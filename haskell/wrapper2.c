@@ -1,3 +1,5 @@
+// This version builds a *library* in C.
+
 // Include Haskell FFI file, which we will use to initialize a Haskell runtime
 #include "HsFFI.h"
 

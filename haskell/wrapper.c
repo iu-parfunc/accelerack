@@ -10,5 +10,5 @@ int main( int argc, char *argv[] )
   hs_init (&argc, &argv);
 
   // Make a call to Haskell code
-  entrypoint();
+  entrypoint(33);
 }

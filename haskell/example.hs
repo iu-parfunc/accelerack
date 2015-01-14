@@ -2,10 +2,10 @@
 
 module Example where
 
-foreign export ccall entrypoint :: IO ()
+-- foreign export ccall entrypoint :: IO ()
+foreign export ccall entrypoint :: Int -> IO Int
 
-entrypoint :: IO ()
-entrypoint = do
+entrypoint :: Int -> IO Int
+entrypoint x = do
   print "Hello from Haskell"
-
-  return ()
+  return x

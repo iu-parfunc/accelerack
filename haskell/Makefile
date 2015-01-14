@@ -27,6 +27,9 @@ gcc: compile
 #	gcc -I$(INCLUDE) -L$(LIBS) -L.  -Wl,-rpath,'$ORIGIN'  -lHSrts -lexample   wrapper.o -o wrapper.exe
 	gcc -I$(INCLUDE) -lffi -L$(LIBS) -L.  -Wl,-rpath      -lHSrts -lexample   wrapper.o -o wrapper.exe
 
+racket: compile
+	LD_LIBRARY_PATH=.:$(HOME)/opt/ghc-7.8.3/lib/ghc-7.8.3/rts-1.0/:$LD_LIBRARY_PATH racket ffi-test.rkt
+
 # Attempt to make a static library through GHC
 static:
 	ghc -c -o example.a example.hs

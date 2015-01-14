@@ -2,8 +2,18 @@
 (require ffi/unsafe
          ffi/unsafe/define)
 
-(define the-lib (ffi-lib "./wrapper2"))
+(printf "Loading .so file...\n")
 
-;(define-ffi-definer define-mylib the-lib)
+; (define the-lib (ffi-lib "./wrapper2"))
+(define the-lib (ffi-lib "./libexample.so"))
 
-;(define-mylib isquare (_fun _int -> _int))
+(printf "Shared object loaded without error!\n")
+
+(define-ffi-definer define-mylib the-lib)
+(define-mylib entrypoint (_fun _int -> _int))
+
+(printf "Aquired entrypoint function, now calling:\n")
+(entrypoint 33)
+
+(printf "Exiting racket safely\n")
+

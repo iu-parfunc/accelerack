@@ -1,5 +1,5 @@
 clean:
-	rm *.hi *.o *_stub.h *.so
+	rm *.hi *.o *_stub.h *.so *~
 so-no-rts:
 	ghc --make -dynamic -shared -fPIC Example.hs -o libexample.so
 so:

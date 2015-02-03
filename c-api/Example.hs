@@ -1,6 +1,6 @@
 module Data.Array.Accelerate.Capi where
 
-import Data.Array.Accelerate.BackendKit.IRs
+-- import Data.Array.Accelerate.BackendKit.IRs
 
 -- foreign export ccall entrypoint :: IO ()
 foreign export ccall entrypoint :: Int -> IO Int

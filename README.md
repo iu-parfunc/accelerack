@@ -1,5 +1,14 @@
-y790-spring-2015
-================
+Accelerack
+==========
+
+Not too late to change it to:
+Raccet "rasset"
+Ackrack (not Accrack)
+Rakcelerate
+Acceleracket
+Celerack
+
+ak cell er ate rack et
 
 C Bindings for Accelerate, Racket Frontend to Accelerate
 

@@ -1,0 +1,11 @@
+
+
+1.  Create SimpleAcc AST using data constructors found in 
+accelerate-backend-kit/backend-kit/Data/Array/Accelerate/BackendKit/IRs/SimpleAcc.hs
+
+This should be packaged into a Prog, which can be evaluated/run.
+Intermediate data stored as ProgBind's.
+
+2.  To run, so something like (simpleRunRaw BKEND dbgName p' Nothing), where p' = AST.
+
+accelerate-backend-kit/icc-opencl/Data/Array/Accelerate/C.hs contains a function, runDetailed, which shows the breakdown of running an Accelerate program.  The phase 2 output is SimpleACC, but I'm not completely convinced.  Does evaluateSimpleAcc input or output SimpleAcc Prog?  Is p or p' the SimpleAcc Prog?

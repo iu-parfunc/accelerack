@@ -2,20 +2,25 @@
 ;; Typed racket?  lang accelerate?
 ;; (require accelerate) ;; Get both staged and Racket bindings
 
+(require "accelerack.rkt")
+
 ;; Dummy wrappers:
 (define generate build-list)
-(define (unindex1 x) x)
-(define (index1 x) x)
+;(define (unindex1 x) x)
+;(define (index1 x) x)
 ;; TODO replace above identity functions with ADT.
 ; (define-struct shape ... ? ? )
 
-(define-syntax acc
-  (syntax-rules ()
-    [(acc x ...) (begin x ...)]))
+;(define-syntax acc
+;  (syntax-rules ()
+;    [(acc (define (fn x) body)) (define (fn x) body)]
+;    ;[(acc (generate x 
+;    [(acc exp) (begin (display "uncaught") exp)]
+;    [(acc exp exp2 x ...) (begin (acc exp) (acc exp2 x ...))]))
+
 (define-syntax run-acc
   (syntax-rules ()
     [(run-acc x) (begin x)]))
-  
 
 ;; ---------------------------------
 ;; Core ops: generate, map, fold
@@ -34,12 +39,15 @@
 ;; Z :. 3 
 
 
+
 ;; I think we should have two namespaces.. like a lisp-2...
 ;; But we should be able 
 (acc 
  ;; Will probably need type annotation: (:: e t) 
- (define x (generate (index1 10) 
-                     (lambda (x) (* 2 (unindex1 x)))))
+ ;(define x (generate (index1 10) 
+ ;                    (lambda (x) (* 2 (unindex1 x)))))
+ (define x (generate 10
+                     (lambda (x) (* 2 x))))
  (define y (map sqr x))
  ; (define y (map (if #t sqr acc) x))
  )
@@ -47,3 +55,5 @@
 ;; Printing "y" should just print an AST.
 ;; Running y on the other hand actually goes to the GPU:
 (run-acc y)
+
+(acc)

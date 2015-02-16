@@ -1,4 +1,7 @@
 
+0.  helpful walk-through of Racket macros very similar to what I was doing:
+http://artyom.me/learning-racket-2
+
 
 1.  Create SimpleAcc AST using data constructors found in 
 accelerate-backend-kit/backend-kit/Data/Array/Accelerate/BackendKit/IRs/SimpleAcc.hs

@@ -17,3 +17,9 @@
     [(_ exp exp2 x ...) #'(begin (acc exp) (acc exp2 x ...))]
     [(_) (datum->syntax #'acc ht)]
     ))
+
+(acc 
+ (define (sqr x) (* x x))
+ )
+
+(acc)

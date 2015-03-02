@@ -50,3 +50,15 @@
 '#hash((sqr3 . (* x x)))
 
 |#
+
+#|
+Thoughts:
+
+Could rig macro to create a run-time binding to the ht.
+That run-time binding would persist into the Interactions Window.
+An acc helper (acc reload) would reset the re-compiled ht to the persisted value,
+which would enable the Interactions Window to continue on with the same run-time
+environment and macro-used ht.  The macro in the second compilation would then be
+pre-loaded with the final ht from the expansion of the .rkt file
+
+|#

@@ -39,7 +39,7 @@
     [(acc load ht2) (begin (set! ht (syntax->datum (syntax ht2))) #'(display ht2))]
     
     ; Placeholder for run command.  Just display the hashtable contents.
-    [(acc run) #'(begin (display "Wish I could run: ") (display (acc view)))]
+    [(acc run) #'(begin (printf "Wish I could run: ~a~n" (acc)))]
     
     ; Catch unrecognized commands
     [(acc exp) (begin (printf "uncaught:~a~n" (syntax->datum stx)) #'(void))]
@@ -51,12 +51,12 @@
 (acc
  (define y 25)
  (define (sqr x) (* x x))
- view
  
  ;attempt redefine
  (define y 9)
  (define (sqr x z) (+ x z))
- view
+
+ ;larger expressions
  (define z (sqr 3)) ;  (z . (sqr 3)) How is this more insufficient than the others?
  (define u (sqr y))
  (define v (sqr z))

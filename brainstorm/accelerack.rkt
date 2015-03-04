@@ -18,6 +18,9 @@
     ; Designed to be called in Interactions Windows to reset the REPL compilation environment's hashtable
     [(acc load ht2) (begin (set! ht (syntax->datum (syntax ht2))) #'(display ht2))]
     
+    ; Placeholder for run command.  Just display the hashtable contents.
+    [(acc run) #'(begin (display "Wish I could run: ") (display (acc view)))]
+    
     ; Catch unrecognized commands
     [(acc exp) (begin (printf "uncaught:~a~n" (syntax->datum stx)) #'(void))]
     

@@ -67,6 +67,9 @@
  
  ; Should z, u, v be expanded?
  ; - No, because the Acc AST presumably stores references.
+ ; - But visibly, it should be.  It's all connected.
+ ; - But, no, the constructors have been called in squence and have returned only pointers.
+ ; - So, do we save the origination info?  Or do we not call out to the API until run?
  ; Should AccRack check for undefined variables?
  ; - Again, like redefinitions, DrRacket does a good job of identifying the error
  ; - Comment out the defns of y and see. 

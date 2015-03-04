@@ -7,11 +7,17 @@
   )
 
 (define-syntax (acc stx)
-  (syntax-case stx (view load run)
-    [(_ (f (fn x) body)) (begin (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax body)))
-                                     #'(f (fn x) body))]  ;<--separate handling for fn defn...todo
-    [(_ (f x exp)) (begin  (display ht) #'(define x exp))]
+  (syntax-case stx (define view load run)
+   
+    ; Variable definition
+    [(acc (define x exp)) (begin (void)#|add_to_hashtable|#
+                                 #'(define x exp))]
     
+    ; Function definition
+    [(acc (define (fn x) body)) (begin
+                                  (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax body)))
+                                  #'(define (fn x) body))]  ;<--separate handling for fn defn...todo
+   
     ; Designed to be called in Definitions Window to create a run-time binding to the AccRack hashtable
     [(acc view) (datum->syntax #'acc ht)]
     

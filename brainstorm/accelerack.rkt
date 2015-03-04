@@ -10,10 +10,10 @@
   )
 
 (define-syntax (acc stx)
-  (syntax-case stx (define load run)
+  (syntax-case stx (define view load run)
     
     ;Redefinitions are ignored.  Should throw an error.
-    ; - but DrRacket's error-handling of redefinitions works well.  Uncomment the guard and see.
+    ; - but DrRacket's error-handling of redefinitions works well.  Comment out the guard and see.
     
     ; Variable definition
     [(acc (define x exp)) (and (identifier? #'x)
@@ -33,6 +33,7 @@
     
     ; Designed to be called in Definitions Window to create a run-time binding to the AccRack hashtable
     [(acc) (datum->syntax #'acc ht)]
+    [(acc view) (begin (printf "~a~n" ht) #'(void))]
     
     ; Designed to be called in Interactions Windows to reset the REPL compilation environment's hashtable
     [(acc load ht2) (begin (set! ht (syntax->datum (syntax ht2))) #'(display ht2))]
@@ -50,10 +51,22 @@
 (acc
  (define y 25)
  (define (sqr x) (* x x))
+ view
  
  ;attempt redefine
  (define y 9)
  (define (sqr x z) (+ x z))
+ view
+ (define z (sqr 3)) ;  (z . (sqr 3)) How is this more insufficient than the others?
+ (define u (sqr y))
+ (define v (sqr z))
+ 
+ ; Should z, u, v be expanded?
+ ; - No, because the Acc AST presumably stores references.
+ ; Should AccRack check for undefined variables?
+ ; - Again, like redefinitions, DrRacket does a good job of identifying the error
+ ; - Comment out the defns of y and see. 
+ 
  )
 
 (define ht (acc)) ; creates run-time binding of hashtable

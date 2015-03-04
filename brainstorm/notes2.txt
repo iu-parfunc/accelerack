@@ -1,0 +1,36 @@
+notes, March 4, 2015
+
+Try to keep things runnable on servers, tank at least, not just from within DrRacket.
+
+Write a Racket program for dot-product, NBody, Mandelbrot
+
+Math library unboxed arrays
+ - conversion functions
+ tuple of array, vs array of tuple
+ 
+ Acc uses tuple of arrays, where our coding would often use arrays of tuples
+ Having tuple-ref may de-complicate this issue (may eliminate need for lift/unlift)
+
+ Make a deliberate choice of which ht implementation to use:
+ Use a persistent data structure inside a mutable box 
+ 
+ The AST gets built
+ then compilation
+  - type-check  ints --(assume all double, use 2.0,
+  write down grammar of types (see Eric's PLT redex model)
+  
+  dot-product
+  nbody
+  
+  rack vs acc
+  
+  ensure rack version is type safe
+  
+  rack generate acc version
+  
+  
+  - normalize, after type check, flatten
+ 
+ 
+ 
+ Evernote account, connect with Prof. Newton

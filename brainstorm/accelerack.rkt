@@ -20,15 +20,16 @@
     
     ; Variable definition
     [(acc (define x exp)) (and (identifier? #'x)
-                               (undefined? (syntax->datum #'x)))
+                               ; (undefined? (syntax->datum #'x))
+                               )
                           (begin (hash-set! ht (syntax->datum (syntax x)) (syntax->datum (syntax exp)))
                                  #'(define x exp))]
     
     ; Function definition
     [(acc (define (fn x ...) body)) ;(undefined? (syntax->datum #'fn))
-                                    (begin
-                                      (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax (λ (x ...) body))))
-                                      #'(define (fn x ...) body))]
+     (begin
+       (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax (λ (x ...) body))))
+       #'(define (fn x ...) body))]
     
     ; Generic use of higher order function, not well-understood in here yet
     ;[(acc (f (fn x) body)) (begin (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax body)))
@@ -52,13 +53,13 @@
     [(acc exp exp2 x ...) #'(begin (acc exp) (acc exp2 x ...))]
     ))
 
-#;(acc
+#; (acc
  (define y 25)
  (define (sqr x) (* x x))
  
  ;attempt redefine
- (define y 9)
- (define (sqr x z) (+ x z))
+ ;(define y 9)
+ ;(define (sqr x z) (+ x z))
 
  ;larger expressions
  (define z (sqr 3)) ;  (z . (sqr 3)) How is this more insufficient than the others?

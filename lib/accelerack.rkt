@@ -2,7 +2,14 @@
 
 ;; This provides the accelerack core library.
 
-(provide acc run-acc generate Z r-arr r-arr-shape r-arr-vectors rget
+(provide acc run-acc 
+         
+         generate 
+         
+         acc-type? acc-shape-type? Z 
+         
+         r-arr r-arr-shape r-arr-vectors rget
+         
          
          ;; FIXME: this should only be accessible from an internal module
          ;; so that theuser does not mess with it:
@@ -14,6 +21,22 @@
 ; DIM1 is (Z Int)
 ; DIM2 is (Z Int Int)
 (define Z vector)
+
+(define (acc-type? t0)
+  (match t0
+    [(or 'Int 'Int8 'Int16 'Int32 'Int64) #t]
+    [(or 'Word 'Word8 'Word16 'Word32 'Word64) #t]
+    ;; TODO: support C Types?  Let's not...
+    [(or 'Float 'Double) #t]
+    [`(Array ,sh ,ty) (and (acc-shape-type? sh) (acc-type? ty))]
+    [(vector ty* ...) (andmap acc-type? ty*)]
+    [else (acc-shape-type? t0)]))
+
+(define (acc-shape-type? sht)
+  (match sht
+    [`(Z ,ints ...) 
+     (andmap (lambda (x) (eq? 'Int x)) ints)]
+    [else #f]))
 
 ;; a Rack-Array is a (r-arr Shape TupleOfVectors)
 (struct r-arr (shape vectors) #:transparent)
@@ -163,3 +186,6 @@ ht2
 ;; - But maybe not due to clear separation of compile environments and compile/run-time environs
 
 |#
+
+
+

@@ -3,11 +3,6 @@
 (require "../lib/accelerack.rkt")
 (require ffi/vector)
 
-(define arr1 (r-arr (Z 4) (list (u64vector 0 1 2 3))))
-
-(define arr2 (r-arr (Z 3 5) (list (u64vector 0 1 2 3 4)
-                                  (u64vector 5 6 7 8 9)
-                                  (u64vector 10 11 12 13 14))))
                                   
 
 ;make-vector and build-vector, and array versions

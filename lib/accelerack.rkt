@@ -2,6 +2,8 @@
 
 ;; This provides the accelerack core library.
 
+(require ffi/vector)
+
 (provide acc run-acc 
          
          generate 
@@ -20,8 +22,11 @@
 ; DIM0 is (Z)
 ; DIM1 is (Z Int)
 ; DIM2 is (Z Int Int)
-(define Z vector)
-
+(define (Z . ls)
+  (if (andmap number? ls)
+      (cons 'Z ls)
+      (error 'Z "cannot construct shape value with non-numeric argument: ~a" ls)))
+  
 (define (acc-type? t0)
   (match t0
     [(or 'Int 'Int8 'Int16 'Int32 'Int64) #t]
@@ -39,7 +44,7 @@
     [else #f]))
 
 ;; a Rack-Array is a (r-arr Shape TupleOfVectors)
-(struct r-arr (shape vectors) #:transparent)
+(struct r-arr (shape arrty vectors) #:transparent)
 ;(struct r-arr (shapes list-of-vectors))
 
 ; rget : Rack-Array Shape-Index -> Payload
@@ -47,9 +52,29 @@
   (λ (rarr index)
     (match rarr
       ;[(r-arr (Z) vs) (first vs)]
-      [(r-arr (vector d1) vs) d1]
-      [(r-arr (vector d1 d2) vs) 5]
+      [(r-arr `(Z ,d1) `(Array (Z Int) ,elt) vs)
+       (match index 
+         [`(Z ,ix) (payloads-ref elt vs ix)])]
+      [(r-arr `(Z ,d1 ,d2) `(Array (Z Int Int) ,elt) vs)
+       5]
       )))
+
+;; Helper function for 1D references into payloads:
+(define (payloads-ref elt payloads index)
+  ;; assert (acc-type? elt)
+  ;; assert (number? index)
+  (match elt
+    [`#(,flds ...) 
+     (error 'finishme "")]
+    
+    ; [(? scalar-type? elt) ]
+    [`(Array ,sh ,_) (error 'payloads-ref "should take element type, not array type: ~s" elt)]
+    
+    [Word64 (match-let ([(list p) payloads])
+              (u64vector-ref p index))]
+    
+    ))
+    
 
 ;; FIXME: need to introduce an abstract datatype for Accelerate arrays:
 (define generate build-list)

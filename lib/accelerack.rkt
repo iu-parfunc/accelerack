@@ -2,15 +2,42 @@
 
 ;; This provides the accelerack core library.
 
-(provide acc run-acc generate
+(provide acc run-acc generate Z r-arr r-arr-shape r-arr-vectors rget
          
          ;; FIXME: this should only be accessible from an internal module
          ;; so that theuser does not mess with it:
          acc-syn-table
          )
 
+;; a Shape is (Z [Int] ...)
+; DIM0 is (Z)
+; DIM1 is (Z Int)
+; DIM2 is (Z Int Int)
+(define Z vector)
+
+;; a Rack-Array is a (r-arr Shape TupleOfVectors)
+(struct r-arr (shape vectors) #:transparent)
+;(struct r-arr (shapes list-of-vectors))
+
+; rget : Rack-Array Shape-Index -> Payload
+(define rget
+  (λ (rarr index)
+    (match rarr
+      ;[(r-arr (Z) vs) (first vs)]
+      [(r-arr (vector d1) vs) d1]
+      [(r-arr (vector d1 d2) vs) 5]
+      )))
+
 ;; FIXME: need to introduce an abstract datatype for Accelerate arrays:
 (define generate build-list)
+
+;;;;; Some confusion here between when to use (Z Int Int) vs (Z 3 5)
+; No way to use (Z Int Int) in Racket yet.
+
+;; generate : Shape [Shape -> Payload] -> Rack-Array
+;(define generate2 (λ (sh fn)
+                    
+;(define make-rarr (λ (sh vals 
 
 ;; The core library defines a global hash table that keeps track of
 ;; all Accelerate bindings defined anywhere.
@@ -54,8 +81,7 @@
                              ;; For now strip source locations (BAD):
                              (syntax->datum (syntax (lambda (x ...) body)))
                              ))
-         (define (fn x ...) body))]
-    
+         (define (fn x ...) body))]    
 #|        
     ; Generic use of higher order function, not well-understood in here yet
     ;[(acc (f (fn x) body)) (begin (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax body)))

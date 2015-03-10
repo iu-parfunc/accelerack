@@ -56,7 +56,9 @@
        (match index 
          [`(Z ,ix) (payloads-ref elt vs ix)])]
       [(r-arr `(Z ,d1 ,d2) `(Array (Z Int Int) ,elt) vs)
-       5]
+       (match index 
+         [`(Z ,ix0 ,ix1) 
+          (payloads-ref elt vs (+ ix1 (* ix0 d2)))])]
       )))
 
 ;; Helper function for 1D references into payloads:
@@ -64,9 +66,13 @@
   ;; assert (acc-type? elt)
   ;; assert (number? index)
   (match elt
-    [`#(,flds ...) 
-     (error 'finishme "")]
-    
+    [`#(,flds ...)
+     ; assert (= (length payloads) (length flds))
+     (list->vector
+      (map (lambda (fld pay)
+             (payloads-ref fld (list pay) index))
+           flds payloads))]
+             
     ; [(? scalar-type? elt) ]
     [`(Array ,sh ,_) (error 'payloads-ref "should take element type, not array type: ~s" elt)]
     

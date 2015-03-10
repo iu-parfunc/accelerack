@@ -29,12 +29,20 @@
                     (list (u64vector 0 10 20 30))))
 
 (define arr2 (r-arr (Z 1 5)
-                    '(Array (Z Int) #(Word64 Word64 Word64))
+                    '(Array (Z Int Int) #(Word64 Word64 Word64))
                     (list (u64vector 0 1 2 3 4)
                           (u64vector 5 6 7 8 9)
                           (u64vector 10 11 12 13 14))))
 
+(define arr3 (r-arr (Z 2 3)
+                    '(Array (Z Int Int) #(Word64 Word64 Word64))
+                    (list (u64vector 0 1 2 3 4 5)
+                          (u64vector 6 7 8 9 10 11)
+                          (u64vector 12 13 14 15 16 17))))
+
 (check-eqv? 20 (rget arr1 (Z 2)))
 
 ;; FINISHME:
-; (check-equal? #(0 5 10) (rget arr2 (Z 0 0)))
+(check-equal? #(0 5 10) (rget arr2 (Z 0 0)))
+(check-equal? #(3 8 13) (rget arr2 (Z 0 3)))
+

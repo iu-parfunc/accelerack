@@ -7,23 +7,38 @@
 ;; Types
 ;; -----------------------------------------------------
 
-(check-true (acc-type? 'Int))
+(check-true (acc-base-type? 'Int))
+(check-true (acc-base-type? 'Word64))
+(check-false (acc-base-type? 'int))
+(check-false (acc-base-type? 'char))
 
-(check-true (acc-type? '(Array (Z Int) Float)))
+(check-true (acc-payload-type? '#(Int Float)))
+(check-true (acc-payload-type? '#(Float)))
+(check-true (acc-payload-type? 'Float))
+(check-false (acc-payload-type? '#(3 4)))
 
-(check-true (acc-type? '(Z Int Int Int Int)))
+(check-true (acc-shape-type? '(Z)))
+(check-true (acc-shape-type? '(Z Int)))
+(check-true (andmap acc-shape-type? (list DIM0 DIM1 DIM2 DIM3)))
 (check-true (acc-shape-type? '(Z Int Int Int Int)))
+(check-false (acc-shape-type? '(Z 1 4)))
 
-(check-true (acc-type? '#(Int Float)))
 
+(check-true (acc-array-type? '(Array (Z Int) Float)))
+(check-true (acc-array-type? '(Array (Z Int) #(Float))))
+(check-true (acc-array-type? '(Array (Z) Int)))
+(check-true (acc-array-type? `(Array ,DIM0 Int)))
+(check-true (acc-array-type? '(Array (Z Int Int) #(Int Int Float))))
+(check-true (acc-array-type? `(Array ,DIM2 #(Int Int Float))))
 
 (check-false (acc-type? '(Int Float)))
 (check-false (acc-type? '(Z Int Float)))
 
-
 ;; Basic in-Racket Array operations:
 ;; -----------------------------------------------------
 
+(check-eqv? 1 (shape-size (Z)))
+(check-eqv? 20 (shape-size (Z 4 5)))
 
 (define arr1 (r-arr (Z 4) '(Array (Z Int) Word64)
                     (list (u64vector 0 10 20 30))))

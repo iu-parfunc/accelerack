@@ -18,7 +18,7 @@
          ;; so that the user does not mess with it:
          acc-syn-table
          
-         (all-from-out ffi/vector)
+         (all-from-out ffi/vector) ;only necessary for very manual array construction
          )
 
 ;; a Rack-Array is a (r-arr Shape ArrayType TupleOfVectors)

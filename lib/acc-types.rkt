@@ -15,6 +15,7 @@
          Z shape-size shape-dim
          DIM0 DIM1 DIM2 DIM3
          
+         (all-from-out ffi/vector) ;only necessary for very manual array construction
          )
 
 ;; Accelerate type include base types, payload, shapes, and arrays

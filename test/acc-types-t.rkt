@@ -2,7 +2,6 @@
 
 (require rackunit)
 (require "../lib/acc-types.rkt")
-(require ffi/vector)
 
 ;; Types
 ;; -----------------------------------------------------
@@ -35,14 +34,14 @@
 ;; Helper functions
 ;; -----------------------------------------------------
 
-(check-eqv? 3 ((payload-type->vector-length 'Float) (f64vector 45 45 45)))
+(check-eqv? ((payload-type->vector-length 'Float) (f64vector 45 45 45)) 3)
 (check-true ((payload-type->vector-pred 'Word64) (u64vector 45 45 45)))
 (check-false ((payload-type->vector-pred 'Word64) (f64vector 45 45 45)))
 
-(check-equal? '(Z) (arr-shape '(Array (Z) #(Int))))
-(check-eqv? DIM0 (arr-shape `(Array ,DIM0 #(Int))))
-(check-equal? '(Z Int Int) (arr-shape '(Array (Z Int Int) #(Int Int Float))))
+(check-equal? (arr-shape '(Array (Z) #(Int))) '(Z))
+(check-eqv? (arr-shape `(Array ,DIM0 #(Int))) DIM0)
+(check-equal? (arr-shape '(Array (Z Int Int) #(Int Int Float))) '(Z Int Int))
 ;; TODO: add tests for arr-dim and arr-payload
 
-(check-eqv? 1 (shape-size (Z)))
-(check-eqv? 20 (shape-size (Z 4 5)))
+(check-eqv? (shape-size (Z)) 1)
+(check-eqv? (shape-size (Z 4 5)) 20)

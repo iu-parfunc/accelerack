@@ -5,18 +5,18 @@
 (require ffi/vector)
 
 (provide 
-         acc-type? acc-base-type? acc-payload-type?
-         acc-shape-type? acc-array-type?
-         
-         payload-type->vector-pred payload-type->vector-length
-         
-         arr-shape arr-payload arr-dim
-         
-         Z shape-size shape-dim
-         DIM0 DIM1 DIM2 DIM3
-         
-         (all-from-out ffi/vector) ;only necessary for very manual array construction
-         )
+ acc-type? acc-base-type? acc-payload-type?
+ acc-shape-type? acc-array-type?
+ 
+ payload-type->vector-pred payload-type->vector-length
+ 
+ arr-shape arr-payload arr-dim
+ 
+ Z shape-size shape-dim acc-index?
+ DIM0 DIM1 DIM2 DIM3
+ 
+ (all-from-out ffi/vector) ;only necessary for very manual array construction
+ )
 
 ;; Accelerate type include base types, payload, shapes, and arrays
 ;; TODO: Add functions
@@ -99,7 +99,19 @@
 (define (shape-size shape)
   (foldl * 1 (rest shape)))
 
-;; shape-dim : Shape -> Int
+;; shape-dim : (U Shape ShapeType) -> Int
 ;; Produces the dimensionality of shape
 (define (shape-dim shape)
   (sub1 (length shape)))
+
+;; acc-index? : Shape Shape -> Boolean
+;; Determines if index is valid for shape
+(define (acc-index? index shape)
+  (and
+   ; Check that dimensionality matches
+   (= (shape-dim index) (shape-dim shape))
+   ; Check that each index is within bounds
+   (andmap (λ (i range) (if (symbol? range)
+                            (symbol=? i range)
+                            (<= 0 i range)))
+           index shape)))

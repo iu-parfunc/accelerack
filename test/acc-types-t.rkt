@@ -45,3 +45,29 @@
 
 (check-eqv? (shape-size (Z)) 1)
 (check-eqv? (shape-size (Z 4 5)) 20)
+
+(check-eqv? (shape-dim (Z)) 0)
+(check-eqv? (shape-dim (Z 1)) 1)
+(check-eqv? (shape-dim (Z 6)) 1)
+(check-eqv? (shape-dim (Z 6 1 1)) 3)
+
+(check-true (acc-index? (Z) (Z)))
+(check-false (acc-index? (Z 1) (Z)))
+(check-false (acc-index? (Z) (Z 1)))
+;
+(check-true (acc-index? (Z 0) (Z 3)))
+(check-true (acc-index? (Z 1) (Z 3)))
+(check-true (acc-index? (Z 3) (Z 3)))
+(check-false (acc-index? (Z 4) (Z 3)))
+(check-false (acc-index? (Z -1) (Z 3)))
+;
+(check-true (acc-index? (Z 0 0 0 0) (Z 3 4 5 6)))
+(check-true (acc-index? (Z 1 1 1 1) (Z 3 4 5 6)))
+(check-true (acc-index? (Z 2 2 2 2) (Z 3 4 5 6)))
+(check-true (acc-index? (Z 3 4 5 6) (Z 3 4 5 6)))
+(check-false (acc-index? (Z 6 5 4 3) (Z 3 4 5 6)))
+(check-false (acc-index? (Z 9 1 1 1) (Z 3 4 5 6)))
+(check-false (acc-index? (Z 1 9 1 1) (Z 3 4 5 6)))
+(check-false (acc-index? (Z 1 1 9 1) (Z 3 4 5 6)))
+(check-false (acc-index? (Z 1 1 1 9) (Z 3 4 5 6)))
+(check-false (acc-index? (Z 1 1 -1 1) (Z 3 4 5 6)))

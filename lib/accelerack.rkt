@@ -26,7 +26,7 @@
   #:transparent
   #:guard (λ (shape arrty vectors _)
             (cond
-              [(not (eqv? (shape-dim shape)
+              [(not (= (shape-dim shape)
                           (arr-dim arrty)))
                (error "Array dimensionality mismatch")]
               [(let [(len (shape-size shape))]
@@ -34,7 +34,7 @@
                            (cond
                              [(not ((payload-type->vector-pred pl-ty) vec))
                               (error "Array Payload type mismatch")]
-                             [(not (eqv? len ((payload-type->vector-length pl-ty) vec)))
+                             [(not (= len ((payload-type->vector-length pl-ty) vec)))
                               (error "Array Shape size mismatch")]
                              [else true]))
                          (vector->list (arr-payload arrty))

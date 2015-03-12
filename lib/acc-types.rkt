@@ -2,12 +2,18 @@
 
 ;;  Accelerack Types
 
+(require ffi/vector)
+
 (provide 
          acc-type? acc-base-type? acc-payload-type?
          acc-shape-type? acc-array-type?
          
-         Z DIM0 DIM1 DIM2 DIM3
-         shape-size
+         payload-type->vector-pred payload-type->vector-length
+         
+         arr-shape arr-payload arr-dim
+         
+         Z shape-size shape-dim
+         DIM0 DIM1 DIM2 DIM3
          
          )
 
@@ -29,6 +35,18 @@
     [(or 'Float 'Double) #t]
     [else false]))
 
+;; TODO: Combine and return (values pred length) ?
+;; payload-type->vector-pred : Base -> VectorPredicate
+(define (payload-type->vector-pred plty)
+  (match plty
+    ['Word64 u64vector?]
+    ['Float f64vector?]))
+;; payload-type->vector-pred : Base -> VectorLengthFn
+(define (payload-type->vector-length plty)
+  (match plty
+    ['Word64 u64vector-length]
+    ['Float f64vector-length]))
+
 ;; Payloads (tuples) is a vector of primitives
 (define (acc-payload-type? t0)
   (match t0
@@ -48,6 +66,16 @@
   (match t0
     [`(Array ,sh ,pl) (and (acc-shape-type? sh) (acc-payload-type? pl))]
     [else false]))
+
+(define (arr-shape arrty)
+  (match arrty
+    [`(Array ,sh ,pl) sh]))
+(define (arr-payload arrty)
+  (match arrty
+    [`(Array ,sh ,pl) pl]))
+(define (arr-dim arrty)
+  (match arrty
+    [`(Array ,sh ,pl) (shape-dim sh)]))
 
 ;; a Shape is (Z [Int] ...)
 ; DIM0 is (Z)
@@ -69,3 +97,8 @@
 ;; Produces the size of an array corresponding to the given shape
 (define (shape-size shape)
   (foldl * 1 (rest shape)))
+
+;; shape-dim : Shape -> Int
+;; Produces the dimensionality of shape
+(define (shape-dim shape)
+  (sub1 (length shape)))

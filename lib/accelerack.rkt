@@ -2,28 +2,46 @@
 
 ;; This provides the Accelerack core library.
 
-(require ffi/vector)
-
 (require "acc-types.rkt")
+(require ffi/vector)
 
 (provide acc run-acc 
          
          generate
+         
+         Z shape-size
+         DIM0 DIM1 DIM2 DIM3
          
          r-arr r-arr-shape r-arr-vectors rget
          
          ;; FIXME: this should only be accessible from an internal module
          ;; so that the user does not mess with it:
          acc-syn-table
+         
+         (all-from-out ffi/vector)
          )
 
-;; a Rack-Array is a (r-arr Shape TupleOfVectors)
+;; a Rack-Array is a (r-arr Shape ArrayType TupleOfVectors)
 (struct r-arr (shape arrty vectors)
   #:transparent
   #:guard (λ (shape arrty vectors _)
-            ;; TODO: check vector lengths against shape
-            (values shape arrty vectors))
+            (cond
+              [(not (eqv? (shape-dim shape)
+                          (arr-dim arrty)))
+               (error "Array dimensionality mismatch")]
+              [(let [(len (shape-size shape))]
+                 (andmap (λ (pl-ty vec)
+                           (cond
+                             [(not ((payload-type->vector-pred pl-ty) vec))
+                              (error "Array Payload type mismatch")]
+                             [(not (eqv? len ((payload-type->vector-length pl-ty) vec)))
+                              (error "Array Shape size mismatch")]
+                             [else true]))
+                         (vector->list (arr-payload arrty))
+                         vectors))
+               (values shape arrty vectors)]))
   )
+
 ;(struct r-arr (shapes list-of-vectors))
 
 ;; FIXME: I bet rget doesn't work for both ways of specifying singleton payloads
@@ -53,7 +71,7 @@
       (map (lambda (fld pay)
              (payloads-ref fld (list pay) index))
            flds payloads))]
-             
+    
     ; [(? scalar-type? elt) ]
     [`(Array ,sh ,_) (error 'payloads-ref "should take element type, not array type: ~s" elt)]
     
@@ -61,7 +79,7 @@
               (u64vector-ref p index))]
     
     ))
-    
+
 
 ;; FIXME: need to introduce an abstract datatype for Accelerate arrays:
 (define generate build-list)
@@ -71,7 +89,7 @@
 
 ;; generate : Shape [Shape -> Payload] -> Rack-Array
 ;(define generate2 (λ (sh fn)
-                    
+
 ;(define make-rarr (λ (sh vals 
 
 ;; The core library defines a global hash table that keeps track of
@@ -94,17 +112,17 @@
     
     ; Variable definition
     [(acc (define x exp))  (identifier? #'x)
-     #'(begin 
-         ;; Note, concurrency safe (non-atomic update):                              
-         (set-box! acc-syn-table                    
-                   (hash-set (unbox acc-syn-table)
-                             ;; Use the FULL identifier as the key:
-                             (syntax x)
-                             ;; For now strip source locations (BAD):
-                             (syntax->datum (syntax exp))
-                             ))
-         (define x exp))]
-
+                           #'(begin 
+                               ;; Note, concurrency safe (non-atomic update):                              
+                               (set-box! acc-syn-table                    
+                                         (hash-set (unbox acc-syn-table)
+                                                   ;; Use the FULL identifier as the key:
+                                                   (syntax x)
+                                                   ;; For now strip source locations (BAD):
+                                                   (syntax->datum (syntax exp))
+                                                   ))
+                               (define x exp))]
+    
     ; Function definition
     [(acc (define (fn x ...) body)) ;(undefined? (syntax->datum #'fn))
      #'(begin 
@@ -117,7 +135,7 @@
                              (syntax->datum (syntax (lambda (x ...) body)))
                              ))
          (define (fn x ...) body))]    
-#|        
+    #|        
     ; Generic use of higher order function, not well-understood in here yet
     ;[(acc (f (fn x) body)) (begin (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax body)))
     ;                                 #'(f (fn x) body))]  ;<--separate handling for fn defn...todo

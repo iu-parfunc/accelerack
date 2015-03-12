@@ -2,6 +2,7 @@
 
 (require rackunit)
 (require "accelerack.rkt")
+(require "acc-types.rkt")
 (require ffi/vector)
 
 ;; Types

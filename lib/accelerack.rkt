@@ -46,9 +46,20 @@
 
 ;; FIXME: I bet rget doesn't work for both ways of specifying singleton payloads
 
-; rget : Rack-Array Shape-Index -> Payload
-(define rget
-  (λ (rarr index)
+; rget : Rack-Array Shape -> Payload
+(define (rget rarr index)
+  (match-let ([(r-arr sh `(Array ,sh1 #(,flds ...)) vs) rarr])
+    (if (acc-index? index sh)
+        (let ([i (flatten-index index sh)])
+          (list->vector
+           (map (λ (fld vs)
+                  ((payload-type->vector-ref fld) vs i))
+                flds vs))
+          )
+        (error "Invalid index for given shape")) ; FIXME: Make this an assertion at pred call
+       ))
+    
+    #|
     (match rarr
       ;[(r-arr (Z) vs) (first vs)]
       [(r-arr `(Z ,d1) `(Array (Z Int) ,elt) vs)
@@ -59,6 +70,7 @@
          [`(Z ,ix0 ,ix1) 
           (payloads-ref elt vs (+ ix1 (* ix0 d2)))])]
       )))
+|#
 
 ;; Helper function for 1D references into payloads:
 (define (payloads-ref elt payloads index)

@@ -68,10 +68,15 @@
                               (list (u64vector 0 1 2 3 4 5)
                                     (u64vector 6 7 8 9 10 11)
                                     (u64vector 12 13 14 15 16 17 18)))))
-
+(define arr4 (r-arr (Z 2 2) '(Array (Z Int Int) #(Word64 Float Word64))
+                    (list (u64vector 4 5 6 7)
+                          (f64vector 10 11 12 13)
+                          (u64vector 22 33 44 55))))
+                     
+                     ;; (Z 2 0 2) allowed?
+                     
 ;(check-eqv? (rget arr1 (Z 2)) 20)
 
 ;; FINISHME:
 (check-equal? (rget arr2 (Z 0 0)) #(0 5 10))
 (check-equal? (rget arr2 (Z 0 3)) #(3 8 13))
-

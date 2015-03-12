@@ -8,11 +8,13 @@
  acc-type? acc-base-type? acc-payload-type?
  acc-shape-type? acc-array-type?
  
- payload-type->vector-pred payload-type->vector-length
+ payload-type->vector-pred
+ payload-type->vector-length
+ payload-type->vector-ref
  
  arr-shape arr-payload arr-dim
  
- Z shape-size shape-dim acc-index?
+ Z shape-size shape-dim acc-index? flatten-index
  DIM0 DIM1 DIM2 DIM3
  
  (all-from-out ffi/vector) ;only necessary for very manual array construction
@@ -47,6 +49,12 @@
   (match plty
     ['Word64 u64vector-length]
     ['Float f64vector-length]))
+;; payload-type->vector-ref : Base -> VectorRefFn
+(define (payload-type->vector-ref plty)
+  (match plty
+    ['Word64 u64vector-ref]
+    ['Float f64vector-ref]))
+
 
 ;; Payloads (tuples) is a vector of primitives
 (define (acc-payload-type? t0)
@@ -94,12 +102,12 @@
 (define DIM2 '(Z Int Int))
 (define DIM3 '(Z Int Int Int))
 
-;; shape-size : Shape -> Int
+;; shape-size : Shape -> Nat
 ;; Produces the size of an array corresponding to the given shape
 (define (shape-size shape)
   (foldl * 1 (rest shape)))
 
-;; shape-dim : (U Shape ShapeType) -> Int
+;; shape-dim : (U Shape ShapeType) -> Nat
 ;; Produces the dimensionality of shape
 (define (shape-dim shape)
   (sub1 (length shape)))
@@ -115,3 +123,16 @@
                             (symbol=? i range)
                             (<= 0 i range)))
            index shape)))
+
+;; flatten-index : Shape Shape -> Nat
+;; Convert multi-dimensional index in Shape form to a linear index into a flat vector
+(define (flatten-index index shape)
+  (if (acc-index? index shape)
+      (let helper ([index (rest index)] [shape (rest shape)])
+        (if (empty? index)
+            0
+            (+ (foldr * (first index) (rest shape))
+               (helper (rest index) (rest shape)))))
+      (error "Invalid index for given shape") ; FIXME: Make this an assertion at pred call
+      ))
+      

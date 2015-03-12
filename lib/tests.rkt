@@ -15,7 +15,6 @@
 
 (check-true (acc-payload-type? '#(Int Float)))
 (check-true (acc-payload-type? '#(Float)))
-(check-true (acc-payload-type? 'Float))
 (check-false (acc-payload-type? '#(3 4)))
 
 (check-true (acc-shape-type? '(Z)))
@@ -25,10 +24,9 @@
 (check-false (acc-shape-type? '(Z 1 4)))
 
 
-(check-true (acc-array-type? '(Array (Z Int) Float)))
 (check-true (acc-array-type? '(Array (Z Int) #(Float))))
-(check-true (acc-array-type? '(Array (Z) Int)))
-(check-true (acc-array-type? `(Array ,DIM0 Int)))
+(check-true (acc-array-type? '(Array (Z) #(Int))))
+(check-true (acc-array-type? `(Array ,DIM0 #(Int))))
 (check-true (acc-array-type? '(Array (Z Int Int) #(Int Int Float))))
 (check-true (acc-array-type? `(Array ,DIM2 #(Int Int Float))))
 

@@ -29,17 +29,11 @@
     [(or 'Float 'Double) #t]
     [else false]))
 
-;; Allows two representations of singleton payloads
-; '(Array (Z Int) Float)
-; '(Array (Z Int) #(Float))
-;; FIXME: Pick one and tighten down type predicate
-;;   - Could use the constructor guards to normalize one to the other
-
 ;; Payloads (tuples) is a vector of primitives
 (define (acc-payload-type? t0)
   (match t0
     [(vector t1* ...) (andmap acc-base-type? t1*)]
-    [else (acc-base-type? t0)]
+    [else false]
     ))
 
 ;; Shapes denote dimensionality and 

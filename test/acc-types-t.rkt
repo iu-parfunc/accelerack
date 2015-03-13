@@ -71,3 +71,8 @@
 (check-false (acc-index? (Z 1 1 9 1) (Z 3 4 5 6)))
 (check-false (acc-index? (Z 1 1 1 9) (Z 3 4 5 6)))
 (check-false (acc-index? (Z 1 1 -1 1) (Z 3 4 5 6)))
+
+
+(check-eqv? (flatten-index (Z) (Z)) 0)
+(check-eqv? (flatten-index (Z 0 0) (Z 3 5)) 0)
+(check-eqv? (flatten-index (Z 1 2 1 5) (Z 3 5 2 7)) 110)

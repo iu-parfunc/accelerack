@@ -144,12 +144,11 @@
 ;; flatten-index : Shape Shape -> Nat
 ;; Convert multi-dimensional index in Shape form to a linear index into a flat vector
 (define (flatten-index index shape)
-  (if (acc-index? index shape)
-      (let helper ([index (rest index)] [shape (rest shape)])
-        (if (empty? index)
-            0
-            (+ (foldr * (first index) (rest shape))
-               (helper (rest index) (rest shape)))))
-      (error "Invalid index for given shape") ; FIXME: Make this an assertion at pred call
-      ))
+  (begin (unless (acc-index? index shape) (error "Invalid index for given shape"))
+         (let helper ([index (rest index)] [shape (rest shape)])
+           (if (empty? index)
+               0
+               (+ (foldr * (first index) (rest shape))
+                  (helper (rest index) (rest shape)))))
+         ))
       

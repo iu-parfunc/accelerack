@@ -13,7 +13,11 @@
          Z shape-size
          DIM0 DIM1 DIM2 DIM3
          
-         r-arr r-arr-shape r-arr-vectors rget
+         r-arr r-arr-shape r-arr-vectors
+         
+         (contract-out
+          [rget (-> r-arr? acc-shape? acc-payload?)]
+          )
          
          ;; FIXME: this should only be accessible from an internal module
          ;; so that the user does not mess with it:
@@ -48,15 +52,13 @@
 ; rget : Rack-Array Shape -> Payload
 (define (rget rarr index)
   (match-let ([(r-arr sh `(Array ,sh1 #(,flds ...)) vs) rarr])
-    (if (acc-index? index sh)
-        (let ([i (flatten-index index sh)])
-          (list->vector
-           (map (λ (fld vs)
-                  ((payload-type->vector-ref fld) vs i))
-                flds vs))
-          )
-        (error "Invalid index for given shape")) ; FIXME: Make this an assertion at pred call
-       ))
+    (unless (acc-index? index sh) (error "Invalid index for given shape"))
+    (let ([i (flatten-index index sh)])
+      (list->vector
+       (map (λ (fld vs)
+              ((payload-type->vector-ref fld) vs i))
+            flds vs))
+        )))
 
 ;; Helper function for 1D references into payloads:
 (define (payloads-ref elt payloads index)

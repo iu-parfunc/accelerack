@@ -8,9 +8,12 @@
  acc-type? acc-base-type? acc-payload-type?
  acc-shape-type? acc-array-type?
  
+ acc-payload? acc-base? acc-shape?
+ 
  payload-type->vector-pred
  payload-type->vector-length
  payload-type->vector-ref
+ payload-type->list->vector
  
  arr-shape arr-payload arr-dim
  
@@ -38,6 +41,8 @@
     [(or 'Float 'Double) #t]
     [else false]))
 
+(define acc-base? real?)
+
 ;; TODO: Combine and return (values pred length) ?
 ;; payload-type->vector-pred : Base -> VectorPredicate
 (define (payload-type->vector-pred plty)
@@ -54,7 +59,10 @@
   (match plty
     ['Word64 u64vector-ref]
     ['Float f64vector-ref]))
-
+(define (payload-type->list->vector plty)
+  (match plty
+    ['Word64 list->u64vector]
+    ['Float list->f64vector]))
 
 ;; Payloads (tuples) is a vector of primitives
 (define (acc-payload-type? t0)
@@ -62,6 +70,11 @@
     [(vector t1* ...) (andmap acc-base-type? t1*)]
     [else false]
     ))
+
+;; 
+(define (acc-payload? x)
+  (or (vector? x)
+      (acc-base? x)))
 
 ;; Shapes denote dimensionality and 
 (define (acc-shape-type? sht)
@@ -94,6 +107,10 @@
   (if (andmap integer? ls)
       (cons 'Z ls)
       (error 'Z "cannot construct shape value with non-numeric argument: ~a" ls)))
+
+(define (acc-shape? x)
+  (and (symbol=? 'Z (first x))
+       (andmap integer? (rest x))))
 
 ;; TODO: Keep these?  Are they a convenience given the need to unquote?
 ;; Convenience shapes

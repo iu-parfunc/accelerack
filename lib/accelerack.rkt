@@ -3,6 +3,7 @@
 ;; This provides the Accelerack core library.
 
 (require "acc-types.rkt")
+
 (require ffi/vector)
 
 (provide acc run-acc 
@@ -44,8 +45,6 @@
 
 ;(struct r-arr (shapes list-of-vectors))
 
-;; FIXME: I bet rget doesn't work for both ways of specifying singleton payloads
-
 ; rget : Rack-Array Shape -> Payload
 (define (rget rarr index)
   (match-let ([(r-arr sh `(Array ,sh1 #(,flds ...)) vs) rarr])
@@ -58,19 +57,6 @@
           )
         (error "Invalid index for given shape")) ; FIXME: Make this an assertion at pred call
        ))
-    
-    #|
-    (match rarr
-      ;[(r-arr (Z) vs) (first vs)]
-      [(r-arr `(Z ,d1) `(Array (Z Int) ,elt) vs)
-       (match index 
-         [`(Z ,ix) (payloads-ref elt vs ix)])]
-      [(r-arr `(Z ,d1 ,d2) `(Array (Z Int Int) ,elt) vs)
-       (match index 
-         [`(Z ,ix0 ,ix1) 
-          (payloads-ref elt vs (+ ix1 (* ix0 d2)))])]
-      )))
-|#
 
 ;; Helper function for 1D references into payloads:
 (define (payloads-ref elt payloads index)
@@ -95,9 +81,6 @@
 
 ;; FIXME: need to introduce an abstract datatype for Accelerate arrays:
 (define generate build-list)
-
-;;;;; Some confusion here between when to use (Z Int Int) vs (Z 3 5)
-; No way to use (Z Int Int) in Racket yet.
 
 ;; generate : Shape [Shape -> Payload] -> Rack-Array
 ;(define generate2 (λ (sh fn)
@@ -148,21 +131,6 @@
                              ))
          (define (fn x ...) body))]    
     #|        
-    ; Generic use of higher order function, not well-understood in here yet
-    ;[(acc (f (fn x) body)) (begin (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax body)))
-    ;                                 #'(f (fn x) body))]  ;<--separate handling for fn defn...todo
-    
-    ; Designed to be called in Definitions Window to create a run-time binding to the AccRack hashtable
-    [(acc) (datum->syntax #'acc ht)]
-    [(acc view) (begin (printf "~a~n" ht) #'(void))]
-    [(acc get) #'ht]
-    
-    ; Designed to be called in Interactions Windows to reset the REPL compilation environment's hashtable
-    [(acc load ht3) (begin (set! ht (syntax->datum (syntax ht3))) #'(display ht3))]
-    
-    ; Placeholder for run command.  Just display the hashtable contents.
-    [(acc run) #'(begin (printf "Wish I could run: ~a~n" (acc)))]
-    
     ; Catch unrecognized commands
     [(acc exp) (begin (printf "uncaught:~a~n" (syntax->datum stx)) #'(void))]
     |#
@@ -216,16 +184,6 @@
                      (lambda (x) (* 2 x))))
  (define b (map sqr a))
  )
-
-(define ht2 (acc)) ; creates run-time binding of hashtable...?
-
-ht2
-
-;; This does NOT work.  The reference works, but was it ever extensible?
-;
-;(acc load ht) ; populates REPL's compilation environment with the hashtable
-;; This could be more automated when this is packaged into one or more modules:
-;; - But maybe not due to clear separation of compile environments and compile/run-time environs
 
 |#
 

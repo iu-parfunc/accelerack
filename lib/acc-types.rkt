@@ -22,7 +22,7 @@
 
 ;; Accelerate type include base types, payload, shapes, and arrays
 ;; TODO: Add functions
-;; TODO: Add Arrays, that is, multiple arrays
+;; TODO: Add Arrays (plural), that is, multiple arrays
 (define (acc-type? t0)
   (or (acc-base-type? t0)
       (acc-payload-type? t0)

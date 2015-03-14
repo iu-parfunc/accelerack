@@ -13,10 +13,14 @@
          Z shape-size
          DIM0 DIM1 DIM2 DIM3
          
-         r-arr r-arr-shape r-arr-vectors
-         
          (contract-out
-          [rget (-> r-arr? acc-shape? acc-payload?)]
+          [r-arr (-> acc-shape? acc-array-type? acc-payload? r-arr?)]
+          [r-arr-shape (-> r-arr? acc-shape?)]
+          [r-arr-payload (-> r-arr? acc-payload?)]
+         
+          [rget (-> r-arr? acc-shape? acc-payload-val?)]
+          
+          
           )
          
          ;; FIXME: this should only be accessible from an internal module
@@ -26,39 +30,38 @@
          (all-from-out ffi/vector) ;only necessary for very manual array construction
          )
 
-;; a Rack-Array is a (r-arr Shape ArrayType TupleOfVectors)
-(struct r-arr (shape arrty vectors)
+;; a Rack-Array is a (r-arr Shape ArrayType Payload)
+(struct r-arr (shape arrty payload)
   #:transparent
-  #:guard (λ (shape arrty vectors _)
+  #:guard (λ (shape arrty payload _)
             (cond
               [(not (= (shape-dim shape)
-                          (arr-dim arrty)))
+                       (arr-dim arrty)))
                (error "Array dimensionality mismatch")]
               [(let [(len (shape-size shape))]
-                 (andmap (λ (pl-ty vec)
+                 (andmap (λ (plty vec)
                            (cond
-                             [(not ((payload-type->vector-pred pl-ty) vec))
+                             [(not ((payload-type->vector-pred plty) vec))
                               (error "Array Payload type mismatch")]
-                             [(not (= len ((payload-type->vector-length pl-ty) vec)))
+                             [(not (= len ((payload-type->vector-length plty) vec)))
                               (error "Array Shape size mismatch")]
                              [else true]))
-                         (vector->list (arr-payload arrty))
-                         vectors))
-               (values shape arrty vectors)]))
+                         (arr-plty-list arrty)
+                         payload))
+               (values shape arrty payload)]))
   )
 
-;(struct r-arr (shapes list-of-vectors))
-
-; rget : Rack-Array Shape -> Payload
+; rget : Rack-Array Shape -> PayloadVal
 (define (rget rarr index)
-  (match-let ([(r-arr sh `(Array ,sh1 #(,flds ...)) vs) rarr])
+  (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
     (unless (acc-index? index sh) (error "Invalid index for given shape"))
     (let ([i (flatten-index index sh)])
-      (list->vector
-       (map (λ (fld vs)
-              ((payload-type->vector-ref fld) vs i))
-            flds vs))
-        )))
+      (cond
+        [(acc-base-type? plty) ((payload-type->vector-ref plty) (first vs) i)]
+        [else (list->vector (map (λ (fld v)
+                                   ((payload-type->vector-ref fld) v i))
+                                 (vector->list plty) vs))]
+        ))))
 
 ;; Helper function for 1D references into payloads:
 (define (payloads-ref elt payloads index)
@@ -79,7 +82,6 @@
               (u64vector-ref p index))]
     
     ))
-
 
 ;; FIXME: need to introduce an abstract datatype for Accelerate arrays:
 (define generate build-list)

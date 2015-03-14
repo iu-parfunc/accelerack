@@ -38,10 +38,10 @@
 (check-true ((payload-type->vector-pred 'Word64) (u64vector 45 45 45)))
 (check-false ((payload-type->vector-pred 'Word64) (f64vector 45 45 45)))
 
-(check-equal? (arr-shape '(Array (Z) #(Int))) '(Z))
-(check-eqv? (arr-shape `(Array ,DIM0 #(Int))) DIM0)
-(check-equal? (arr-shape '(Array (Z Int Int) #(Int Int Float))) '(Z Int Int))
-;; TODO: add tests for arr-dim and arr-payload
+(check-equal? (arr-shty '(Array (Z) #(Int))) '(Z))
+(check-eqv? (arr-shty `(Array ,DIM0 #(Int))) DIM0)
+(check-equal? (arr-shty '(Array (Z Int Int) #(Int Int Float))) '(Z Int Int))
+;; TODO: add tests for arr-dim and arr-plty
 
 (check-eqv? (shape-size (Z)) 1)
 (check-eqv? (shape-size (Z 4 5)) 20)

@@ -9,13 +9,14 @@
  acc-shape-type? acc-array-type?
  
  acc-payload? acc-base? acc-shape?
+ acc-payload-val?
  
  payload-type->vector-pred
  payload-type->vector-length
  payload-type->vector-ref
  payload-type->list->vector
  
- arr-shape arr-payload arr-dim
+ arr-shty arr-plty arr-plty-list arr-dim
  
  Z shape-size shape-dim acc-index? flatten-index
  DIM0 DIM1 DIM2 DIM3
@@ -43,6 +44,10 @@
 
 (define acc-base? real?)
 
+(define (acc-vector? x)
+  (or (u64vector? x)
+      (f64vector? x)))
+
 ;; TODO: Combine and return (values pred length) ?
 ;; payload-type->vector-pred : Base -> VectorPredicate
 (define (payload-type->vector-pred plty)
@@ -64,17 +69,34 @@
     ['Word64 list->u64vector]
     ['Float list->f64vector]))
 
-;; Payloads (tuples) is a vector of primitives
+;; A Payload-Type is one of:
+;; - acc-base-type?
+;; - (vector acc-base-type? ...)
 (define (acc-payload-type? t0)
   (match t0
     [(vector t1* ...) (andmap acc-base-type? t1*)]
-    [else false]
+    [else (acc-base-type? t0)]
     ))
-
-;; 
+;; acc-vect-length : acc-vector? -> Nat
+(define (acc-vector-length pl)
+  (cond
+    [(u64vector? pl) (u64vector-length pl)]
+    [(f64vector? pl) (f64vector-length pl)]
+    ))
+;; A Payload is a non-empty list of acc-vectors of unzipped tuples
 (define (acc-payload? x)
-  (or (vector? x)
-      (acc-base? x)))
+  (let ([len (acc-vector-length (first x))])
+    (and (cons? x)
+         (andmap (λ (v) (and (acc-vector? v)
+                             (= (acc-vector-length v) len)))
+                 x))))
+       
+;; A PayloadVal is on of:
+;; - acc-base?
+;; - (vector acc-base? ...)
+(define (acc-payload-val? x)
+  (or (acc-base? x)
+      (and (vector? x) (andmap acc-base? (vector->list x)))))
 
 ;; Shapes denote dimensionality and 
 (define (acc-shape-type? sht)
@@ -89,12 +111,16 @@
     [`(Array ,sh ,pl) (and (acc-shape-type? sh) (acc-payload-type? pl))]
     [else false]))
 
-(define (arr-shape arrty)
+(define (arr-shty arrty)
   (match arrty
     [`(Array ,sh ,pl) sh]))
-(define (arr-payload arrty)
+(define (arr-plty arrty)
   (match arrty
     [`(Array ,sh ,pl) pl]))
+(define (arr-plty-list arrty)
+  (match arrty
+    [`(Array ,sh ,pl) #:when (vector? pl) (vector->list pl)]
+    [`(Array ,sh ,pl) #:when (acc-base-type? pl) (list pl)]))
 (define (arr-dim arrty)
   (match arrty
     [`(Array ,sh ,pl) (shape-dim sh)]))

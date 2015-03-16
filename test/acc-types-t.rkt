@@ -75,15 +75,15 @@
 (check-true (acc-index-valid? (Z 0) (Z 3)))
 ;(check-false exn:fail? (λ () (acc-index-valid? (Z 0 2) (Z 0 5))) ;;FIXME
 (check-true (acc-index-valid? (Z 1) (Z 3)))
-;(check-false (acc-index-valid? (Z 3) (Z 3))) ;;FIXME
+(check-false (acc-index-valid? (Z 3) (Z 3)))
 (check-false (acc-index-valid? (Z 4) (Z 3)))
 (check-false (acc-index-valid? (Z -1) (Z 3)))
 (check-true (acc-index-valid? (Z 0 0 0 0) (Z 3 4 5 6)))
 (check-true (acc-index-valid? (Z 1 1 1 1) (Z 3 4 5 6)))
 ;(check-exn exn:fail? (λ () (acc-index-valid? (Z 1 1 1 1) (Z 3 4 0 6)))) ;FIXME and check for appropriate error message
 (check-true (acc-index-valid? (Z 2 2 2 2) (Z 3 4 5 6)))
-;(check-false (acc-index-valid? (Z 2 3 4 5) (Z 3 4 5 6))) ;FIXME
-;(check-false (acc-index-valid? (Z 3 4 5 6) (Z 3 4 5 6))) ;FIXME
+(check-true (acc-index-valid? (Z 2 3 4 5) (Z 3 4 5 6)))
+(check-false (acc-index-valid? (Z 3 4 5 6) (Z 3 4 5 6)))
 (check-false (acc-index-valid? (Z 6 5 4 3) (Z 3 4 5 6)))
 (check-false (acc-index-valid? (Z 9 1 1 1) (Z 3 4 5 6)))
 (check-false (acc-index-valid? (Z 1 9 1 1) (Z 3 4 5 6)))
@@ -95,5 +95,5 @@
 (check-eqv? (flatten-index (Z) (Z)) 0)
 (check-eqv? (flatten-index (Z 0 0) (Z 3 5)) 0)
 (check-eqv? (flatten-index (Z 1 2 1 5) (Z 3 5 2 7)) 110)
-;(check-exn exn:fail? (λ () (flatten-index (Z 1 1 3) (Z 5 5 3)))) ;;FIXME
-;(check-exn exn:fail? (λ () (flatten-index (Z 0) (Z 0))))
+(check-exn #rx"Invalid index for given shape" (λ () (flatten-index (Z 1 1 3) (Z 5 5 3)))) ;;FIXME
+(check-exn #rx"Invalid index for given shape" (λ () (flatten-index (Z 0) (Z 0))))

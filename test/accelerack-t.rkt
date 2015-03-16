@@ -84,12 +84,8 @@
 (check-eqv? (rget arr1 (Z 2)) 20)
 (check-equal? (rget arr2 (Z 0 0)) #(0 5 10))
 (check-equal? (rget arr2 (Z 0 3)) #(3 8 13))
-#;
-;; FIXME: Error should come from acc library not ffi/vector
 (check-exn #rx"Invalid index for array" (λ ()
                        (rget arr1 (Z 4))))
-#;
-;; FIXME: Range checking is off by one
 (check-exn exn:fail? (λ ()
                        (rget arr3 (Z 0 3))))
 

@@ -194,7 +194,7 @@
    ; Check that each index is within bounds
    (andmap (λ (i range) (if (symbol? range)
                             (symbol=? i range)
-                            (<= 0 i range)))
+                            (<= 0 i (sub1 range))))
            index shape)))
 
 ;; flatten-index : Shape Shape -> Nat

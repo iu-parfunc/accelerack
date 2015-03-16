@@ -8,7 +8,7 @@
  acc-type? acc-base-type? acc-payload-type?
  acc-shape-type? acc-array-type?
  
- acc-payload? acc-base? acc-shape?
+ acc-payload? acc-base? acc-shape? acc-index-valid?
  acc-payload-val?
  
  (contract-out
@@ -21,10 +21,9 @@
  payload-type->list->vector
  payload-type->vector-set!
  
- 
  arr-shty arr-plty arr-plty-list arr-dim
  
- Z shape-size shape-dim acc-index? flatten-index
+ Z shape-size shape-dim acc-index-valid? flatten-index
  (contract-out
   (acc-index-0 (-> acc-shape? acc-shape?))
   )
@@ -120,12 +119,22 @@
       (= (vector-length plty)
          (vector-length x))))
 
-;; Shapes denote dimensionality and 
+;; ShapeTypes denote dimensionality and 
 (define (acc-shape-type? sht)
   (match sht
     [`(Z ,ints ...) 
      (andmap (lambda (x) (eq? 'Int x)) ints)]
     [else #f]))
+
+; DIM0 is (Z)
+; DIM1 is (Z Int)
+; DIM2 is (Z Int Int)
+;; TODO: Keep these?  Are they a convenience given the need to unquote?
+;; Convenience shapes
+(define DIM0 '(Z))
+(define DIM1 '(Z Int))
+(define DIM2 '(Z Int Int))
+(define DIM3 '(Z Int Int Int))
 
 ;; ArrayType
 (define (acc-array-type? t0)
@@ -153,10 +162,10 @@
   (match arrty
     [`(Array ,sh ,pl) (shape-dim sh)]))
 
-;; a Shape is (Z [Int] ...)
-; DIM0 is (Z)
-; DIM1 is (Z Int)
-; DIM2 is (Z Int Int)
+(define (natural? n)
+  (and (integer? n) (positive? n)))
+
+;; a ShapeType is (Z [Int] ...)
 (define (Z . ls)
   (if (andmap integer? ls)
       (cons 'Z ls)
@@ -165,13 +174,6 @@
 (define (acc-shape? x)
   (and (symbol=? 'Z (first x))
        (andmap integer? (rest x))))
-
-;; TODO: Keep these?  Are they a convenience given the need to unquote?
-;; Convenience shapes
-(define DIM0 '(Z))
-(define DIM1 '(Z Int))
-(define DIM2 '(Z Int Int))
-(define DIM3 '(Z Int Int Int))
 
 ;; shape-size : Shape -> Nat
 ;; Produces the size of an array corresponding to the given shape
@@ -183,9 +185,9 @@
 (define (shape-dim shape)
   (sub1 (length shape)))
 
-;; acc-index? : Shape Shape -> Boolean
+;; acc-index-valid? : Shape Shape -> Boolean
 ;; Determines if index is valid for shape
-(define (acc-index? index shape)
+(define (acc-index-valid? index shape)
   (and
    ; Check that dimensionality matches
    (= (shape-dim index) (shape-dim shape))
@@ -198,7 +200,7 @@
 ;; flatten-index : Shape Shape -> Nat
 ;; Convert multi-dimensional index in Shape form to a linear index into a flat vector
 (define (flatten-index index shape)
-  (begin (unless (acc-index? index shape) (error "Invalid index for given shape"))
+  (begin (unless (acc-index-valid? index shape) (error "Invalid index for given shape"))
          (let helper ([index (rest index)] [shape (rest shape)])
            (if (empty? index)
                0

@@ -69,27 +69,27 @@
 ;(check-exn exn:fail? (shape-dim (Z 0 1))) ;;FIXME
 ;(check-exn exn:fail? (shape-dim (Z 2 0 2))) ;;FIXME
 
-(check-true (acc-index? (Z) (Z)))
-(check-false (acc-index? (Z 1) (Z)))
-(check-false (acc-index? (Z) (Z 1)))
-(check-true (acc-index? (Z 0) (Z 3)))
-;(check-false exn:fail? (λ () (acc-index? (Z 0 2) (Z 0 5))) ;;FIXME
-(check-true (acc-index? (Z 1) (Z 3)))
-;(check-false (acc-index? (Z 3) (Z 3))) ;;FIXME
-(check-false (acc-index? (Z 4) (Z 3)))
-(check-false (acc-index? (Z -1) (Z 3)))
-(check-true (acc-index? (Z 0 0 0 0) (Z 3 4 5 6)))
-(check-true (acc-index? (Z 1 1 1 1) (Z 3 4 5 6)))
-;(check-exn exn:fail? (λ () (acc-index? (Z 1 1 1 1) (Z 3 4 0 6)))) ;FIXME and check for appropriate error message
-(check-true (acc-index? (Z 2 2 2 2) (Z 3 4 5 6)))
-;(check-false (acc-index? (Z 2 3 4 5) (Z 3 4 5 6))) ;FIXME
-;(check-false (acc-index? (Z 3 4 5 6) (Z 3 4 5 6))) ;FIXME
-(check-false (acc-index? (Z 6 5 4 3) (Z 3 4 5 6)))
-(check-false (acc-index? (Z 9 1 1 1) (Z 3 4 5 6)))
-(check-false (acc-index? (Z 1 9 1 1) (Z 3 4 5 6)))
-(check-false (acc-index? (Z 1 1 9 1) (Z 3 4 5 6)))
-(check-false (acc-index? (Z 1 1 1 9) (Z 3 4 5 6)))
-(check-false (acc-index? (Z 1 1 -1 1) (Z 3 4 5 6)))
+(check-true (acc-index-valid? (Z) (Z)))
+(check-false (acc-index-valid? (Z 1) (Z)))
+(check-false (acc-index-valid? (Z) (Z 1)))
+(check-true (acc-index-valid? (Z 0) (Z 3)))
+;(check-false exn:fail? (λ () (acc-index-valid? (Z 0 2) (Z 0 5))) ;;FIXME
+(check-true (acc-index-valid? (Z 1) (Z 3)))
+;(check-false (acc-index-valid? (Z 3) (Z 3))) ;;FIXME
+(check-false (acc-index-valid? (Z 4) (Z 3)))
+(check-false (acc-index-valid? (Z -1) (Z 3)))
+(check-true (acc-index-valid? (Z 0 0 0 0) (Z 3 4 5 6)))
+(check-true (acc-index-valid? (Z 1 1 1 1) (Z 3 4 5 6)))
+;(check-exn exn:fail? (λ () (acc-index-valid? (Z 1 1 1 1) (Z 3 4 0 6)))) ;FIXME and check for appropriate error message
+(check-true (acc-index-valid? (Z 2 2 2 2) (Z 3 4 5 6)))
+;(check-false (acc-index-valid? (Z 2 3 4 5) (Z 3 4 5 6))) ;FIXME
+;(check-false (acc-index-valid? (Z 3 4 5 6) (Z 3 4 5 6))) ;FIXME
+(check-false (acc-index-valid? (Z 6 5 4 3) (Z 3 4 5 6)))
+(check-false (acc-index-valid? (Z 9 1 1 1) (Z 3 4 5 6)))
+(check-false (acc-index-valid? (Z 1 9 1 1) (Z 3 4 5 6)))
+(check-false (acc-index-valid? (Z 1 1 9 1) (Z 3 4 5 6)))
+(check-false (acc-index-valid? (Z 1 1 1 9) (Z 3 4 5 6)))
+(check-false (acc-index-valid? (Z 1 1 -1 1) (Z 3 4 5 6)))
 
 
 (check-eqv? (flatten-index (Z) (Z)) 0)

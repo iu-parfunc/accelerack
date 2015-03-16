@@ -52,7 +52,7 @@
 ; rget : Rack-Array Shape -> PayloadVal
 (define (rget rarr index)
   (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
-    (unless (acc-index? index sh) (error "Invalid index for array"))
+    (unless (acc-index-valid? index sh) (error "Invalid index for array"))
     (let ([i (flatten-index index sh)])
       (cond
         [(acc-base-type? plty) ((payload-type->vector-ref plty) (first vs) i)]
@@ -64,7 +64,7 @@
 ;; rput : Rack-Array Shape PayloadVal -> (void)
 (define (rput rarr index vals)
   (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
-    (unless (acc-index? index sh)
+    (unless (acc-index-valid? index sh)
       (error "Invalid index for array's shape"))
     (unless (acc-payload-val-instance? vals plty)
       (error "Value invalid for array's payload"))

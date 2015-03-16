@@ -8,7 +8,7 @@
 
 (provide acc run-acc 
          
-         generate
+         ;generate
          
          Z shape-size
          DIM0 DIM1 DIM2 DIM3
@@ -46,15 +46,13 @@
                              [(not (= len ((payload-type->vector-length plty) vec)))
                               (error "Array Shape size mismatch")]
                              [else true]))
-                         (arr-plty-list arrty)
-                         payload))
-               (values shape arrty payload)]))
-  )
+                         (arr-plty-list arrty) payload))
+               (values shape arrty payload)])))
 
 ; rget : Rack-Array Shape -> PayloadVal
 (define (rget rarr index)
   (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
-    (unless (acc-index? index sh) (error "Invalid index for given shape"))
+    (unless (acc-index? index sh) (error "Invalid index for array"))
     (let ([i (flatten-index index sh)])
       (cond
         [(acc-base-type? plty) ((payload-type->vector-ref plty) (first vs) i)]
@@ -67,9 +65,9 @@
 (define (rput rarr index vals)
   (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
     (unless (acc-index? index sh)
-      (error "Invalid index for given shape"))
+      (error "Invalid index for array's shape"))
     (unless (acc-payload-val-instance? vals plty)
-      (error "Payload value invalid for given array"))
+      (error "Value invalid for array's payload"))
     (let ([i (flatten-index index sh)])
       (cond
         [(acc-base-type? plty) ((payload-type->vector-set! plty) (first vs) i vals)]
@@ -79,8 +77,22 @@
                 ((payload-type->vector-set! fld) v i val))]
         ))))
 
-;; FIXME: need to introduce an abstract datatype for Accelerate arrays:
-(define generate build-list)
+;; an Acc-Fn is a (acc-fn PayloadType Shape (Shape -> PayloadVal))
+;; where fn's PayloadVal is valid for plty
+;; and fn's expects an index in sh
+(struct acc-fn (plty sh fn)
+  #:transparent
+  #:guard (λ (plty sh fn _)
+            (cond
+              [(not (acc-payload-val-instance?
+                     (fn (acc-index-0 sh)) plty))
+               (error "Calling fn with zero index did not produce val in plty")]
+              [else (values plty sh fn)])))
+
+;; generate : Shape Acc-Fn -> Rack-Array
+;; Produces a Rack-Array with the given Shape and fn's PayloadType
+;(define (generate shape fn) ...
+  
 
 ;; generate : Shape [Shape -> Payload] -> Rack-Array
 ;(define generate2 (λ (sh fn)

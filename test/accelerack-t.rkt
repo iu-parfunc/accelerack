@@ -86,3 +86,5 @@
 (check-equal? (begin (rput arr2 (Z 0 3) #(103 108 113)) (rget arr2 (Z 0 3)))
             #(103 108 113))
 
+;; Acc-Fn
+(rget arr2 (Z))

@@ -25,6 +25,9 @@
  arr-shty arr-plty arr-plty-list arr-dim
  
  Z shape-size shape-dim acc-index? flatten-index
+ (contract-out
+  (acc-index-0 (-> acc-shape? acc-shape?))
+  )
  DIM0 DIM1 DIM2 DIM3
  
  (all-from-out ffi/vector) ;only necessary for very manual array construction
@@ -124,10 +127,16 @@
      (andmap (lambda (x) (eq? 'Int x)) ints)]
     [else #f]))
 
-;; Array
+;; ArrayType
 (define (acc-array-type? t0)
   (match t0
-    [`(Array ,sh ,pl) (and (acc-shape-type? sh) (acc-payload-type? pl))]
+    [`(Array ,shty ,plty) (and (acc-shape-type? shty) (acc-payload-type? plty))]
+    [else false]))
+
+;; FnType
+(define (acc-fn-type? t0)
+  (match t0
+    [`(Fn ,sh ,plty) (and (acc-shape? sh) (acc-payload-type? plty))]
     [else false]))
 
 (define (arr-shty arrty)
@@ -196,4 +205,8 @@
                (+ (foldr * (first index) (rest shape))
                   (helper (rest index) (rest shape)))))
          ))
-      
+
+;; acc-index-0 : Shape -> Shape
+;; Produces the 0-index for sh
+(define (acc-index-0 sh)
+  (cons (first sh) (map (λ (n) 0) (rest sh))))

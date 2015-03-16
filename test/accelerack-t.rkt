@@ -87,4 +87,4 @@
             #(103 108 113))
 
 ;; Acc-Fn
-(rget arr2 (Z))
+;(rget arr2 (Z))

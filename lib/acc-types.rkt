@@ -11,10 +11,16 @@
  acc-payload? acc-base? acc-shape?
  acc-payload-val?
  
+ (contract-out
+  [acc-payload-val-instance? (-> acc-payload-val? acc-payload-type? boolean?)]
+  )
+ 
  payload-type->vector-pred
  payload-type->vector-length
  payload-type->vector-ref
  payload-type->list->vector
+ payload-type->vector-set!
+ 
  
  arr-shty arr-plty arr-plty-list arr-dim
  
@@ -68,6 +74,11 @@
   (match plty
     ['Word64 list->u64vector]
     ['Float list->f64vector]))
+(define (payload-type->vector-set! plty)
+  (match plty
+    ['Word64 u64vector-set!]
+    ['Float f64vector-set!]))
+
 
 ;; A Payload-Type is one of:
 ;; - acc-base-type?
@@ -97,6 +108,14 @@
 (define (acc-payload-val? x)
   (or (acc-base? x)
       (and (vector? x) (andmap acc-base? (vector->list x)))))
+
+;; Determines if x as a payload-val is of type plty
+;; Does not check if numerical value is valid c-type
+(define (acc-payload-val-instance? x plty)
+  (or (and (acc-base-type? plty)
+           (acc-base? x))
+      (= (vector-length plty)
+         (vector-length x))))
 
 ;; Shapes denote dimensionality and 
 (define (acc-shape-type? sht)

@@ -76,7 +76,13 @@
                      ;; (Z 2 0 2) allowed?
 
 ;; FINISHME:
+
+(check-eqv? (rget arr1 (Z 2)) 20)
 (check-equal? (rget arr2 (Z 0 0)) #(0 5 10))
 (check-equal? (rget arr2 (Z 0 3)) #(3 8 13))
 
-(check-eqv? (rget arr1 (Z 2)) 20)
+(check-eqv? (begin (rput arr1 (Z 2) 25) (rget arr1 (Z 2)))
+            25)
+(check-equal? (begin (rput arr2 (Z 0 3) #(103 108 113)) (rget arr2 (Z 0 3)))
+            #(103 108 113))
+

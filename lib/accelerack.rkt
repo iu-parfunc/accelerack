@@ -19,7 +19,7 @@
           [r-arr-payload (-> r-arr? acc-payload?)]
          
           [rget (-> r-arr? acc-shape? acc-payload-val?)]
-          
+          [rput (-> r-arr? acc-shape? acc-payload-val? void?)]
           
           )
          
@@ -63,25 +63,21 @@
                                  (vector->list plty) vs))]
         ))))
 
-;; Helper function for 1D references into payloads:
-(define (payloads-ref elt payloads index)
-  ;; assert (acc-type? elt)
-  ;; assert (number? index)
-  (match elt
-    [`#(,flds ...)
-     ; assert (= (length payloads) (length flds))
-     (list->vector
-      (map (lambda (fld pay)
-             (payloads-ref fld (list pay) index))
-           flds payloads))]
-    
-    ; [(? scalar-type? elt) ]
-    [`(Array ,sh ,_) (error 'payloads-ref "should take element type, not array type: ~s" elt)]
-    
-    [Word64 (match-let ([(list p) payloads])
-              (u64vector-ref p index))]
-    
-    ))
+;; rput : Rack-Array Shape PayloadVal -> (void)
+(define (rput rarr index vals)
+  (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
+    (unless (acc-index? index sh)
+      (error "Invalid index for given shape"))
+    (unless (acc-payload-val-instance? vals plty)
+      (error "Payload value invalid for given array"))
+    (let ([i (flatten-index index sh)])
+      (cond
+        [(acc-base-type? plty) ((payload-type->vector-set! plty) (first vs) i vals)]
+        [else (for ([v (in-list vs)]
+                    [fld (in-vector plty)]
+                    [val (in-vector vals)])
+                ((payload-type->vector-set! fld) v i val))]
+        ))))
 
 ;; FIXME: need to introduce an abstract datatype for Accelerate arrays:
 (define generate build-list)

@@ -43,28 +43,47 @@
 (check-equal? (arr-shty '(Array (Z Int Int) #(Int Int Float))) '(Z Int Int))
 ;; TODO: add tests for arr-dim and arr-plty
 
+(check-true (acc-shape? (Z)))
+(check-true (acc-shape? (Z 1)))
+(check-true (acc-shape? (Z 3)))
+(check-true (acc-shape? (Z 1 4)))
+(check-true (acc-shape? (Z 5 7 99)))
+;(check-false (acc-shape? (Z 0))) ;;FIXME
+;(check-exn exn:fail? (shape-size (Z 1 0))) ;;FIXME
+;(check-exn exn:fail? (shape-size (Z 0 1))) ;;FIXME
+;(check-false (acc-shape? (Z 2 0 2)))  ;;FIXME
+
 (check-eqv? (shape-size (Z)) 1)
 (check-eqv? (shape-size (Z 4 5)) 20)
+;(check-exn exn:fail? (shape-size (Z 0)))
+;(check-exn exn:fail? (shape-size (Z 1 0))) ;;FIXME
+;(check-exn exn:fail? (shape-size (Z 0 1))) ;;FIXME
+;(check-exn exn:fail? (shape-size (Z 2 0 2))) ;;FIXME
 
 (check-eqv? (shape-dim (Z)) 0)
-(check-eqv? (shape-dim (Z 1)) 1)
+;(check-exn exn:fail? (λ () (shape-dim (Z 1)) 1)) ;FIXME
 (check-eqv? (shape-dim (Z 6)) 1)
 (check-eqv? (shape-dim (Z 6 1 1)) 3)
+;(check-exn exn:fail? (shape-dim (Z 0))) ;;FIXME
+;(check-exn exn:fail? (shape-dim (Z 1 0))) ;;FIXME
+;(check-exn exn:fail? (shape-dim (Z 0 1))) ;;FIXME
+;(check-exn exn:fail? (shape-dim (Z 2 0 2))) ;;FIXME
 
 (check-true (acc-index? (Z) (Z)))
 (check-false (acc-index? (Z 1) (Z)))
 (check-false (acc-index? (Z) (Z 1)))
-;
 (check-true (acc-index? (Z 0) (Z 3)))
+;(check-false exn:fail? (λ () (acc-index? (Z 0 2) (Z 0 5))) ;;FIXME
 (check-true (acc-index? (Z 1) (Z 3)))
-(check-true (acc-index? (Z 3) (Z 3)))
+;(check-false (acc-index? (Z 3) (Z 3))) ;;FIXME
 (check-false (acc-index? (Z 4) (Z 3)))
 (check-false (acc-index? (Z -1) (Z 3)))
-;
 (check-true (acc-index? (Z 0 0 0 0) (Z 3 4 5 6)))
 (check-true (acc-index? (Z 1 1 1 1) (Z 3 4 5 6)))
+;(check-exn exn:fail? (λ () (acc-index? (Z 1 1 1 1) (Z 3 4 0 6)))) ;FIXME and check for appropriate error message
 (check-true (acc-index? (Z 2 2 2 2) (Z 3 4 5 6)))
-(check-true (acc-index? (Z 3 4 5 6) (Z 3 4 5 6)))
+;(check-false (acc-index? (Z 2 3 4 5) (Z 3 4 5 6))) ;FIXME
+;(check-false (acc-index? (Z 3 4 5 6) (Z 3 4 5 6))) ;FIXME
 (check-false (acc-index? (Z 6 5 4 3) (Z 3 4 5 6)))
 (check-false (acc-index? (Z 9 1 1 1) (Z 3 4 5 6)))
 (check-false (acc-index? (Z 1 9 1 1) (Z 3 4 5 6)))
@@ -76,3 +95,5 @@
 (check-eqv? (flatten-index (Z) (Z)) 0)
 (check-eqv? (flatten-index (Z 0 0) (Z 3 5)) 0)
 (check-eqv? (flatten-index (Z 1 2 1 5) (Z 3 5 2 7)) 110)
+;(check-exn exn:fail? (λ () (flatten-index (Z 1 1 3) (Z 5 5 3)))) ;;FIXME
+;(check-exn exn:fail? (λ () (flatten-index (Z 0) (Z 0))))

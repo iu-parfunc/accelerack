@@ -96,10 +96,10 @@ test :: Sealed -> Dynamic
 test (Sealed x) = toDyn x
 
 -- | Only closed expressions here:
-upcast1 :: forall a . Typeable a => Exp2 -> Ty -> Exp EmptyEnv a
+upcast1 :: forall a . Typeable a => Exp2 -> Exp EmptyEnv a
 -- upcast1 :: forall a . Exp2 -> Ty -> Maybe (Exp EmptyEnv a)
-upcast1 exp2 tty =
-  case go exp2 tty of Sealed e -> safeCast e
+upcast1 exp2 =
+  case go exp2 of Sealed e -> safeCast e
   where
 
   e2d :: Exp2 -> Ty -> Dynamic
@@ -123,15 +123,13 @@ upcast1 exp2 tty =
 --       toDyn res
        undefined
       
-  go :: Exp2 -> Ty -> Sealed
-  go e2 ty =
+  go :: Exp2 -> Sealed
+  go e2 =
     case e2 of
      T2 -> Sealed (T :: Exp EmptyEnv Bool)
      F2 -> Sealed (F :: Exp EmptyEnv Bool)
      If2 x1 x2 x3 ->
-       case (go x1 BoolTy,
-             go x2 ty,
-             go x3 ty) of
+       case (go x1, go x2, go x3) of
          (Sealed (a::Exp env1 t1),
           Sealed (b::Exp env2 t2),
           Sealed c) -> Sealed $
@@ -139,9 +137,9 @@ upcast1 exp2 tty =
               (safeCast b :: Exp env1 t2)
               (safeCast c :: Exp env1 t2)
      Lit2 x -> Sealed (Lit x :: Exp EmptyEnv Int)
-     (Add2 x1 x2) -> undefined
-     (Let2 x1 x2) -> undefined
-     (Var2 x) -> undefined
+     Add2 x1 x2 -> undefined
+     Let2 x1 x2 -> undefined
+     Var2 x -> undefined
 
 safeCast :: forall a b . (Typeable a, Typeable b) => a -> b
 safeCast a =
@@ -164,9 +162,9 @@ p0 :: Exp EmptyEnv Int
 p0 = If T (Lit 3) (Lit 4)
 
 t0 :: Exp EmptyEnv Int
-t0 = upcast1 (downcast p0) IntTy
+t0 = upcast1 (downcast p0) 
 
-p1a :: Exp env Int
+p1a :: Exp EmptyEnv Int
 p1a = Let (Lit 5) 
       (If T (Var Zero) (Lit 4))
 
@@ -176,7 +174,20 @@ p1b = Let2 (Lit2 5)
 
 --------------------------------------------------------------------------------
 
+tests :: [Sealed]
+tests = [Sealed p0, Sealed p1a]
+
 main :: IO ()
-main = do print p1a
-          print p1b
+main = do
+          putStrLn "\np0:"
+          print p0
+          print (downcast p0)
+          print (upcast1 (downcast p0) :: Exp EmptyEnv Int)
+          
+          putStrLn "\np1a:"
+          print p1a
           print (downcast p1a)
+          print (upcast1 (downcast p1a) :: Exp EmptyEnv Int)
+
+          putStrLn "\np1b:"
+          print p1b

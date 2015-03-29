@@ -4,14 +4,23 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
+-- For Typeable of Extend:
+{-# LANGUAGE PolyKinds #-}
 
 import Data.Dynamic
 
 --------------------------------------------------------------------------------
 -- (1) GADT based AST 
 
-data Env = Empty | forall a . Extend a Env
+data Env = EmptyEnv | forall a . Extend a Env
  deriving Typeable
+
+
+deriving instance (Typeable 'EmptyEnv)
+-- deriving instance (Typeable a, Typeable e) => (Typeable ('Extend a e))
+deriving instance Typeable 'Extend
 
 data Exp (env :: Env) (a :: *) where
   T   :: Exp env Bool
@@ -25,6 +34,8 @@ data Exp (env :: Env) (a :: *) where
   Var :: Idx env a -> Exp env a
  deriving Typeable
 
+-- deriving instance Typeable (Exp env a)
+
 data Idx (env :: Env) t where
   Zero ::              Idx (Extend t env) t
   Succ :: Idx env t -> Idx (Extend s env) t
@@ -36,6 +47,7 @@ deriving instance (Show (Idx env t))
 --------------------------------------------------------------------------------
 -- (2) ADT version:
 
+-- | Strip all phantom type args.
 data Exp2 = T2 | F2
           | If2 Exp2 Exp2 Exp2
           | Lit2 Int
@@ -44,13 +56,17 @@ data Exp2 = T2 | F2
           | Var2 Idx2
   deriving (Show, Typeable)
 
+-- | Same algorithm applied to Idx:
 data Idx2 = Zero2 | Succ2 Idx2
   deriving (Show, Typeable)
 
+-- | All the types mentioned in the GADT move down to the value level:
 data Ty = BoolTy | IntTy | AnyTy
 
 --------------------------------------------------------------------------------
 
+-- | Downcasting never fails.  It strips type-level information or
+-- reifies it to the value level.
 downcast :: Exp env a -> Exp2
 downcast e =
   case e of
@@ -69,26 +85,71 @@ downcast e =
 --------------------------------------------------------------------------------
 -- Option 1: the old way.  Sealed, monomorphic data and Data.Dynamic.
     
-data Sealed = forall env a . Sealed (Exp env a) -- Dynamic
+data Sealed = forall env a . (Typeable env, Typeable a) =>
+              Sealed (Exp env a)
+              -- { unseal :: Exp env a } -- Dynamic
 
--- upcast :: Exp2 -> Ty -> Exp env a
-upcast :: Exp2 -> Ty -> Sealed
-upcast e2 ty =
-  case e2 of
-   T2 -> Sealed T -- (toDyn T)
-   F2 -> Sealed F 
-   (If2 x1 x2 x3) ->
-     case (upcast x1 BoolTy,
-           upcast x2 ty,
-           upcast x3 ty) of
-       (Sealed e, _, _) ->
---         fromDynamic
---       Sealed $ If e undefined undefined
-         undefined
-   (Lit2 x) -> undefined
-   (Add2 x1 x2) -> undefined
-   (Let2 x1 x2) -> undefined
-   (Var2 x) -> undefined
+unused :: a
+unused = error "This value should never be used"
+
+test :: Sealed -> Dynamic
+test (Sealed x) = toDyn x
+
+-- | Only closed expressions here:
+upcast1 :: forall a . Typeable a => Exp2 -> Ty -> Exp EmptyEnv a
+-- upcast1 :: forall a . Exp2 -> Ty -> Maybe (Exp EmptyEnv a)
+upcast1 exp2 tty =
+  case go exp2 tty of Sealed e -> safeCast e
+  where
+
+  e2d :: Exp2 -> Ty -> Dynamic
+  e2d e2 ty =
+    case e2 of
+     T2 -> toDyn e2
+     F2 -> toDyn e2
+     If2 a b c ->
+       let res :: Exp (env :: Env) res
+           res = If undefined undefined undefined
+       -- Managing environments gets very tricky here.
+--           a1 :: Maybe (Exp env Bool)
+--           a1 = fromDyn (e2d a BoolTy) unused
+{-       
+       case (fromDyn (e2d a BoolTy),
+             fromDyn (e2d b ty),
+             fromDyn (e2d c ty)) of
+         _ -> undefined
+-}
+       in
+--       toDyn res
+       undefined
+      
+  go :: Exp2 -> Ty -> Sealed
+  go e2 ty =
+    case e2 of
+     T2 -> Sealed (T :: Exp EmptyEnv Bool)
+     F2 -> Sealed (F :: Exp EmptyEnv Bool)
+     If2 x1 x2 x3 ->
+       case (go x1 BoolTy,
+             go x2 ty,
+             go x3 ty) of
+         (Sealed (a::Exp env1 t1),
+          Sealed (b::Exp env2 t2),
+          Sealed c) -> Sealed $
+           If (safeCast a :: Exp env1 Bool)
+              (safeCast b :: Exp env1 t2)
+              (safeCast c :: Exp env1 t2)
+     Lit2 x -> Sealed (Lit x :: Exp EmptyEnv Int)
+     (Add2 x1 x2) -> undefined
+     (Let2 x1 x2) -> undefined
+     (Var2 x) -> undefined
+
+safeCast :: forall a b . (Typeable a, Typeable b) => a -> b
+safeCast a =
+  case fromDynamic (toDyn a) of
+    Just x -> x
+    Nothing -> error $ "safeCast failed, from "++show (typeOf (undefined::a))++
+                       " to "++show (typeOf (undefined::b))
+    
 
 --------------------------------------------------------------------------------
 -- Option 2: the new way.  Consumer demands the type and we downcast
@@ -98,6 +159,12 @@ upcast e2 ty =
 
 --------------------------------------------------------------------------------
 -- Test programs:
+
+p0 :: Exp EmptyEnv Int
+p0 = If T (Lit 3) (Lit 4)
+
+t0 :: Exp EmptyEnv Int
+t0 = upcast1 (downcast p0) IntTy
 
 p1a :: Exp env Int
 p1a = Let (Lit 5) 

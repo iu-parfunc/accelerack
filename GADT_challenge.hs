@@ -21,16 +21,22 @@ deriving instance (Typeable 'EmptyEnv)
 -- deriving instance (Typeable a, Typeable e) => (Typeable ('Extend a e))
 deriving instance Typeable 'Extend
 
--- | All the types mentioned in the GADT move down to the value level:
+-- | Simplest version.  Use a closed world of value types in the Exp:
 data Ty = BoolTy | IntTy | AnyTy
   deriving (Show, Typeable)
+-- The way Accelerate, for example, does this is more complicated,
+-- using a class for value types which can reify them.
 
-data Exp (env :: Env) (a :: *) where
-  T   :: Exp env Bool
-  F   :: Exp env Bool
-  If  :: Exp env Bool -> Exp env a -> Exp env a -> Exp env a
-  Lit :: Int -> Exp env Int
-  Add :: Exp env Int -> Exp env Int -> Exp env Int 
+deriving instance (Typeable 'BoolTy)
+deriving instance (Typeable 'IntTy)
+deriving instance (Typeable 'AnyTy)
+
+data Exp (env :: Env) (a :: Ty) where
+  T   :: Exp env BoolTy
+  F   :: Exp env BoolTy
+  If  :: Exp env BoolTy -> Exp env a -> Exp env a -> Exp env a
+  Lit :: Int -> Exp env IntTy
+  Add :: Exp env IntTy -> Exp env IntTy -> Exp env IntTy
   Let :: Exp env t1
       -> Exp (Extend t1 env) a
       -> Exp env a  
@@ -134,22 +140,22 @@ upcast1 exp2 =
   go :: Exp2 -> Sealed
   go e2 =
     case e2 of
-     T2 -> Sealed (T :: Exp EmptyEnv Bool)
-     F2 -> Sealed (F :: Exp EmptyEnv Bool)
+     T2 -> Sealed (T :: Exp EmptyEnv BoolTy)
+     F2 -> Sealed (F :: Exp EmptyEnv BoolTy)
      If2 x1 x2 x3 ->
        case (go x1, go x2, go x3) of
          (Sealed (a::Exp env1 t1),
           Sealed (b::Exp env2 t2),
           Sealed c) -> Sealed $
-           If (safeCast a :: Exp env1 Bool)
+           If (safeCast a :: Exp env1 BoolTy)
               (safeCast b :: Exp env1 t2)
               (safeCast c :: Exp env1 t2)
-     Lit2 x -> Sealed (Lit x :: Exp EmptyEnv Int)
+     Lit2 x -> Sealed (Lit x :: Exp EmptyEnv IntTy)
      Add2 x1 x2 ->
        case (go x1, go x2) of
          (Sealed (a::Exp env1 t1), Sealed b) -> 
-          Sealed $ Add (safeCast a :: Exp env1 Int)
-                       (safeCast b :: Exp env1 Int)
+          Sealed $ Add (safeCast a :: Exp env1 IntTy)
+                       (safeCast b :: Exp env1 IntTy)
      Var2 x -> undefined $
        case upcastIdx x of
          _ -> undefined
@@ -174,13 +180,13 @@ safeCast a =
 --------------------------------------------------------------------------------
 -- Test programs:
 
-p0 :: Exp EmptyEnv Int
+p0 :: Exp EmptyEnv IntTy
 p0 = If T (Lit 3) (Lit 4)
 
-t0 :: Exp EmptyEnv Int
+t0 :: Exp EmptyEnv IntTy
 t0 = upcast1 (downcast p0) 
 
-p1a :: Exp EmptyEnv Int
+p1a :: Exp EmptyEnv IntTy
 p1a = Let (Lit 5) 
       (If T (Var Zero) (Lit 4))
 
@@ -198,12 +204,12 @@ main = do
           putStrLn "\np0:"
           print p0
           print (downcast p0)
-          print (upcast1 (downcast p0) :: Exp EmptyEnv Int)
+          print (upcast1 (downcast p0) :: Exp EmptyEnv IntTy)
           
           putStrLn "\np1a:"
           print p1a
           print (downcast p1a)
-          print (upcast1 (downcast p1a) :: Exp EmptyEnv Int)
+          print (upcast1 (downcast p1a) :: Exp EmptyEnv IntTy)
 
           putStrLn "\np1b:"
           print p1b

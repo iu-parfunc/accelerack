@@ -15,12 +15,15 @@ import Data.Dynamic
 -- (1) GADT based AST 
 
 data Env = EmptyEnv | forall a . Extend a Env
- deriving Typeable
-
+-- deriving Typeable
 
 deriving instance (Typeable 'EmptyEnv)
 -- deriving instance (Typeable a, Typeable e) => (Typeable ('Extend a e))
 deriving instance Typeable 'Extend
+
+-- | All the types mentioned in the GADT move down to the value level:
+data Ty = BoolTy | IntTy | AnyTy
+  deriving (Show, Typeable)
 
 data Exp (env :: Env) (a :: *) where
   T   :: Exp env Bool
@@ -47,8 +50,10 @@ deriving instance (Show (Idx env t))
 --------------------------------------------------------------------------------
 -- (2) ADT version:
 
--- | Strip all phantom type args.
-data Exp2 = T2 | F2
+-- | Strip all phantom type args. 
+--   (BUT... it could reify them all instead?)
+data Exp2 = T2 
+          | F2
           | If2 Exp2 Exp2 Exp2
           | Lit2 Int
           | Add2 Exp2 Exp2 
@@ -57,11 +62,8 @@ data Exp2 = T2 | F2
   deriving (Show, Typeable)
 
 -- | Same algorithm applied to Idx:
-data Idx2 = Zero2 | Succ2 Idx2
+data Idx2 = Zero2 | Succ2 Ty Idx2
   deriving (Show, Typeable)
-
--- | All the types mentioned in the GADT move down to the value level:
-data Ty = BoolTy | IntTy | AnyTy
 
 --------------------------------------------------------------------------------
 
@@ -77,10 +79,13 @@ downcast e =
     Add a b -> Add2 (downcast a) (downcast b)
     Let a b -> Let2 (downcast a) (downcast b) 
     Var ix ->
-      let loop :: Idx env t -> Idx2
+      let loop :: forall env t . Idx env t -> Idx2
           loop Zero = Zero2
-          loop (Succ idx) = Succ2 (loop idx)
+          loop (Succ idx) = Succ2 (reifyTy (undefined)) (loop idx)
       in Var2 $ loop ix 
+
+reifyTy :: t
+reifyTy = undefined
 
 --------------------------------------------------------------------------------
 -- Option 1: the old way.  Sealed, monomorphic data and Data.Dynamic.
@@ -94,6 +99,9 @@ unused = error "This value should never be used"
 
 test :: Sealed -> Dynamic
 test (Sealed x) = toDyn x
+
+upcastIdx :: Idx2 -> Idx env a
+upcastIdx = undefined
 
 -- | Only closed expressions here:
 upcast1 :: forall a . Typeable a => Exp2 -> Exp EmptyEnv a
@@ -137,9 +145,17 @@ upcast1 exp2 =
               (safeCast b :: Exp env1 t2)
               (safeCast c :: Exp env1 t2)
      Lit2 x -> Sealed (Lit x :: Exp EmptyEnv Int)
-     Add2 x1 x2 -> undefined
+     Add2 x1 x2 ->
+       case (go x1, go x2) of
+         (Sealed (a::Exp env1 t1), Sealed b) -> 
+          Sealed $ Add (safeCast a :: Exp env1 Int)
+                       (safeCast b :: Exp env1 Int)
+     Var2 x -> undefined $
+       case upcastIdx x of
+         _ -> undefined
+     
      Let2 x1 x2 -> undefined
-     Var2 x -> undefined
+
 
 safeCast :: forall a b . (Typeable a, Typeable b) => a -> b
 safeCast a =

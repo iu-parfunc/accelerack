@@ -45,7 +45,7 @@ data Exp (env :: Env) (a :: Ty) where
 
 -- deriving instance Typeable (Exp env a)
 
-data Idx (env :: Env) t where
+data Idx (env :: Env) (t :: Ty) where
   Zero ::              Idx (Extend t env) t
   Succ :: Idx env t -> Idx (Extend s env) t
 
@@ -67,7 +67,7 @@ data Exp2 = T2
           | Var2 Idx2
   deriving (Show, Typeable)
 
--- | Same algorithm applied to Idx:
+-- | Reify the type arg to the value level:
 data Idx2 = Zero2 | Succ2 Ty Idx2
   deriving (Show, Typeable)
 

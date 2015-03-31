@@ -26,7 +26,7 @@ deriving instance (Typeable 'BoolTy)
 deriving instance (Typeable 'IntTy)
 deriving instance (Typeable 'AnyTy)
 
-class ReifyTy t where
+class Typeable t => ReifyTy t where
   reifyTy :: Proxy t -> Ty
 instance ReifyTy 'BoolTy where reifyTy _ = BoolTy
 instance ReifyTy 'IntTy  where reifyTy _ = IntTy
@@ -65,9 +65,12 @@ data Exp (env :: Env) (a :: Ty) where
 -- deriving instance Typeable (Exp env a)
 
 data Idx (env :: Env) (t :: Ty) where
-  Zero ::              Idx (Extend t env) t
-  Succ :: forall (env :: Env) (s :: Ty) (t :: Ty) .
+  -- Here, again, ReifyTy is redundant, but no way to tell GHC that:
+  Zero :: forall (env :: Env) (t::Ty) . ReifyTy t =>
+          Idx (Extend t env) t
+  Succ :: forall (env :: Env) (s :: Ty) (t :: Ty) . ReifyTy s => 
           Idx env t -> Idx (Extend s env) t
+  deriving Typeable
 
 deriving instance (Show (Exp env a))
 
@@ -109,19 +112,10 @@ downcast e =
 
 downcastIdx :: forall env1 a1 . ReifyTy a1 =>
                Idx env1 a1 -> Idx2
-
--- downcastIdx :: forall (env1::Env) (s::Ty) (a1::Ty) . ReifyTy a1 =>
---                Idx (Extend s env1) a1 -> Idx2
-               
--- downcastIdx x@Zero = Zero2 (reifyTy x)
-downcastIdx x@((Succ (inner :: Idx env2 a1))
---               :: Idx (Extend s env2) a1
-              )
-            =
---  _foo x
-  undefined
-  -- Succ2 (reifyTy (Proxy :: Proxy (ENV_HEAD env1)))
-  --       (downcastIdx inner)
+downcastIdx Zero = Zero2 (reifyTy (Proxy :: Proxy (ENV_HEAD env1)))
+downcastIdx (Succ (inner :: Idx env2 a1)) =
+  Succ2 (reifyTy (Proxy :: Proxy (ENV_HEAD env1)))
+        (downcastIdx inner)
 
 --------------------------------------------------------------------------------
 -- Option 1: the old way.  Sealed, monomorphic data and Data.Dynamic.
@@ -131,12 +125,14 @@ downcastIdx x@((Succ (inner :: Idx env2 a1))
 -- express that.
 data Sealed = forall env a . (Typeable env, Typeable a) =>
               Sealed (Exp env a)
-              -- { unseal :: Exp env a } -- Dynamic
 
 data SealedIdx = forall env a . (Typeable env, Typeable a) =>
                  SealedIdx (Idx env a)
 
-data SealedTy = forall (t :: Ty) . Typeable t =>
+instance Show SealedIdx where
+  show (SealedIdx x) = "<SealedIdx: "++show (typeOf x)++">"
+
+data SealedTy = forall (t :: Ty) . ReifyTy t =>
                 SealedTy (Proxy t)
 
 -- | The inverse of reifyTy: value to type level.
@@ -158,12 +154,6 @@ upcastIdx (Succ2 ty ix2) =
      SealedIdx (ixb :: Idx env2 a2)) -> 
       SealedIdx (Succ ixb :: Idx ('Extend tty env2) a2)
 
-
-unused :: a
-unused = error "This value should never be used"
-
-test :: Sealed -> Dynamic
-test (Sealed x) = toDyn x
 
 -- | Only closed expressions here:
 upcast1 :: forall a . Typeable a => Exp2 -> Exp EmptyEnv a
@@ -206,13 +196,16 @@ safeCast a =
     
 
 --------------------------------------------------------------------------------
--- Option 2: the new way.  Consumer demands the type and we downcast
+-- Option 2: the new way.  Consumer demands the type and we upcast
 -- without ever sealing.
 
 -- FINISHME   
 
 --------------------------------------------------------------------------------
--- Test programs:
+-- Misc + Test programs:
+
+unused :: a
+unused = error "This value should never be used"
 
 p0 :: Exp EmptyEnv IntTy
 p0 = If T (Lit 3) (Lit 4)

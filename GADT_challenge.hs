@@ -13,6 +13,7 @@
 
 import Control.Monad (forM_)
 import Data.Dynamic
+import Debug.Trace
 
 --------------------------------------------------------------------------------
 -- (*) Types
@@ -158,21 +159,27 @@ upcast1 exp2 =
   go :: Exp2 -> Sealed
   go e2 =
     case e2 of
-     T2 -> Sealed (T :: Exp EmptyEnv BoolTy)
-     F2 -> Sealed (F :: Exp EmptyEnv BoolTy)
+     T2     -> Sealed (T :: Exp EmptyEnv BoolTy)
+     F2     -> Sealed (F :: Exp EmptyEnv BoolTy)
+     Lit2 x -> Sealed (Lit x :: Exp EmptyEnv IntTy)
+
      If2 x1 x2 x3 ->
        case (go x1, go x2, go x3) of
          (Sealed (a::Exp env1 t1),
           Sealed (b::Exp env2 t2),
-          Sealed c) -> Sealed $
+          Sealed (c::Exp env3 t3)) ->
+           trace ("IF of "++show (Sealed a,Sealed b,Sealed c)) $ 
+           Sealed $
            -- FIXME: Need to somehow COMBINE the environments:
            If (safeCast a :: Exp env1 BoolTy)
               (safeCast b :: Exp env1 t2)
               (safeCast c :: Exp env1 t2)
-     Lit2 x -> Sealed (Lit x :: Exp EmptyEnv IntTy)
+
      Add2 x1 x2 ->
        case (go x1, go x2) of
-         (Sealed (a::Exp env1 t1), Sealed b) -> 
+         (Sealed (a::Exp env1 t1), Sealed b) ->
+           trace ("ADD of "++show (Sealed a,Sealed b)) $ 
+           
           Sealed $ Add (safeCast a :: Exp env1 IntTy)
                        (safeCast b :: Exp env1 IntTy)
      Var2 x -> case upcastIdx x of
@@ -236,6 +243,11 @@ p3b :: Exp2
 p3b = Let2 (Lit2 5) 
       (If2 T2 (Var2 (Zero2 IntTy)) (Lit2 4))
 
+-- An Add with different envs:
+p4 :: Exp EmptyEnv IntTy
+p4 = Let (Lit 4) $
+     Let (Lit 5) $
+      (Add (Var Zero) (Var (Succ Zero)))
 
 
 i0 :: Idx (Extend IntTy (Extend BoolTy EmptyEnv)) BoolTy
@@ -251,7 +263,9 @@ tests :: [(String,Sealed)]
 tests = [("p0",Sealed p0),
          ("p1",Sealed p1),
          ("p2",Sealed p2),
-         ("p3",Sealed p3)]
+         -- ("p3",Sealed p3),
+         ("p4",Sealed p4)
+        ]
 
 main :: IO ()
 main = do

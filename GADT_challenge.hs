@@ -14,14 +14,7 @@
 import Data.Dynamic
 
 --------------------------------------------------------------------------------
--- (1) GADT based AST 
-
-data Env = EmptyEnv | forall a . Extend a Env
--- deriving Typeable
-
-deriving instance (Typeable 'EmptyEnv)
--- deriving instance (Typeable a, Typeable e) => (Typeable ('Extend a e))
-deriving instance Typeable 'Extend
+-- (*) Types
 
 -- | Simplest version.  Use a closed world of value types in the Exp:
 data Ty = BoolTy | IntTy | AnyTy
@@ -34,11 +27,27 @@ deriving instance (Typeable 'IntTy)
 deriving instance (Typeable 'AnyTy)
 
 class ReifyTy t where
-  reifyTy :: Idx env t -> Ty
+  reifyTy :: Proxy t -> Ty
 instance ReifyTy 'BoolTy where reifyTy _ = BoolTy
 instance ReifyTy 'IntTy  where reifyTy _ = IntTy
 instance ReifyTy 'AnyTy  where reifyTy _ = AnyTy
 
+--------------------------------------------------------------------------------
+-- (*) Environments
+
+data Env = EmptyEnv
+         | forall a . Extend a Env
+-- deriving Typeable
+
+deriving instance (Typeable 'EmptyEnv)
+-- deriving instance (Typeable a, Typeable e) => (Typeable ('Extend a e))
+deriving instance Typeable 'Extend
+
+type family   ENV_HEAD (t::Env) :: Ty
+type instance ENV_HEAD ('Extend s e) = s
+
+--------------------------------------------------------------------------------
+-- (1) GADT based AST 
 
 data Exp (env :: Env) (a :: Ty) where
   T   :: Exp env BoolTy
@@ -57,7 +66,8 @@ data Exp (env :: Env) (a :: Ty) where
 
 data Idx (env :: Env) (t :: Ty) where
   Zero ::              Idx (Extend t env) t
-  Succ :: Idx env t -> Idx (Extend s env) t
+  Succ :: forall (env :: Env) (s :: Ty) (t :: Ty) .
+          Idx env t -> Idx (Extend s env) t
 
 deriving instance (Show (Exp env a))
 
@@ -97,19 +107,28 @@ downcast e =
     Let a b -> Let2 (downcast a) (downcast b) 
     Var ix  -> Var2 (downcastIdx ix)
 
---------------------------------------------------------------------------------
--- Type and environment handling
-
 downcastIdx :: forall env1 a1 . ReifyTy a1 =>
                Idx env1 a1 -> Idx2
-downcastIdx Zero = Zero2 undefined
-downcastIdx (Succ (inner :: Idx env2 a2) :: Idx env1 a1) =
-  Succ2 (reifyTy inner)
-  (downcastIdx inner)
+
+-- downcastIdx :: forall (env1::Env) (s::Ty) (a1::Ty) . ReifyTy a1 =>
+--                Idx (Extend s env1) a1 -> Idx2
+               
+-- downcastIdx x@Zero = Zero2 (reifyTy x)
+downcastIdx x@((Succ (inner :: Idx env2 a1))
+--               :: Idx (Extend s env2) a1
+              )
+            =
+--  _foo x
+  undefined
+  -- Succ2 (reifyTy (Proxy :: Proxy (ENV_HEAD env1)))
+  --       (downcastIdx inner)
 
 --------------------------------------------------------------------------------
 -- Option 1: the old way.  Sealed, monomorphic data and Data.Dynamic.
-    
+
+-- Typeable constraints are actually redundant here, because the kind
+-- of 'env' and 'a' should imply Typeable, but we have no way to
+-- express that.
 data Sealed = forall env a . (Typeable env, Typeable a) =>
               Sealed (Exp env a)
               -- { unseal :: Exp env a } -- Dynamic
@@ -134,7 +153,10 @@ upcastIdx (Zero2 ty) =
     SealedTy (_ :: Proxy tty) -> 
       SealedIdx (Zero :: Idx ('Extend tty 'EmptyEnv) tty)
 upcastIdx (Succ2 ty ix2) =
-  undefined
+  case (toType ty, upcastIdx ix2) of
+    (SealedTy (_ :: Proxy tty),
+     SealedIdx (ixb :: Idx env2 a2)) -> 
+      SealedIdx (Succ ixb :: Idx ('Extend tty env2) a2)
 
 
 unused :: a
@@ -205,6 +227,9 @@ p1a = Let (Lit 5)
 p1b :: Exp2
 p1b = Let2 (Lit2 5) 
       (If2 T2 (Var2 (Zero2 IntTy)) (Lit2 4))
+
+i0 :: Idx (Extend IntTy (Extend BoolTy EmptyEnv)) BoolTy
+i0 = Succ Zero 
 
 --------------------------------------------------------------------------------
 

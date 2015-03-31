@@ -11,6 +11,7 @@
 
 {-# LANGUAGE TypeFamilies #-}
 
+import Control.Monad (forM_)
 import Data.Dynamic
 
 --------------------------------------------------------------------------------
@@ -37,10 +38,8 @@ instance ReifyTy 'AnyTy  where reifyTy _ = AnyTy
 
 data Env = EmptyEnv
          | forall a . Extend a Env
--- deriving Typeable
 
 deriving instance (Typeable 'EmptyEnv)
--- deriving instance (Typeable a, Typeable e) => (Typeable ('Extend a e))
 deriving instance Typeable 'Extend
 
 type family   ENV_HEAD (t::Env) :: Ty
@@ -61,8 +60,6 @@ data Exp (env :: Env) (a :: Ty) where
       -> Exp env a  
   Var :: Idx env a -> Exp env a
  deriving Typeable
-
--- deriving instance Typeable (Exp env a)
 
 data Idx (env :: Env) (t :: Ty) where
   -- Here, again, ReifyTy is redundant, but no way to tell GHC that:
@@ -123,10 +120,10 @@ downcastIdx (Succ (inner :: Idx env2 a1)) =
 -- Typeable constraints are actually redundant here, because the kind
 -- of 'env' and 'a' should imply Typeable, but we have no way to
 -- express that.
-data Sealed = forall env a . (Typeable env, Typeable a) =>
+data Sealed = forall env a . (Typeable env, ReifyTy a) =>
               Sealed (Exp env a)
 
-data SealedIdx = forall env a . (Typeable env, Typeable a) =>
+data SealedIdx = forall env a . (Typeable env, ReifyTy a) =>
                  SealedIdx (Idx env a)
 
 data SealedTy = forall (t :: Ty) . ReifyTy t =>
@@ -168,6 +165,7 @@ upcast1 exp2 =
          (Sealed (a::Exp env1 t1),
           Sealed (b::Exp env2 t2),
           Sealed c) -> Sealed $
+           -- FIXME: Need to somehow COMBINE the environments:
            If (safeCast a :: Exp env1 BoolTy)
               (safeCast b :: Exp env1 t2)
               (safeCast c :: Exp env1 t2)
@@ -177,19 +175,24 @@ upcast1 exp2 =
          (Sealed (a::Exp env1 t1), Sealed b) -> 
           Sealed $ Add (safeCast a :: Exp env1 IntTy)
                        (safeCast b :: Exp env1 IntTy)
-     Var2 x -> undefined 
-       -- case upcastIdx x of
-       --   _ -> undefined
+     Var2 x -> case upcastIdx x of
+                 SealedIdx ix -> Sealed (Var ix)
      
-     Let2 x1 x2 -> undefined
+     Let2 x1 x2 ->
+       case (go x1, go x2) of
+         (Sealed (a::Exp env1 t1),
+          Sealed (b::Exp env2 t2)) -> 
+           Sealed 
+            (Let a (safeCast b :: Exp (Extend t1 env1) t2)
+             :: Exp env1 t2)
 
 
 safeCast :: forall a b . (Typeable a, Typeable b) => a -> b
 safeCast a =
   case fromDynamic (toDyn a) of
     Just x -> x
-    Nothing -> error $ "safeCast failed, from "++show (typeOf (undefined::a))++
-                       " to "++show (typeOf (undefined::b))
+    Nothing -> error $ "safeCast failed, from "++show (typeOf (unused::a))++
+                       " to "++show (typeOf (unused::b))
     
 
 --------------------------------------------------------------------------------
@@ -200,6 +203,9 @@ safeCast a =
 
 --------------------------------------------------------------------------------
 -- Misc + Test programs:
+
+unused :: a
+unused = error "This value should never be used"
 
 instance Show Sealed where
   show (Sealed x) = "<Sealed: "++show (typeOf x)++">"
@@ -216,13 +222,21 @@ p0 = If T (Lit 3) (Lit 4)
 t_p0 :: Exp EmptyEnv IntTy
 t_p0 = upcast1 (downcast p0) 
 
-p1a :: Exp EmptyEnv IntTy
-p1a = Let (Lit 5) 
+p1 :: Exp EmptyEnv IntTy
+p1 = Let (Lit 5) (Var Zero)
+
+p2 :: Exp EmptyEnv IntTy
+p2 = (If T (Lit 11) p1)
+
+p3 :: Exp EmptyEnv IntTy
+p3 = Let (Lit 5) 
       (If T (Var Zero) (Lit 4))
 
-p1b :: Exp2
-p1b = Let2 (Lit2 5) 
+p3b :: Exp2
+p3b = Let2 (Lit2 5) 
       (If2 T2 (Var2 (Zero2 IntTy)) (Lit2 4))
+
+
 
 i0 :: Idx (Extend IntTy (Extend BoolTy EmptyEnv)) BoolTy
 i0 = Succ Zero 
@@ -233,24 +247,19 @@ t_i0 = print $ upcastIdx $ downcastIdx i0
 --------------------------------------------------------------------------------
 
 -- FinishMe: test more uniformly:
-_tests :: [Sealed]
-_tests = [Sealed p0, Sealed p1a]
+tests :: [(String,Sealed)]
+tests = [("p0",Sealed p0),
+         ("p1",Sealed p1),
+         ("p2",Sealed p2),
+         ("p3",Sealed p3)]
 
 main :: IO ()
 main = do
-          putStrLn "\np0:"
-          print p0
-          print (downcast p0)
-          print t_p0
+  putStrLn "\nTest i0:"
+  t_i0
 
-          putStrLn "\ni0:"
-          t_i0
-
-          putStrLn "\np1a:"
-          print p1a
-          print (downcast p1a)
-          print (upcast1 (downcast p1a) :: Exp EmptyEnv IntTy)
-
-          putStrLn "\np1b:"
-          print p1b
-
+  forM_ tests $ \ (name, Sealed (expr::Exp env a)) -> do
+    putStrLn$ "\nTest "++name++":"
+    putStrLn$ "  Orig: "++show expr
+    putStrLn$ "  Down: "++show (downcast expr)
+    putStrLn$ "  BkUp: "++show (upcast1 (downcast expr) :: Exp EmptyEnv a)

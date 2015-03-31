@@ -129,9 +129,6 @@ data Sealed = forall env a . (Typeable env, Typeable a) =>
 data SealedIdx = forall env a . (Typeable env, Typeable a) =>
                  SealedIdx (Idx env a)
 
-instance Show SealedIdx where
-  show (SealedIdx x) = "<SealedIdx: "++show (typeOf x)++">"
-
 data SealedTy = forall (t :: Ty) . ReifyTy t =>
                 SealedTy (Proxy t)
 
@@ -204,14 +201,20 @@ safeCast a =
 --------------------------------------------------------------------------------
 -- Misc + Test programs:
 
-unused :: a
-unused = error "This value should never be used"
+instance Show Sealed where
+  show (Sealed x) = "<Sealed: "++show (typeOf x)++">"
+
+instance Show SealedIdx where
+  show (SealedIdx x) = "<SealedIdx: "++show (typeOf x)++">"
+
+instance Show SealedTy where
+  show (SealedTy x) = "<SealedTy: "++show (typeOf x)++">"
 
 p0 :: Exp EmptyEnv IntTy
 p0 = If T (Lit 3) (Lit 4)
 
-t0 :: Exp EmptyEnv IntTy
-t0 = upcast1 (downcast p0) 
+t_p0 :: Exp EmptyEnv IntTy
+t_p0 = upcast1 (downcast p0) 
 
 p1a :: Exp EmptyEnv IntTy
 p1a = Let (Lit 5) 
@@ -224,18 +227,25 @@ p1b = Let2 (Lit2 5)
 i0 :: Idx (Extend IntTy (Extend BoolTy EmptyEnv)) BoolTy
 i0 = Succ Zero 
 
+t_i0 :: IO ()
+t_i0 = print $ upcastIdx $ downcastIdx i0
+
 --------------------------------------------------------------------------------
 
-tests :: [Sealed]
-tests = [Sealed p0, Sealed p1a]
+-- FinishMe: test more uniformly:
+_tests :: [Sealed]
+_tests = [Sealed p0, Sealed p1a]
 
 main :: IO ()
 main = do
           putStrLn "\np0:"
           print p0
           print (downcast p0)
-          print (upcast1 (downcast p0) :: Exp EmptyEnv IntTy)
-          
+          print t_p0
+
+          putStrLn "\ni0:"
+          t_i0
+
           putStrLn "\np1a:"
           print p1a
           print (downcast p1a)
@@ -243,3 +253,4 @@ main = do
 
           putStrLn "\np1b:"
           print p1b
+

@@ -115,7 +115,8 @@
 
 ;; a Shape is a concrete instance of ShapeType*
 (define (shape? x)
-  (and (symbol=? 'Z (first x))
+  (and (list? x) (not (empty? x))
+       (symbol=? 'Z (first x))
        (andmap integer? (rest x))))
 
 ;; shape-size : (U Shape ShapeType*) -> Nat

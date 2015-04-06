@@ -1,7 +1,8 @@
 #lang racket
 
 (require rackunit)
-(require "../lib/accelerack.rkt")
+(require "../lib/types.rkt")
+(require/expose "../lib/accelerack.rkt" (rget rput zero-array gen-indices generate/a plty-default))
 
 ;; Basic in-Racket Array operations:
 ;; -----------------------------------------------------
@@ -38,8 +39,7 @@
 ;; Acc-Fn
 ;(rget arr2 (Z))
 
-;; Testing Accelerack internals
-(require/expose "../lib/accelerack.rkt" (zero-array gen-indices))
+
 ; zero-array
 ;singletons
 (check-equal? (zero-array (Z) 'Word64) (r-arr (Z) (array* 0 'Word64) (list #(0))))
@@ -68,3 +68,14 @@
                                             
 (check-exn exn:fail? (thunk (gen-indices (Z 0))) "gen-indices: does not accept empty shapes")
 (check-exn exn:fail? (thunk (gen-indices (Z 2 0 5))) "gen-indices: does not accept empty shapes")
+
+;generate/a
+(generate/a (Z 11) (r-fn 1 'Word64 sqr))
+(generate/a (Z 5 5) (r-fn 2 'Word64 expt))
+(generate/a (Z 5) (r-fn 1 '#(Word64 Word64 Word64) (λ (i) (vector i (sqr i) (* i i i)))))
+(generate/a (Z 5 5) (r-fn 2 '#(Float Float) (λ (i j) (vector (+ i (/ j 10.0)) (/ i (add1 j))))))
+;plty-default
+(check-equal? (plty-default 1) '#(Float))
+(check-equal? (plty-default 2) '#(Float Float))
+(check-equal? (plty-default 3) '#(Float Float Float))
+

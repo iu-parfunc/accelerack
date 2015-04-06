@@ -157,6 +157,10 @@
 (check-eqv? (flatten-index (Z 3 5 2 7) (Z 1 2 1 5)) 110)
 (check-exn #rx"Invalid index for given shape" (λ () (flatten-index (Z 5 5 3) (Z 1 1 3)))) ;;FIXME
 (check-exn #rx"Invalid index for given shape" (λ () (flatten-index (Z 0) (Z 0))))
+;index-0
+(check-equal? (index-0 0) (Z))
+(check-equal? (index-0 1) (Z 0))
+(check-equal? (index-0 3) (Z 0 0 0))
 ;r-arr
 ;; Test Rack-Array constructor guard
 ;; TODO: test for expected error message
@@ -212,8 +216,3 @@
                                    (f64vector)
                                    (f64vector)))))
 ;r-fn
-
-(require/expose "../lib/types.rkt" (index-0))
-(check-equal? (index-0 0) (Z))
-(check-equal? (index-0 1) (Z 0))
-(check-equal? (index-0 3) (Z 0 0 0))

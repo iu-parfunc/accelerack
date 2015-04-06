@@ -30,6 +30,7 @@
   [index? predicate/c]
   [index-valid? (-> shape? index? boolean?)]
   [flatten-index (-> shape? index? natural-number/c)]
+  [index-0 (-> shape*? index?)]
   
   )
  

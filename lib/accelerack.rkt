@@ -4,6 +4,15 @@
 
 (require "types.rkt")
 
+;; Types exposed to Racket side
+;; Base:  simplified categorization of numerical types
+;; Element:  Number and Tuple/[ListOf Number]
+;; Array:  Nested list  [ListOf [ListOf Element]]
+
+;; Or should we provide limited access to structures?
+;; They could contain helper functions not exported but used on Accelerack side
+;; to convert/expand to needed functionality:  type inference, normalization, vectorization
+
 (provide
  acc run-acc 
  
@@ -13,15 +22,17 @@
   
   [rget (-> r-arr? index? element?)]
   [rput (-> r-arr? index? element? void?)]
-  [generate (-> shape? r-fn? r-arr?)]
+  
+  ; TODO...finsh [generate (-> (listof natural-number/c)  r-fn? r-arr?)]
   
   )
+ generate
  
  ;; FIXME: this should only be accessible from an internal module
  ;; so that the user does not mess with it:
  acc-syn-table
  
- (all-from-out "types.rkt")
+ ;(all-from-out "types.rkt")
  )
 
 ; rget : Rack-Array Shape -> PayloadVal
@@ -82,19 +93,42 @@
             (gen-indices-h (rest sh))))]))
 
 
-;; generate : Shape [Index -> Element] -> Rack-Array
+;; generate/a : Shape [Index -> Element] -> Rack-Array
 ;; Produces a Rack-Array with Shape sh
-(define (generate sh fn)
+(define (generate/a sh fn)
   (match-let ([(r-fn dim plty f) fn])
     (let ([arr0 (zero-array sh plty)])
       (for ([index (gen-indices sh)])
         (rput arr0 index (fn index)))
       arr0)))
 
+;; a SShape is a [ListOf Nat]
+;; a SIndex is a SShape
+;; a SElement is (U Num [NE-ListOf Num])
 
-;---------------------
+; plty-default : Nat -> PayloadType*
+(define (plty-default d)
+  (apply vector (build-list d (const 'Float))))
+
+;; generate : SShape [Nat ... -> SElement] -> [ArrayOf SElement]
+(define (generate ssh sfn)
+  (let* ([sh (apply Z ssh)]
+         [shty (shape-dim sh)]
+         [el0 (apply sfn (rest (index-0 shty)))]
+         [plty (plty-default (if (number? el0) 1 (length el0)))]
+         [arr (generate/a (apply Z ssh)
+                          (r-fn shty plty
+                                (λ nats
+                                  (let* ([val (apply sfn nats)]
+                                         [val-list (if (number? val) (list val) val)])
+                                    (list->vector val-list)))))])
+    (pretty-print arr)
+    (r-arr-payload arr)))
+                                        
+
+;--------------------------------------------------------------------------------------
 ; Below is old
-;---------------------
+;--------------------------------------------------------------------------------------
 
 
 ;; The core library defines a global hash table that keeps track of

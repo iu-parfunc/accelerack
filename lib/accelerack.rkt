@@ -92,10 +92,10 @@
       arr0)))
 
 
-;; generate : Shape [Shape -> Payload] -> Rack-Array
-;(define generate2 (λ (sh fn)
+;---------------------
+; Below is old
+;---------------------
 
-;(define make-rarr (λ (sh vals 
 
 ;; The core library defines a global hash table that keeps track of
 ;; all Accelerate bindings defined anywhere.

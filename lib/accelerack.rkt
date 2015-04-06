@@ -4,91 +4,92 @@
 
 (require "types.rkt")
 
-(provide acc run-acc 
-         
-         ;generate
-         
-         (contract-out
-          [r-arr (-> shape? array*? payload? r-arr?)]
-          [r-arr-shape (-> r-arr? shape?)]
-          [r-arr-payload (-> r-arr? payload?)]
-          
-          [rget (-> r-arr? shape? payload-val?)]
-          [rput (-> r-arr? shape? payload-val? void?)]
-          
-          )
-         
-         ;; FIXME: this should only be accessible from an internal module
-         ;; so that the user does not mess with it:
-         acc-syn-table
-         
-         (all-from-out "types.rkt")
-         )
-
-;; a Rack-Array is a (r-arr Shape ArrayType Payload)
-(struct r-arr (shape arrty payload)
-  #:transparent
-  #:guard (λ (shape arrty payload _)
-            (cond
-              [(not (= (shape-dim shape)
-                       (arr-dim arrty)))
-               (error 'r-arr "Array dimensionality mismatch")]
-              [(let [(len (shape-size shape))]
-                 (andmap (λ (plty vec)
-                           (cond
-                             [(not ((acc-vector? plty) vec))
-                              (error 'r-arr "Array Payload type mismatch")]
-                             [(not (= len (acc-vector-length vec)))
-                              (error 'r-arr "Array Shape size mismatch")]
-                             [else true]))
-                         (arr-plty-list arrty) payload))
-               (values shape arrty payload)])))
-
-;; an Rack-Fn is a (r-fn PayloadType Shape (Shape -> PayloadVal))
-;; where fn's PayloadVal is of type plty
-;; and fn's expects an index valid for sh
-(struct r-fn (plty sh fn)
-  #:transparent
-  #:guard (λ (plty sh fn _)
-            (cond
-              [(not (payload-val-valid?
-                     (fn (index-0 sh)) plty))
-               (error 'r-fn "Calling fn with zero index did not produce val in plty")]
-              [else (values plty sh fn)])))
+(provide
+ acc run-acc 
+ 
+ ;generate
+ 
+ (contract-out
+  
+  [rget (-> r-arr? index? element?)]
+  [rput (-> r-arr? index? element? void?)]
+  [generate (-> shape? r-fn? r-arr?)]
+  
+  )
+ 
+ ;; FIXME: this should only be accessible from an internal module
+ ;; so that the user does not mess with it:
+ acc-syn-table
+ 
+ (all-from-out "types.rkt")
+ )
 
 ; rget : Rack-Array Shape -> PayloadVal
 (define (rget rarr index)
-  (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
-    (unless (index-valid? index sh) (error 'rget "Invalid index for array"))
-    (let ([i (flatten-index index sh)])
+  (match-let ([(r-arr sh (array* shty plty) vs) rarr])
+    (unless (index-valid? sh index) (error 'rget "Invalid index for array"))
+    (let ([i (flatten-index sh index)])
       (cond
         [(base*? plty) (acc-vector-ref (first vs) i)]
         [else (list->vector (map (λ (fld v)
                                    (acc-vector-ref v i))
-                                 (vector->list plty) vs))]
+                                 (pl*->list plty) vs))]
         ))))
 
-;; rput : Rack-Array Shape PayloadVal -> (void)
-(define (rput rarr index vals)
-  (match-let ([(r-arr sh `(Array ,sh1 ,plty) vs) rarr])
-    (unless (index-valid? index sh)
+;; rput : Rack-Array Shape element -> (void)
+(define (rput rarr index elem)
+  (match-let ([(r-arr sh (array* shty plty) vs) rarr])
+    (unless (index-valid? sh index)
       (error 'rput "Invalid index for array's shape"))
-    (unless (payload-val-valid? vals plty)
+    (unless (element-valid? plty elem)
       (error 'rput "Value invalid for array's payload"))
-    (let ([i (flatten-index index sh)])
+    (let ([i (flatten-index sh index)])
       (cond
-        [(base*? plty) (acc-vector-set! (first vs) i vals)]
+        [(base*? plty) (acc-vector-set! (first vs) i elem)]
         [else (for ([v (in-list vs)]
                     [fld (in-vector plty)]
-                    [val (in-vector vals)])
+                    [val (in-vector elem)])
                 (acc-vector-set! v i val))]
         ))))
 
-;; generate : Shape Acc-Fn -> Rack-Array
-;; Produces a Rack-Array with the given Shape and fn's PayloadType
-;(define (generate shape fn)
-;  (match-let ([(r-fn plty
-;  (let ([vector-set! (payload-type->vector-set! 
+;; zero-array : Shape PayloadType* -> Rack-Array
+;; (zero-array sh plty) produces an array of shape sh filled with zero elements of plty
+(define (zero-array sh plty)
+  (r-arr sh (array* (shape-dim sh) plty)
+         (let ([zeros (build-list (shape-size sh) (const 0))])
+           (map (λ (bty) (apply (acc-vector bty) zeros))
+                (pl*->list plty)))))
+
+;; gen-indices : NonEmptyShape -> [ListOf Index]
+;; (gen-indices sh) produces a complete list of all valid indices in sh
+;; Confirmed linear run time
+(define (gen-indices sh)
+  (map (λ (ls) (apply Z ls))
+       (cond
+         [(shape-empty? sh) (list empty)]
+         [(equal? sh '(Z)) (list (list 0))]
+         [else
+          (letrec
+              ([; gen-indices-h : [ListOf Nat] -> [ListOf Index]
+                ; this helper processes non-empty shapes with the 'Z stripped off
+                gen-indices-h
+                (λ (sh)
+                  (if (empty? sh) (list empty)
+                      (foldr append empty
+                             (build-list (first sh)
+                                         (λ (n) (map (λ (index) (cons n index))
+                                                     (gen-indices-h (rest sh))))))))])
+            (gen-indices-h (rest sh)))])))
+
+
+;; generate : Shape [Index -> Element] -> Rack-Array
+;; Produces a Rack-Array with Shape sh
+(define (generate sh fn)
+  (match-let ([(r-fn dim plty f) fn])
+    (let ([arr0 (zero-array sh plty)])
+      (for ([index (gen-indices sh)])
+        (rput arr0 index (fn index)))
+      arr0)))
 
 
 ;; generate : Shape [Shape -> Payload] -> Rack-Array

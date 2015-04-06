@@ -64,22 +64,22 @@
 ;; (gen-indices sh) produces a complete list of all valid indices in sh
 ;; Confirmed linear run time
 (define (gen-indices sh)
-  (map (λ (ls) (apply Z ls))
-       (cond
-         [(shape-empty? sh) (list empty)]
-         [(equal? sh '(Z)) (list (list 0))]
-         [else
-          (letrec
-              ([; gen-indices-h : [ListOf Nat] -> [ListOf Index]
-                ; this helper processes non-empty shapes with the 'Z stripped off
-                gen-indices-h
-                (λ (sh)
-                  (if (empty? sh) (list empty)
-                      (foldr append empty
-                             (build-list (first sh)
-                                         (λ (n) (map (λ (index) (cons n index))
-                                                     (gen-indices-h (rest sh))))))))])
-            (gen-indices-h (rest sh)))])))
+  (cond
+    [(shape-empty? sh) (error 'gen-indices "does not accept empty shapes")];(list empty)]
+    [(equal? sh '(Z)) (list (Z))]
+    [else
+     (letrec
+         ([; gen-indices-h : [ListOf Nat] -> [ListOf Index]
+           ; this helper processes non-empty shapes with the 'Z stripped off
+           gen-indices-h
+           (λ (sh)
+             (if (empty? sh) (list empty)
+                 (foldr append empty
+                        (build-list (first sh)
+                                    (λ (n) (map (λ (index) (cons n index))
+                                                (gen-indices-h (rest sh))))))))])
+       (map (λ (ls) (apply Z ls))
+            (gen-indices-h (rest sh))))]))
 
 
 ;; generate : Shape [Index -> Element] -> Rack-Array

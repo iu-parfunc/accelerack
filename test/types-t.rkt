@@ -212,3 +212,8 @@
                                    (f64vector)
                                    (f64vector)))))
 ;r-fn
+
+(require/expose "../lib/types.rkt" (index-0))
+(check-equal? (index-0 0) (Z))
+(check-equal? (index-0 1) (Z 0))
+(check-equal? (index-0 3) (Z 0 0 0))

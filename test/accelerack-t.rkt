@@ -37,3 +37,34 @@
 
 ;; Acc-Fn
 ;(rget arr2 (Z))
+
+;; Testing Accelerack internals
+(require/expose "../lib/accelerack.rkt" (zero-array gen-indices))
+; zero-array
+;singletons
+(check-equal? (zero-array (Z) 'Word64) (r-arr (Z) (array* 0 'Word64) (list #(0))))
+(check-equal? (zero-array (Z) '#(Word64)) (r-arr (Z) (array* 0 '#(Word64)) (list #(0))))
+(check-equal? (zero-array (Z) '#(Word64 Word64)) (r-arr (Z) (array* 0 '#(Word64 Word64)) (list #(0) #(0))))
+;(check-equal? (zero-array (Z) '#(Word64 Float)) (r-arr (Z) (array* 0 '#(Word64 Float)) (list #(0) #(0.0))))
+(check-equal? (zero-array (Z 1) '#(Word64)) (r-arr (Z 1) (array* 1 '#(Word64)) (list #(0))))
+(check-equal? (zero-array (Z 2) '#(Word64)) (r-arr (Z 2) (array* 1 '#(Word64)) (list #(0 0))))
+(check-equal? (zero-array (Z 2 3) '#(Word64)) (r-arr (Z 2 3) (array* 2 '#(Word64))
+                                                     (list #(0 0 0 0 0 0))))
+(check-equal? (zero-array (Z 2 3) '#(Word64 Word64)) (r-arr (Z 2 3) (array* 2 '#(Word64 Word64))
+                                                            (list #(0 0 0 0 0 0)
+                                                                  #(0 0 0 0 0 0))))
+#;(check-equal? (zero-array (Z 2 3) '#(Word64 Float)) (r-arr (Z 2 3) (array* 2 '#(Word64 Float))
+                                                             (list #(0 0 0 0 0 0)
+                                                                   #(0.0 0.0 0.0 0.0 0.0 0.0))))
+; gen-indices
+(check-equal? (gen-indices (Z)) (list (Z)))
+(check-equal? (gen-indices (Z 1)) (list (Z 0)))
+(check-equal? (gen-indices (Z 3)) (list (Z 0) (Z 1) (Z 2)))
+(check-equal? (gen-indices (Z 1 1 1)) (list (Z 0 0 0)))
+(check-equal? (gen-indices (Z 2 2 5)) (list (Z 0 0 0) (Z 0 0 1) (Z 0 0 2) (Z 0 0 3) (Z 0 0 4)
+                                            (Z 0 1 0) (Z 0 1 1) (Z 0 1 2) (Z 0 1 3) (Z 0 1 4)
+                                            (Z 1 0 0) (Z 1 0 1) (Z 1 0 2) (Z 1 0 3) (Z 1 0 4)
+                                            (Z 1 1 0) (Z 1 1 1) (Z 1 1 2) (Z 1 1 3) (Z 1 1 4)))
+                                            
+(check-exn exn:fail? (thunk (gen-indices (Z 0))) "gen-indices: does not accept empty shapes")
+(check-exn exn:fail? (thunk (gen-indices (Z 2 0 5))) "gen-indices: does not accept empty shapes")

@@ -27,14 +27,14 @@
 (check-equal? (rget arr2 (Z 0 0)) #(0 5 10))
 (check-equal? (rget arr2 (Z 0 3)) #(3 8 13))
 (check-exn #rx"Invalid index for array" (λ ()
-                       (rget arr1 (Z 4))))
+                                          (rget arr1 (Z 4))))
 (check-exn exn:fail? (λ ()
                        (rget arr3 (Z 0 3))))
 ;rput
 (check-eqv? (begin (rput arr1 (Z 2) 25) (rget arr1 (Z 2)))
             25)
 (check-equal? (begin (rput arr2 (Z 0 3) #(103 108 113)) (rget arr2 (Z 0 3)))
-            #(103 108 113))
+              #(103 108 113))
 
 ;; Acc-Fn
 ;(rget arr2 (Z))
@@ -65,9 +65,9 @@
                                             (Z 0 1 0) (Z 0 1 1) (Z 0 1 2) (Z 0 1 3) (Z 0 1 4)
                                             (Z 1 0 0) (Z 1 0 1) (Z 1 0 2) (Z 1 0 3) (Z 1 0 4)
                                             (Z 1 1 0) (Z 1 1 1) (Z 1 1 2) (Z 1 1 3) (Z 1 1 4)))
-                                            
-(check-exn exn:fail? (thunk (gen-indices (Z 0))) "gen-indices: does not accept empty shapes")
-(check-exn exn:fail? (thunk (gen-indices (Z 2 0 5))) "gen-indices: does not accept empty shapes")
+
+(check-equal? (gen-indices (Z 0)) empty)
+(check-equal? (gen-indices (Z 2 0 5)) empty)
 
 ;generate/a
 (generate/a (Z 11) (r-fn 1 'Word64 sqr))

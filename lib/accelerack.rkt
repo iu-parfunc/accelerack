@@ -71,12 +71,12 @@
            (map (λ (bty) (apply (acc-vector bty) zeros))
                 (pl*->list plty)))))
 
-;; gen-indices : NonEmptyShape -> [ListOf Index]
+;; gen-indices : Shape -> [ListOf Index]
 ;; (gen-indices sh) produces a complete list of all valid indices in sh
 ;; Confirmed linear run time
 (define (gen-indices sh)
   (cond
-    [(shape-empty? sh) (error 'gen-indices "does not accept empty shapes")];(list empty)]
+    [(shape-empty? sh) empty]
     [(equal? sh '(Z)) (list (Z))]
     [else
      (letrec

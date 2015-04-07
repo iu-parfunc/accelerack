@@ -45,4 +45,4 @@
 
 ;;;untested
 ;instance-of-base*?
-;pl*->list
+;pl*->lis

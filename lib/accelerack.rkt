@@ -14,7 +14,7 @@
 ;; to convert/expand to needed functionality:  type inference, normalization, vectorization
 
 (provide
- acc run-acc 
+ ;acc run-acc 
  
  ;generate
  
@@ -30,7 +30,7 @@
  
  ;; FIXME: this should only be accessible from an internal module
  ;; so that the user does not mess with it:
- acc-syn-table
+ ;acc-syn-table
  
  ;(all-from-out "types.rkt")
  )

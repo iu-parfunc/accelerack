@@ -2,7 +2,8 @@
 
 (require rackunit)
 (require "../lib/types.rkt")
-(require/expose "../lib/accelerack.rkt" (rget rput zero-array gen-indices generate/a plty-default))
+(require "../lib/accelerack.rkt")
+(require/expose "../lib/accelerack.rkt" (zero-array gen-indices generate/a plty-default))
 
 ;; Basic in-Racket Array operations:
 ;; -----------------------------------------------------
@@ -96,4 +97,3 @@
 (check-equal? (plty-default 1) '#(Float))
 (check-equal? (plty-default 2) '#(Float Float))
 (check-equal? (plty-default 3) '#(Float Float Float))
-

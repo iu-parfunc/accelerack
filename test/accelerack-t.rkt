@@ -70,10 +70,28 @@
 (check-equal? (gen-indices (Z 2 0 5)) empty)
 
 ;generate/a
-(generate/a (Z 11) (r-fn 1 'Word64 sqr))
-(generate/a (Z 5 5) (r-fn 2 'Word64 expt))
-(generate/a (Z 5) (r-fn 1 '#(Word64 Word64 Word64) (λ (i) (vector i (sqr i) (* i i i)))))
-(generate/a (Z 5 5) (r-fn 2 '#(Float Float) (λ (i j) (vector (+ i (/ j 10.0)) (/ i (add1 j))))))
+(check-equal? (generate/a (Z 11) (r-fn 1 'Word64 sqr))
+              (r-arr (Z 11) (array* 1 'Word64) '(#(0 1 4 9 16 25 36 49 64 81 100))))
+(check-equal? (generate/a (Z 5 5) (r-fn 2 'Word64 expt))
+              (r-arr
+               (Z 5 5)
+               (array* 2 'Word64)
+               '(#(1 0 0 0 0 1 1 1 1 1 1 2 4 8 16 1 3 9 27 81 1 4 16 64 256))))
+(check-equal? (generate/a (Z 5) (r-fn 1 '#(Word64 Word64 Word64) (λ (i) (vector i (sqr i) (* i i i)))))
+              (r-arr
+               (Z 5)
+               (array* 1 '#(Word64 Word64 Word64))
+               (list #(0 1 2 3 4) #(0 1 4 9 16) #(0 1 8 27 64))))
+;; FIXME I can't get this to be equal
+#;(check-equal? (generate/a (Z 5 5) (r-fn 2 '#(Float Float) (λ (i j) (vector (+ i (/ j 10.0)) (/ i (add1 j))))))
+              (r-arr
+               '(Z 5 5)
+               (array* 2 '#(Float Float))
+               (list #(0 0.1 0.2 0.3 0.4 1 1.1 1.2 1.3 1.4 2 2.1 2.2
+                         2.3 2.4 3 3.1 3.2 3.3 3.4 4 4.1 4.2 4.3 4.4)
+                     #(0 0 0 0 0 1 (/ 1 2) (/ 1 3) (/ 1 4) (/ 1 5) 2
+                         1 (/ 2 3) (/ 2 4) (/ 2 5) 3 (/ 3 2) 1 (/ 3 4)
+                         (/ 3 5) 4 2 (/ 4 3) 1 (/ 4 5)))))
 ;plty-default
 (check-equal? (plty-default 1) '#(Float))
 (check-equal? (plty-default 2) '#(Float Float))

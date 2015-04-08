@@ -23,12 +23,27 @@
   [rget (-> r-arr? index? element?)]
   [rput (-> r-arr? index? element? void?)]
   
-  ; TODO: the function argument is checked for appropriate arity but not for type
-  ;       Is there a way to check that it accepts numbers?
+  ; FIXME: The check for natural-number input in function argument is not generalized for 
+  ;       any number of inputs, like the rest of the contract.
+  ;       AND, it doesn't really work:  string-append gets through the contract.
+  ; TODO: Look into custom contract combinators/creators, but this shouldn't be so hard
+  ;       Will the case-lambda contract work for other than case-lambda functions?
   [generate (->i ([index (listof natural-number/c)]
                   [fn (index)
                       (and/c (λ (f) (procedure-arity-includes? f (length index)))
-                             (unconstrained-domain-> (or/c real? (listof real?))))])
+                             (unconstrained-domain-> (or/c real? (listof real?)))
+                             (or/c (-> any) (-> natural-number/c any)
+                                   (-> natural-number/c natural-number/c any)
+                                   (-> natural-number/c natural-number/c
+                                       natural-number/c any)
+                                   (-> natural-number/c natural-number/c
+                                       natural-number/c natural-number/c any)
+                                   (-> natural-number/c natural-number/c
+                                       natural-number/c natural-number/c
+                                       natural-number/c any)
+                                   (-> natural-number/c natural-number/c
+                                       natural-number/c natural-number/c
+                                       natural-number/c natural-number/c any)))])
                  [result (listof (vectorof real?))])]
   
   )
@@ -106,6 +121,8 @@
       (for ([index (gen-indices sh)])
         (rput arr0 index (fn index)))
       arr0)))
+
+;; map/a : Shape [Element -> Element] -> Rack-Array
 
 ;; a SShape is a [ListOf Nat]
 ;; a SIndex is a SShape

@@ -127,13 +127,13 @@
 ;; a SShape is a [ListOf Nat]
 ;; a SIndex is a SShape
 ;; a SElement is (U Real [ListOf Real])
-;; an Array is ???
+;; an SArray is a [ListOf [ListOf SElement]]
 
 ; plty-default : Nat -> PayloadType*
 (define (plty-default d)
   (apply vector (build-list d (const 'Float))))
 
-;; generate : SShape [Nat ... -> SElement] -> [ArrayOf SElement]
+;; generate : SShape [Nat ... -> SElement] -> SArray
 (define (generate ssh sfn)
   (let* ([sh (apply Z ssh)]
          [shty (shape-dim sh)]
@@ -146,7 +146,13 @@
                                          [val-list (if (number? val) (list val) val)])
                                     (list->vector val-list)))))])
     (pretty-print arr)
-    (r-arr-payload arr)))
+    (simplify arr)))
+
+;; FINISH_ME
+;; simplify : Rack-Array -> SArray
+;; (simplify arr) converts arr into the most simplified array type
+(define (simplify arr)
+  (r-arr-payload arr))
                                         
 
 ;--------------------------------------------------------------------------------------

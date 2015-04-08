@@ -1,4 +1,4 @@
-default: test
+default: test examples
 examples: lib/*.rkt example_apps/*.rkt
 	racket example_apps/hello_world.rkt
 	racket example_apps/trial.rkt

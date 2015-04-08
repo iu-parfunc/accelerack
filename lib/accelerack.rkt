@@ -23,8 +23,13 @@
   [rget (-> r-arr? index? element?)]
   [rput (-> r-arr? index? element? void?)]
   
-  ; TODO Figure out this contract
-  [generate (-> (listof natural-number/c) procedure? (listof vector?))]
+  ; TODO: the function argument is checked for appropriate arity but not for type
+  ;       Is there a way to check that it accepts numbers?
+  [generate (->i ([index (listof natural-number/c)]
+                  [fn (index)
+                      (and/c (λ (f) (procedure-arity-includes? f (length index)))
+                             (unconstrained-domain-> (or/c real? (listof real?))))])
+                 [result (listof (vectorof real?))])]
   
   )
  
@@ -104,7 +109,7 @@
 
 ;; a SShape is a [ListOf Nat]
 ;; a SIndex is a SShape
-;; a SElement is (U Real [NE-ListOf Real])
+;; a SElement is (U Real [ListOf Real])
 ;; an Array is ???
 
 ; plty-default : Nat -> PayloadType*

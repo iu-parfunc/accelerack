@@ -16,17 +16,17 @@
 (provide
  acc run-acc 
  
- ;generate
+
  
  (contract-out
   
   [rget (-> r-arr? index? element?)]
   [rput (-> r-arr? index? element? void?)]
   
-  ; TODO...finsh [generate (-> (listof natural-number/c)  r-fn? r-arr?)]
+  ; TODO Figure out this contract
+  [generate (-> (listof natural-number/c) procedure? (listof vector?))]
   
   )
- generate
  
  ;; FIXME: this should only be accessible from an internal module
  ;; so that the user does not mess with it:
@@ -104,7 +104,8 @@
 
 ;; a SShape is a [ListOf Nat]
 ;; a SIndex is a SShape
-;; a SElement is (U Num [NE-ListOf Num])
+;; a SElement is (U Real [NE-ListOf Real])
+;; an Array is ???
 
 ; plty-default : Nat -> PayloadType*
 (define (plty-default d)

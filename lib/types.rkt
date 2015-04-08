@@ -4,14 +4,12 @@
 
 (require "types-hi.rkt")
 
-(define predicate/c (unconstrained-domain-> boolean?))
-
 (provide
  
  base? avector?
  
  (contract-out
-  [acc-vector? (-> base*? (unconstrained-domain-> boolean?))]
+  [acc-vector? (-> base*? predicate/c)]
   [acc-vector (-> base*? (->* () #:rest (listof number?) avector?))]
   [acc-vector-length (-> avector? natural-number/c)]
   [acc-vector-ref (-> avector? natural-number/c base?)]
@@ -19,7 +17,7 @@
   [acc-vector-set! (-> avector? natural-number/c base? void?)]
 
   [payload? predicate/c]
-  [element? (unconstrained-domain-> boolean?)]
+  [element? predicate/c]
   [element-valid? (-> payload*? element? boolean?)]
   
   [shape? predicate/c]

@@ -16,7 +16,7 @@
 (generate '(1) (const (list 5 6)))
 
 ; Note: The two above examples differ only in dimensionality,
-;       and so they are indexed differently, (Z) vs (Z 0).
+;       and so they are indexed differently, (Z) vs (Z 0), or '() vs '(0).
 ; This is consistent with Accelerack's internal representation and Accelerate itself.
 
 ; Singleton payloads:  two ways of returning singleton payload elements

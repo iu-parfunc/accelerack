@@ -7,21 +7,22 @@
 ;; Types exposed to Racket side
 ;; Base:  simplified categorization of numerical types
 ;; Element:  Number and Tuple/[ListOf Number]
-;; Array:  Nested list  [ListOf [ListOf Element]]
+;; Array:  Nested list  [ListOf [ListOf Element]] **using Rack-Arrays for now
 
 ;; Or should we provide limited access to structures?
 ;; They could contain helper functions not exported but used on Accelerack side
 ;; to convert/expand to needed functionality:  type inference, normalization, vectorization
 
 (provide
- acc run-acc 
- 
-
+ ;acc run-acc 
  
  (contract-out
   
   [rget (-> r-arr? index? element?)]
   [rput (-> r-arr? index? element? void?)]
+  
+  [generate/a (-> shape? r-gen-fn? r-arr?)]
+  [map/a (-> r-map-fn? r-arr? r-arr?)]
   
   ; FIXME: The check for natural-number input in function argument is not generalized for 
   ;       any number of inputs, like the rest of the contract.
@@ -32,32 +33,37 @@
                   [fn (index)
                       (and/c (λ (f) (procedure-arity-includes? f (length index)))
                              (unconstrained-domain-> (or/c real? (listof real?)))
-                             (or/c (-> any) (-> natural-number/c any)
-                                   (-> natural-number/c natural-number/c any)
-                                   (-> natural-number/c natural-number/c
-                                       natural-number/c any)
-                                   (-> natural-number/c natural-number/c
-                                       natural-number/c natural-number/c any)
-                                   (-> natural-number/c natural-number/c
-                                       natural-number/c natural-number/c
-                                       natural-number/c any)
-                                   (-> natural-number/c natural-number/c
-                                       natural-number/c natural-number/c
-                                       natural-number/c natural-number/c any)))])
-                 [result (listof (vectorof real?))])]
-  
+                             #;(or/c (-> any) (-> natural-number/c any)
+                                     (-> natural-number/c natural-number/c any)
+                                     (-> natural-number/c natural-number/c
+                                         natural-number/c any)
+                                     (-> natural-number/c natural-number/c
+                                         natural-number/c natural-number/c any)
+                                     (-> natural-number/c natural-number/c
+                                         natural-number/c natural-number/c
+                                         natural-number/c any)
+                                     (-> natural-number/c natural-number/c
+                                         natural-number/c natural-number/c
+                                         natural-number/c natural-number/c any))
+                             )])
+                 [result list? #;r-arr? #;(listof (vectorof real?))])]
+  [amap (-> procedure? list? list?)]
+  [complicate (-> list? r-arr?)]
+  [simplify (-> r-arr? list?)]
   )
  
  ;; FIXME: this should only be accessible from an internal module
  ;; so that the user does not mess with it:
- acc-syn-table
+ ;acc-syn-table
  
  ;(all-from-out "types.rkt")
  )
 
-; rget : Rack-Array Shape -> PayloadVal
+; rget : Rack-Array Shape -> Element
 (define (rget rarr index)
   (match-let ([(r-arr sh (array* shty plty) vs) rarr])
+    ;    (displayln sh)
+    ;    (displayln index)
     (unless (index-valid? sh index) (error 'rget "Invalid index for array"))
     (let ([i (flatten-index sh index)])
       (cond
@@ -67,7 +73,7 @@
                                  (pl*->list plty) vs))]
         ))))
 
-;; rput : Rack-Array Shape element -> (void)
+;; rput : Rack-Array Shape Element -> (void)
 (define (rput rarr index elem)
   (match-let ([(r-arr sh (array* shty plty) vs) rarr])
     (unless (index-valid? sh index)
@@ -113,16 +119,22 @@
             (gen-indices-h (rest sh))))]))
 
 
-;; generate/a : Shape [Index -> Element] -> Rack-Array
+;; generate/a : Shape Gen-Fn -> Rack-Array
 ;; Produces a Rack-Array with Shape sh
 (define (generate/a sh fn)
-  (match-let ([(r-fn dim plty f) fn])
-    (let ([arr0 (zero-array sh plty)])
-      (for ([index (gen-indices sh)])
-        (rput arr0 index (fn index)))
-      arr0)))
+  (let ([arr0 (zero-array sh (r-fn-plty fn))])
+    (for ([index (gen-indices sh)])
+      (rput arr0 index (fn index)))
+    arr0))
 
-;; map/a : Shape [Element -> Element] -> Rack-Array
+;; map/a : Map-Fn Rack-Array -> Rack-Array
+;; TODO contract can check dimensionality matchup
+;;      - and fn arg applicability
+;;      - in generate/a also...
+(define (map/a fn arr)
+  (generate/a (r-arr-shape arr)
+              (r-gen-fn (r-fn-shty fn) (r-fn-plty fn)
+                        (λ (index) (fn (rget arr index))))))
 
 ;; a SShape is a [ListOf Nat]
 ;; a SIndex is a SShape
@@ -130,35 +142,71 @@
 ;; an SArray is a [ListOf [ListOf SElement]]
 
 ; plty-default : Nat -> PayloadType*
-(define (plty-default d)
-  (apply vector (build-list d (const 'Float))))
+(define plty-default
+  (case-lambda
+    [() 'Float]
+    [(d) (apply vector (build-list d (const 'Float)))]))
 
 ;; generate : SShape [Nat ... -> SElement] -> SArray
 (define (generate ssh sfn)
   (let* ([sh (apply Z ssh)]
          [shty (shape-dim sh)]
          [el0 (apply sfn (rest (index-0 shty)))]
-         [plty (plty-default (if (number? el0) 1 (length el0)))]
-         [arr (generate/a (apply Z ssh)
-                          (r-fn shty plty
-                                (λ nats
-                                  (let* ([val (apply sfn nats)]
-                                         [val-list (if (number? val) (list val) val)])
-                                    (list->vector val-list)))))])
-    (pretty-print arr)
+         [plty (if (number? el0) (plty-default) (plty-default (length el0)))]
+         [arr (generate/a sh (r-gen-fn shty plty (make-gen-fn sfn)))])
+    #;(pretty-print arr)
     (simplify arr)))
 
-;; FINISH_ME
-;; simplify : Rack-Array -> SArray
-;; (simplify arr) converts arr into the most simplified array type
+;; map : [SElement -> SElement] SArray -> SArray
+(define (amap f arr)
+  (let ([rarr (complicate arr)])
+    (simplify (map/a (r-map-fn (shape-dim (r-arr-shape rarr))
+                               (array*-pl* (r-arr-arrty rarr))
+                               (make-map-fn-ls f))
+                     rarr))))
+
+;; complicate : SArray -> Rack-Array
+;; vectorizes & flatten dimensions and unzips tuples
+;; NOTE: always uses 1-D shape
+(define (complicate lls)
+  (letrec ([sh-finder (λ (lls) (cond
+                                 [(empty? lls) (cons 0 empty)]
+                                 [(empty? (first lls)) (cons 0 empty)]
+                                 [(number? (first (first lls))) (cons (length lls) empty)]
+                                 [else (cons (length lls) (sh-finder (first lls)))]))]
+           [helper (λ (lls) (cond
+                              [(empty? lls) empty]
+                              [(number? (first lls)) (list lls)]
+                              [else (apply append (map helper lls))]))])
+    (let ([payload (if (empty? lls) (list (vector))
+                        (apply ((curry map) vector) (helper lls)))]
+          [shape (apply Z (sh-finder lls))])
+      (r-arr shape (array* (shape-dim shape) (plty-default (length payload)))
+             payload))))  
+
+;; simplify: Rack-Array -> SArray
+;; zips tuples and devectorizes & splits dimensions
 (define (simplify arr)
-  (r-arr-payload arr))
-                                        
+  (let ([stage1 (apply map list (map vector->list (r-arr-payload arr)))]
+        [shape (r-arr-shape arr)])
+    (letrec ([split* (λ (ls sh)
+                       (let ([n (shape-size sh)])
+                         (cond [(empty? ls) empty]
+                               [else (let-values ([(front others) (split-at ls n)])
+                                       (cons (split-all front sh)
+                                             (split* others sh)))])))]
+             [split-all (λ (lls sh)
+                          (if (< (shape-dim sh) 2)
+                              lls
+                              (split* lls (apply Z (rest (rest sh))))))])
+      (split-all stage1 shape))))
+
+
 
 ;--------------------------------------------------------------------------------------
 ; Below is old
 ;--------------------------------------------------------------------------------------
-
+#|
 
 ;; The core library defines a global hash table that keeps track of
 ;; all Accelerate bindings defined anywhere.
@@ -262,3 +310,4 @@
 
 
 
+|#

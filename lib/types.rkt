@@ -15,7 +15,7 @@
   [acc-vector-ref (-> avector? natural-number/c base?)]
   [acc-list->vector (-> base*? (-> list? avector?))]
   [acc-vector-set! (-> avector? natural-number/c base? void?)]
-
+  
   [payload? predicate/c]
   [element? predicate/c]
   [element-valid? (-> payload*? element? boolean?)]
@@ -30,10 +30,17 @@
   [flatten-index (-> shape? index? natural-number/c)]
   [index-0 (-> shape*? index?)]
   
+  [flatten-arr (-> r-arr? r-arr?)]
   )
  
  (struct-out r-arr)
  (struct-out r-fn)
+ (struct-out r-gen-fn)
+ make-gen-fn ;; TODO make a contract
+ make-gen-fn-ls
+ make-map-fn ;; TODO make a contract
+ make-map-fn-ls
+ (struct-out r-map-fn)
  
  (all-from-out "types-hi.rkt")
  )
@@ -46,7 +53,7 @@
 (define (avector? t0)
   (vector? t0)
   #;(or (u64vector? t0)
-      (f64vector? t0)))
+        (f64vector? t0)))
 
 ;;;; Need a way to polymorphically access vector helper functions for payloads
 ;; TODO: Consider using a macro
@@ -103,7 +110,7 @@
                  (sequence-andmap (λ (v) (and (avector? v)
                                               (= (acc-vector-length v) len)))
                                   x))))))
-       
+
 ;; a Element is an element of a Payload, either a Singleton or a Tuple, one of
 ;; - acc-base?
 ;; - (vector acc-base? ...)
@@ -119,9 +126,9 @@
       (and (= (vector-length plty)
               (vector-length x))
            #;(for*/fold ([result true])
-                      ([val x]
-                       [ty plty])
-             (values (and (instance-of-base*? x plty) result)))
+                        ([val x]
+                         [ty plty])
+               (values (and (instance-of-base*? x plty) result)))
            (andmap identity
                    (map instance-of-base*? (vector->list x) (vector->list plty))))))
 
@@ -201,16 +208,70 @@
                          (pl*->list (array*-pl* arrty)) payload))
                (values shape arrty payload)])))
 
-;; a Rack-Fn is a (r-fn ShapeType* PayloadType* [Base ... -> Element])
-(struct r-fn (shty plty fn)
-  #:transparent
+;; flatten-arr : Rack-Array -> Rack-Array
+(define (flatten-arr arr)
+  (match-let ([(r-arr sh (array* _ plty) payload) arr])
+    (r-arr (Z (shape-size sh)) (array* 1 plty) payload)))
+
+;; a Rack-Fn is a (r-fn ShapeType* PayloadType* [Any ... -> Any])
+(struct r-fn (shty plty fn) #:transparent)
+
+;; a Gen-Fn is a Rack-Fn with fn argument of type [Index -> Element]
+;; Gen-Fn processes Indices, and it's internal fn procedure must meet the following:
+;;  - process an Index valid for shty
+;;  - produce an Element valid for plty
+;; Both conditions are checked in the structure guard during structure instantiation.
+(struct r-gen-fn r-fn () #:transparent
   #:guard (λ (shty plty fn _)
             (cond
-              [(not (element-valid? plty (apply fn (rest (index-0 shty)))))
-               (error 'r-fn "Calling fn with zero index did not produce valid payload element")]
+              [(not (element-valid? plty (fn (index-0 shty))))
+               (error 'r-gen-fn "Calling fn with zero index did not produce valid payload element")]
               [else (values shty plty fn)]))
   #:property prop:procedure
-  ; Rack-Fun Index -> Element
-  (λ (this i)
-    (apply (r-fn-fn this) (rest i)))
+  ; Gen-Fun : Index -> Element
+  (λ (this index)
+    ((r-fn-fn this) index))
+  )
+;; selement->element : SElement -> Element
+(define (selement->element sel)
+  (if (list? sel)
+      (list->vector sel)
+      sel))
+;; element -> selement : Element -> SElement
+(define (element->selement el)
+  (if (vector? el)
+      (vector->list el)
+      (list el)))
+;; make-gen-fn : [Base ... -> SElement] -> [Index -> Element] ;;TODO: combine like below?
+(define (make-gen-fn f)
+  (λ (index) (selement->element (apply f (rest index)))))
+(define (make-gen-fn-ls f)
+  (make-gen-fn (λ ls (list (apply f ls)))))
+;; make-map-fn : [Base ... -> SElement] -> [Element -> Element] ;;TODO: combine these two now
+(define (make-map-fn f)
+  (λ (el) (selement->element (apply f (element->selement el)))))
+(define (make-map-fn-ls f)
+  (make-map-fn (λ ls
+                 (let ([result (apply f ls)])
+                   (if (list? result) result (list result))))))
+
+;; a Map-Fn is a Rack-Fn with an fn argument of type [Element -> Element],
+;; where the Element is valid for plty.
+;;
+;; This condition is not checkable in a structure guard, because there is no default
+;; element value that is guaranteed to be acceptable input (as is the case for Gen-Fn).
+;; Therefore, element validity (both domain and range) is checked against plty during
+;; function application in the structure's procedure property.
+(struct r-map-fn r-fn () #:transparent
+  #:property prop:procedure
+  ; Map-Fn : Element -> Element
+  (λ (this e)
+    (let ([plty (r-fn-plty this)])
+      (unless (element-valid? plty e)
+        (error 'r-map-fn-domain "Invalid element given for function's PayloadType*"))
+      (let ([result ((r-fn-fn this) e)])
+        (unless (element-valid? plty result)
+          (begin (displayln result)
+            (error 'r-map-fn-range "Invalid return value for function's PayloadType*")))
+        result)))
   )

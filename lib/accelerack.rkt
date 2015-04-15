@@ -47,7 +47,9 @@
                                          natural-number/c natural-number/c any))
                              )])
                  [result list? #;r-arr? #;(listof (vectorof real?))])]
-  [amap (-> procedure? list? list?)]
+  [amap (case->
+         (-> procedure? list? list?)
+         (-> procedure? list? natural-number/c list?))]
   [complicate (-> list? r-arr?)]
   [simplify (-> r-arr? list?)]
   )
@@ -133,8 +135,10 @@
 ;;      - in generate/a also...
 (define (map/a fn arr)
   (generate/a (r-arr-shape arr)
-              (r-gen-fn (r-fn-shty fn) (r-fn-plty fn)
+              (r-gen-fn (r-fn-shty fn) (r-map-fn-plty2 fn)
                         (λ (index) (fn (rget arr index))))))
+
+;; fold/a : Fold-Fn Rack-Array -> Any
 
 ;; a SShape is a [ListOf Nat]
 ;; a SIndex is a SShape
@@ -157,13 +161,22 @@
     #;(pretty-print arr)
     (simplify arr)))
 
-;; map : [SElement -> SElement] SArray -> SArray
-(define (amap f arr)
-  (let ([rarr (complicate arr)])
-    (simplify (map/a (r-map-fn (shape-dim (r-arr-shape rarr))
-                               (array*-pl* (r-arr-arrty rarr))
-                               (make-map-fn-ls f))
-                     rarr))))
+;; amap : [SElement -> SElement] SArray {Nat} -> SArray
+(define amap
+  (case-lambda
+    [(f arr) (let* ([rarr (complicate arr)]
+                    [plty (array*-pl* (r-arr-arrty rarr))])
+               (simplify (map/a (r-map-fn (shape-dim (r-arr-shape rarr))
+                                          plty
+                                          (make-map-fn-ls f)
+                                          plty)
+                                rarr)))]
+    [(f arr n) (let ([rarr (complicate arr)])
+                 (simplify (map/a (r-map-fn (shape-dim (r-arr-shape rarr))
+                                            (array*-pl* (r-arr-arrty rarr))
+                                            (make-map-fn-ls f)
+                                            (plty-default n))
+                                  rarr)))]))
 
 ;; complicate : SArray -> Rack-Array
 ;; vectorizes & flatten dimensions and unzips tuples
@@ -179,7 +192,7 @@
                               [(number? (first lls)) (list lls)]
                               [else (apply append (map helper lls))]))])
     (let ([payload (if (empty? lls) (list (vector))
-                        (apply ((curry map) vector) (helper lls)))]
+                       (apply ((curry map) vector) (helper lls)))]
           [shape (apply Z (sh-finder lls))])
       (r-arr shape (array* (shape-dim shape) (plty-default (length payload)))
              payload))))  
@@ -200,6 +213,7 @@
                               lls
                               (split* lls (apply Z (rest (rest sh))))))])
       (split-all stage1 shape))))
+
 
 
 

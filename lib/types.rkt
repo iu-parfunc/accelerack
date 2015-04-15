@@ -262,7 +262,9 @@
 ;; element value that is guaranteed to be acceptable input (as is the case for Gen-Fn).
 ;; Therefore, element validity (both domain and range) is checked against plty during
 ;; function application in the structure's procedure property.
-(struct r-map-fn r-fn () #:transparent
+;;
+;; Goal is for plty2 to be optional, may need a custom constructor
+(struct r-map-fn r-fn (plty2) #:transparent ;TODO guard/contract for plty2
   #:property prop:procedure
   ; Map-Fn : Element -> Element
   (λ (this e)
@@ -270,7 +272,8 @@
       (unless (element-valid? plty e)
         (error 'r-map-fn-domain "Invalid element given for function's PayloadType*"))
       (let ([result ((r-fn-fn this) e)])
-        (unless (element-valid? plty result)
+        ;;allow different range than domain
+        (unless (element-valid? (r-map-fn-plty2 this) result)
           (begin (displayln result)
             (error 'r-map-fn-range "Invalid return value for function's PayloadType*")))
         result)))

@@ -1,0 +1,66 @@
+
+
+TODO: Latex me.
+
+
+Here is an initial, very small subset:
+
+Accelerack programs are introduced into Racket programs with:
+
+  (acc Def*)
+
+And:
+
+  (run E)
+
+Definitions consist of:
+
+  Def := (define Var E)
+       | (define (Var Var*) E)
+
+Expressions:
+
+  E := (map E E)
+     | (generate E E)
+     | (fold E E E)
+     | ...
+     | C
+     | (Z E*)
+     | (array-ref E E)
+     | (if E E E)
+     | (tuple E*)
+     | (let ((P E) *) E)
+     | (lambda (Arg*) E)
+     | (E E*)
+     | (: E T)
+
+  Arg := Var | [Var : Ty]
+
+  Note: tuple is an alias for "vector" when run outside an acc block
+  Note: pattern matching is the only way to destructure tuples.
+
+Constants, i.e. numbers and tuples:
+
+  C := <Num>
+     | #( C* )
+
+Patterns:
+
+  P := Var
+     | #( P* )
+
+Types:
+
+  Ty := (Array Dim Ty)
+     | Elt
+     | #( Ty Ty+ )
+
+  Elt := Int | Int16 | ...
+       | Double | Float | Char ...
+       | #( )
+       | #( Elt Elt+ )
+
+
+There are some invariants that kepe Accelerate's scalar and array
+languages stratified which are NOT present in the grammar above.
+Rather, they need to be enforced by the type checker.

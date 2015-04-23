@@ -3,6 +3,9 @@
 TODO: Latex me.
 
 
+Language Grammar
+----------------
+
 Here is an initial, very small subset:
 
 Accelerack programs are introduced into Racket programs with:
@@ -25,6 +28,7 @@ Expressions:
      | (fold E E E)
      | ...
      | C
+     | (+ E E) | (* E E) ...
      | (Z E*)
      | (array-ref E E)
      | (if E E E)
@@ -43,6 +47,7 @@ Constants, i.e. numbers and tuples:
 
   C := <Num>
      | #( C* )
+     | #\char
 
 Patterns:
 
@@ -54,13 +59,91 @@ Types:
   Ty := (Array Dim Ty)
      | Elt
      | #( Ty Ty+ )
+     | (-> Ty* Ty)
 
   Elt := Int | Int16 | ...
        | Double | Float | Char ...
        | #( )
        | #( Elt Elt+ )
 
+  Dim := 0 | 1 | 2 | 3 | 4 ...
+
 
 There are some invariants that kepe Accelerate's scalar and array
 languages stratified which are NOT present in the grammar above.
 Rather, they need to be enforced by the type checker.
+
+
+
+Current Limitations
+-------------------
+
+The above proposal has no concrete syntax for type variables or
+polymorphic types.  They would be infered, and part of the type
+checker, but NOT user provided in signatures.
+
+
+
+Two phase type checking proposal
+--------------------------------
+
+What is the type of "+"?  Our initial proposal is a two phase
+type-checking scheme:
+
+ * Phase 1, pre normalization:
+   "+" has type (-> a a a), i.e. "a,a -> a"
+
+ * Phase 2, post normalization: "+" has ONE of:
+   (-> Int Int Int)
+   (-> Double Double Double) ...
+
+The set of allowed types in phase 2 does NOT include
+(-> Char Char Char), or any type containing tuples.  The idea is that
+after normalization, + is unified with one of the list of monomorphic
+types.  But this choise is delicate, as the choice for different
+polymorphic operators can be inter-twined, e.g.:
+
+  (* (+ a b) c)
+
+We may conceivably need to search multiple possibilites for + and * to
+find a compatible setting.
+
+ALTERNATIVE: A designated numeric kind can make this kind of
+defaulting process much easier.  Simply resolve any unconstrained type
+variables (of numeric kind) at the end of phase 2 typecheck to
+whatever the default is: e.g. Int or Double or whatever.
+
+
+Note:
+
+Because of phase 1 type checking it is still possible to get a type error
+from a library which defines only functions:
+
+  (acc (define (f x) ...))
+
+Even though none of this code is run on the GPU and normalization
+hasn't happened yet, (+) may still be misused at a type not compatible
+with (-> a a a).
+
+Further, if we want, we could elect to do a "precheck" by verifying
+that the type for + in the above library unifies with AT LEAST ONE of
+the phase two types.  This would mean that (+ #\c #\b) would fail type
+check right away.
+
+
+
+Possibility: Gradual typing
+---------------------------
+
+Inside of acc/run blocks the types above are the whole story.  But
+outside these blocks all expressions E continue to be valid but must
+also interoperate with arbitrary Racket code.  It is unclear currently
+[2015.04.23] whether gradual typing will be needed / help in this
+scenario.
+
+Gradual types, may eventually be used internally, or perhaps just in
+the metatheory.  In this case we would extend "Ty" with "Dyn", the
+dynamic type.  Thus (Array Dim Dyn) is an object which we know to be
+an Accelerate array, but which may be heterogeneous and even contain
+arbitrary Racket objects.  This, for example, is the return type of
+"map/a" when called outside of an acc block.

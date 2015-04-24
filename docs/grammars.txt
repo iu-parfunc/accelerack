@@ -56,22 +56,58 @@ Patterns:
 
 Types:
 
-  Ty := (Array Dim Ty)
+  Ty := (Array Dim Elt)
      | Elt
      | #( Ty Ty+ )
      | (-> Ty* Ty)
 
   Elt := Int | Int16 | ...
        | Double | Float | Char ...
+       | ShapeTy
        | #( )
        | #( Elt Elt+ )
 
-  Dim := 0 | 1 | 2 | 3 | 4 ...
+  ShapeTy := (Z Elt*)
+
+  Dim := DIM0 | DIM1 | DIM2 | DIM3 | DIM4 ...
 
 
 There are some invariants that kepe Accelerate's scalar and array
 languages stratified which are NOT present in the grammar above.
 Rather, they need to be enforced by the type checker.
+
+
+Types of Primitives
+-------------------
+
+We need to build a table of primitive types.  These should be nearly isomorphic
+
+    generate :: (Shape ix, Elt a) => Exp ix -> (Exp ix -> Exp a) -> Acc (Array ix a)
+
+But we can't actually write these types in the grammar of types we
+have above, so we'll write them informally, and with an (also
+informal) set of side conditions:
+
+    (: generate (-> sh (-> sh a) (Array sh a)))
+      where a \in ShapeTy
+            dim = |sh|
+
+Phase 2 types:
+
+    (: generate (-> DIM1 (-> DIM1 Int)   (Array DIM1 Int)))
+    (: generate (-> DIM1 (-> DIM1 Float) (Array DIM1 Float)))
+    (: generate (-> DIM2 (-> DIM2 #(Int Float)) (Array DIM2 #(Int Float))))
+    ....
+
+Example program and its type:
+
+  (generate (Z 3 5)
+    (lambda ([x : DIM2]) (shape-ref x 0)))
+    : (Array DIM2 Int)
+
+  (Z :. 3 :. 5) :: (Z :. Int :. Int)
+  (Z 3 5) :: (Z Int Int)
+  (Z 3 5) :: DIM2
 
 
 

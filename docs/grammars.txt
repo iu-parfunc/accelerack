@@ -72,7 +72,7 @@ Types:
   Dim := DIM0 | DIM1 | DIM2 | DIM3 | DIM4 ...
 
 
-There are some invariants that kepe Accelerate's scalar and array
+There are some invariants that keep Accelerate's scalar and array
 languages stratified which are NOT present in the grammar above.
 Rather, they need to be enforced by the type checker.
 
@@ -136,7 +136,7 @@ type-checking scheme:
 The set of allowed types in phase 2 does NOT include
 (-> Char Char Char), or any type containing tuples.  The idea is that
 after normalization, + is unified with one of the list of monomorphic
-types.  But this choise is delicate, as the choice for different
+types.  But this choice is delicate, as the choice for different
 polymorphic operators can be inter-twined, e.g.:
 
   (* (+ a b) c)

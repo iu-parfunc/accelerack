@@ -1,0 +1,21 @@
+Maintain an IR in the syntax table
+Use syntax objects to capture nearly-Accelerate syntax
+ - IR must nearly correspond (isomorphic) to type-checking Accelerate code
+ - SExp's will, with little modification (Racc->Acc), type check in GHC
+
+Compiler
+ - Type checking - when run is called?
+ - Normalization - removal of polymorphism, finalization of type checking.
+
+If type checking is done when run is called, then what really needs to be checked in acc?
+Okay to allow acc to naively build the AST, leaving all checking to run?
+Run type checks, 
+
+Or no, the acc blocks _maintain_ a type-checking AST by checking types.
+And more?  Further checking the invariants/side conditions?
+
+type conversion?
+f(x) = (+ (+ x 1) 1.0)
+
+ -? Patterns in grammar
+ -? ShTy as Elt

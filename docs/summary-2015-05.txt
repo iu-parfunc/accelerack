@@ -1,0 +1,18 @@
+Summary Report - Independent Study Y-790
+Accelerack - A DSL in Racket for Array Processing on GPUs
+
+This project's aim is to design and implement an array-processing domain specific language (DSL) in Racket using one of Accelerate's new APIs.  Accelerate is an array-processing library written for Haskell which has the ability to prepare and run computations on the graphical processing unit (GPU).  It is also growing to support multiple and combined use of various parallel architectures commonly present in computers.  This project's goal is to provide easy access to Accelerate's parallel processing from Racket, for research, professional and pedagogical use.  The corresponding Accelerate API is being developed by colleagues at IU.  One of its uses and motivations is Accelerack.
+
+Accomplishments:
+
+1. AST and Macro Development
+One key component of the system is a method of translating Racket-friendly syntax into Accelerate's Haskell syntax, with specific focus on satisfying Haskell's type system, which Accelerate uses to tailor its compilation.
+
+We leverage Racket macros to generate our behind-the-scenes AST.  Our macros accept Racket-friendly syntax and store enough information (via type annotation and type inference) to be nearly isomorphic to an equivalent Accelerate program.  We have two macros, "acc" for creating variables and functions and "run" for constructing and running expressions/computations.  The macro is in its first, proof-of-concept version.  It accepts only limited input to demonstrate some internal mechanics of the macro system and its use of state to store the AST.
+
+The AST is in development.  It is designed to closely follow Accelerate's SimpleAcc grammar and types, a simplified version of the Accelerate language designed for use outside of Haskell proper.  We are already using Racket syntax objects to aid in producing helpful error messages.  That will be expanded upon.
+
+2. Language Design
+A presentation in April demonstrated primarily a proof-of-concept version of a working interpreter for a rudimentary array DSL.  It demonstrated two levels of Racket-friendly syntax, one very close to vanilla "teaching language" syntax and the other containing more type annotations essentially building the AST manually.  The end product was a Mandelbrot fractal image generated using list/array computations.  This interpreter did not use the aforementioned macro system but rather directly ran everything in the base Racket language.  It did, however, pass all computations through the then-current version of the Accelerate-like/AST data structures to show their functionality.  This showed a start-to-finish example of writing Racket code, converting to array-based structures, running array computations, converting the results back to Racket, and finally rendering the data as an image.  It demonstrated the array routines "generate" and "map," and it demonstrated user-defined functions.  One part of this early version which is thorough is the safety checking for invariants and type consistency especially via Racket's structure guards and module contracts.  Much work was put into that part of the system to see the effectiveness of using those resources.
+
+Current work involves updating the macro system to generate the AST.  The current design calls for a two-level type checker.  The first will run during all calls to the "acc" macro in order to maintain a well-typed AST.  The second runs at the beginning of "run" computations to convert all polymorphic types to monomorphic types fully compatible with the Accelerate library.  A full Hindley-Milner Type System has been discussed and will be implemented for type inference and type checking.

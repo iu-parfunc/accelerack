@@ -1,0 +1,19 @@
+name: accelerack-sexp
+version: 0.1.0.0
+cabal-version: >=1.10
+build-type: Simple
+license: BSD3
+license-file: LICENSE
+maintainer: kylcarte@gmail.com
+author: Kyle Carter
+
+library
+    exposed-modules:
+        Accelerack.Parse
+    build-depends:
+        base >=4.8 && <4.9,
+        bytestring -any,
+        sexp >=0.7.1
+    default-language: Haskell2010
+    hs-source-dirs: src
+

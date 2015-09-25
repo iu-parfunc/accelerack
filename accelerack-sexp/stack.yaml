@@ -1,0 +1,6 @@
+flags: {}
+packages:
+- '.'
+- sexp-0.7/
+extra-deps: []
+resolver: lts-3.5

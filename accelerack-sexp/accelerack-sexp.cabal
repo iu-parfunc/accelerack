@@ -9,6 +9,7 @@ author: Kyle Carter
 
 library
     exposed-modules:
+        Accelerack.Gen
         Accelerack.Parse
     build-depends:
         base >=4.8 && <4.9,

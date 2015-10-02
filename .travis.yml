@@ -13,9 +13,10 @@ before_install:
 - cat /proc/cpuinfo | grep name
 
 install:
+  - cd accelerack-sexp 
   - stack setup --no-terminal 
   - stack test --only-snapshot --no-terminal 
 
 script:
-#  - stack test --no-terminal +RTS -N1 -RTS
-  - cd accelerack-sexp && stack build --no-terminal 
+  - cd accelerack-sexp && stack test --no-terminal +RTS -N1 -RTS
+#  - cd accelerack-sexp && stack build --no-terminal 

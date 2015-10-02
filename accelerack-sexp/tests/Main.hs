@@ -9,7 +9,11 @@ import Accelerack.Gen
 import Accelerack.Run
 
 main :: IO ()
-main = do test1; test2; test3
+main = do 
+  def <- runInterpreter $ getLoadedModules
+  putStrLn $ "Default loaded modules: "++show def
+
+  test1; test2; test3
 
 test1 =
   interp $ do

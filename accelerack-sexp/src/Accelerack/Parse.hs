@@ -15,7 +15,14 @@ import Language.Sexp
 import Text.Read (readEither)
 import Control.Monad
 
+test :: String
+test = "(use (vector _double (2 3) ((1 2 3) (4 5 6))))"
+
 type P a = Sexp -> Either String a
+
+data Block
+  = Cmd Cmd
+  deriving (Eq,Ord,Show)
 
 data Cmd
   = Use Vec
@@ -46,8 +53,8 @@ data V
 
 -- Parse {{{
 
-parseAccel :: String -> Either String Cmd
-parseAccel = parseSexp >=> sexpCmd
+parseAccel :: String -> Either String Block
+parseAccel = parseSexp >=> sexpBlock
 
 parseSexp :: String -> Either String Sexp
 parseSexp = either (Left . fst) go . parse . BS.pack
@@ -55,6 +62,9 @@ parseSexp = either (Left . fst) go . parse . BS.pack
   go = \case
     [s] -> return s
     _   -> expected "Single SExp"
+
+sexpBlock :: P Block
+sexpBlock = fmap Cmd . sexpCmd
 
 sexpCmd :: P Cmd
 sexpCmd = \case
@@ -111,31 +121,6 @@ readBS t = either (const $ expected t) Right . readEither . BS.unpack
 
 -- }}}
 
-class HasType t where
-  type_ :: t -> String
-
-instance HasType Cmd where
-  type_ = \case
-    Use v -> "(Acc " ++ type_ v ++ ")"
-
-instance HasType Vec where
-  type_ (Vec t sh _) = "(Array " ++ type_ sh ++ " " ++ type_ t ++ ")"
-
-instance HasType Type where
-  type_ = \case
-    Dbl -> "Double"
-
-instance HasType Shape where
-  type_ = go . getShape
-    where
-    go :: [Int] -> String
-    go = \case
-      []   -> "Z"
-      _:ns -> "(Int :. " ++ go ns ++ ")"
-
-instance HasType Datum where
-  type_ = \case
-    Double _ -> "Double"
 
 {-
 

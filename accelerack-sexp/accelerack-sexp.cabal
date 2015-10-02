@@ -29,7 +29,8 @@ test-suite test-accelerack-sexp
     hs-source-dirs: tests/ 
                     
     build-depends: accelerack-sexp
-    build-depends: base >= 4.6 && < 4.9
+    build-depends: base >= 4.6 && < 4.9,
+                   hint -any
 --                   , containers >= 0.5
 --                   , vector >=0.10
 --                   , random

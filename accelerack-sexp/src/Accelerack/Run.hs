@@ -7,6 +7,14 @@ import Language.Haskell.Interpreter
 import Accelerack.Parse
 import Accelerack.Gen
 
+dataList :: IO (Either InterpreterError ())
+dataList = runInterpreter $ do
+  setImportsQ [("Prelude",Nothing),("Data.List",Just "L")]
+  res1 <- interpret "L.map (+1) [1..4]" (as :: [Int])
+  liftIO $ print res1
+  res2 <- eval "L.map (+2) [3..8]"
+  liftIO $ putStrLn res2
+
 accelerack :: String -> IO ()
 accelerack s = do
   b <- parsedBlock

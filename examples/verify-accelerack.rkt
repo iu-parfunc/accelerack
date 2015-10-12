@@ -1,14 +1,13 @@
 #lang racket
 
+(require ffi/unsafe)
+
 (provide verify-accelerack)
 
-(define (verify-accelerack exp)
-  ;(lambda (exp)
-    (define types '(_double _Double _int _Int))
-    
+(define (verify-accelerack exp)    
     (define check-type
       (lambda (type)
-        (if (member type types) #t #f)))
+        (if (ctype? type) #t #f)))
     
     (define check-shape
       (lambda (shape)
@@ -17,14 +16,22 @@
           ((exact-integer? (car shape)) (and #t (check-shape (cdr shape))))
           (else #f))))
     
-    (define dblvector?
+    (define dbl_vector?
       (lambda (vec-list)
         (cond
           ((null? vec-list) #t)
-          ((pair? (car vec-list)) (and (dblvector? (car vec-list)) (dblvector? (cdr vec-list))))
-          ((double-flonum? (car vec-list)) (dblvector? (cdr vec-list)))
+          ((pair? (car vec-list)) (and (dbl_vector? (car vec-list)) (dbl_vector? (cdr vec-list))))
+          ((double-flonum? (car vec-list)) (dbl_vector? (cdr vec-list)))
           (else #f))))
-    
+
+    (define int_vector?
+      (lambda (vec-list)
+        (cond
+          ((null? vec-list) #t)
+          ((pair? (car vec-list)) (and (int_vector? (car vec-list)) (int_vector? (cdr vec-list))))
+          ((exact-integer? (car vec-list)) (int_vector? (cdr vec-list)))
+          (else #f))))  
+  
     (define check-length
       (lambda (vec-list shape)
         (cond
@@ -37,14 +44,22 @@
     (define check-exp
       (lambda (exp shape type)
         (if (check-length exp shape)
-            (if (dblvector? exp)
-                #t
-                (error 'verify-accelerack "failed ! Invalid expression: double expected"))
-            (error 'verify-accelerack "failed ! Invalid expression: length mismatch"))))
+            (if (if (equal? type _int) (int_vector? exp) (if (equal? type _double) (dbl_vector? exp) #f))
+                '(#t)
+                '(#f "failed ! Invalid expression: type mismatch"))
+            '(#f "failed ! Invalid expression: length mismatch"))))
     
     (match exp
-      [`(use (vector ,type ,shape ,exp ...)) #:when (list? shape)
-         (if (and (check-type type) (check-shape shape) (check-exp exp shape type))
-             exp
-             (error 'verify-accelerack "failed ! Invalid expression ~a" exp))]
-      [`,no-match (error 'verify-accelerack "failed ! Invalid expression ~a" no-match)]))
+      [`#(,type ,shape ,exp ...) #:when (list? shape)
+         (let ((val (if (check-type type) 
+                      (if (check-shape shape)
+                          (let ((ret (check-exp (car exp) shape type)))
+                               (if (car ret)
+                                  '(#t)
+                                   ret))
+                         '(#f "failed ! Invalid Shape"))
+                     '(#f "failed ! Invalid Type"))))
+             (if (car val)
+             (car exp)
+            `(#f ,(cadr val))))]
+      [`,no-match '(#f "failed ! Invalid expression ~a" no-match)]))

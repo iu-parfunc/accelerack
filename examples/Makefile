@@ -1,7 +1,8 @@
 so:
-	ghc --make Capi.hs -o libcapi.so -shared -dynamic -fPIC -lHSrts-ghc7.10.2
+	gcc -shared -fPIC -o libacclib.so acclib.c
 test: so
-	racket ffi-test.rkt
-ctest: clean test
+	racket accelerack.rkt
+	racket allocate.rkt
+	racket verify-accelerack.rkt
 clean:
-	rm *.hi *.o *_stub.h *.so
+	rm *.so

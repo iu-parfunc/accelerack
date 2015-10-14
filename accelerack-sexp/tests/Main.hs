@@ -9,7 +9,15 @@ import Accelerack.Gen
 import Accelerack.Run
 
 main :: IO ()
+-- <<<<<<< HEAD
 main = do test1; test2; test4
+-- =======
+-- main = do 
+--   def <- runInterpreter $ getLoadedModules
+--   putStrLn $ "Default loaded modules: "++show def
+-- 
+--   test1; test2; test3
+-- >>>>>>> ad2dab04d099864110bd9732dcc34bf97a416906
 
 test1 = interp $ do
   setImportsQ [("Data.List",Just "L")]

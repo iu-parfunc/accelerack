@@ -14,10 +14,10 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Lib
 import Language.Haskell.TH.Ppr
 
-runTest :: IO String
-runTest = case parseAccel test of
+runTest :: String -> IO ()
+runTest s = case parseAccel s of
   Left err -> fail $ "Error: " ++ err
-  Right b  -> qprint $ genBlock b
+  Right b  -> putStrLn =<< qprint (genBlock b)
 
 qprint :: Ppr a => Q a -> IO String
 qprint q = do

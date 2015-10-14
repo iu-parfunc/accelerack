@@ -9,21 +9,22 @@ import Accelerack.Gen
 import Accelerack.Run
 
 main :: IO ()
-main = do test1; test2; test3
+main = do test1; test2; test4
 
-test1 =
-  interp $ do
-    setImportsQ [("Data.List",Just "L")]
-    interpret "L.map (+1) [1..4]" (as :: [Int])
+test1 = interp $ do
+  setImportsQ [("Data.List",Just "L")]
+  interpret "L.map (+1) [1..4]" (as :: [Int])
 
-test2 = 
-  interp $ do
-    setImportsQ [("Data.List",Just "L")]
-    eval "map (+2) [3..8]"
+test2 = interp $ do
+  setImportsQ [("Data.List",Just "L")]
+  eval "map (+2) [3..8]"
 
-test3 = interp $ 
-  do setImports ["Prelude", "Data.Array.Accelerate", "Data.Array.Accelerate.Interpreter"] 
-     eval "run $ generate (index1 10) (\\ x -> x) :: (Vector ((:.) Z Int))"
+test3 = interp $ do 
+  setImports ["Prelude", "Data.Array.Accelerate", "Data.Array.Accelerate.Interpreter"] 
+  eval "run $ generate (index1 10) (\\ x -> x) :: (Vector ((:.) Z Int))"
+
+test4 = interp $ do
+  getModuleExports "Data.Array.Accelerate"
 
 -- Should print:
 -- Right "Array (Z :. 10) [Z :. 0,Z :. 1,Z :. 2,Z :. 3,Z :. 4,Z :. 5,Z :. 6,Z :. 7,Z :. 8,Z :. 9]"

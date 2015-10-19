@@ -5,21 +5,21 @@ typedef enum
     , BOOL   = 2
     } scalar;
 
-typedef enum
-  { SCALAR = 0
-  , TUPLE  = 1
-  } type_tag;
-
-typedef struct accel_tuple {
-    int tuple_length;
-    type *tuple_types;
+typedef struct array_data {
+    scalar *type;
+    void *data;
 };
 
-typedef struct accel_type {
-    type_tag tag;
-    union {
-        accel_tuple *tuple;
-        accel_scalar scalar;
-    } type;
+typedef struct array {
+    int *shape;
+    array_data *data;
 };
+
+// typedef struct accel_type {
+//     type_tag tag;
+//     union {
+//         accel_tuple *tuple;
+//         accel_scalar scalar;
+//     } type;
+// };
 

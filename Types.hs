@@ -1,82 +1,87 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Types where
 
 import Foreign.C
 import Foreign.Ptr
+import Foreign.Marshal.Array
 import Foreign.Storable
-import Control.Monad
 
-data Type
-  = Tuple  Tup
-  | Scalar Scalar
-  deriving (Eq,Ord,Show)
+-- Arr {{{
 
-instance Storable Type where
-  sizeOf _ = szInt
-           + max szInt
-                 (sizeOf (undefined :: Ptr ()))
-  alignment _ = 8
-  peek p = do
-    tag :: CInt <- peek $ castPtr p
-    case tag of
-      -- SCALAR
-      0 -> Scalar <$> peekByteOff (castPtr p) szInt
-      -- TUPLE
-      1 -> Tuple  <$> peekByteOff (castPtr p) szInt
-      _ -> fail $ "Unrecognized Type tag: " ++ show tag
-  poke p = \case
-    Scalar s -> do
-      poke (castPtr p :: Ptr CInt) 0
-      pokeByteOff p szInt p
-    Tuple  t -> do
-      poke (castPtr p :: Ptr CInt) 1
-      pokeByteOff p szInt p
+data Arr = Arr
+  { arrShape :: [Int]
+  , arrData  :: [Vec]
+  }
 
-newtype Tup = Tup
-  { getTuple :: [Type]
-  } deriving (Eq,Ord,Show)
+peekArr :: Ptr a -> IO Arr
+peekArr p = do
+  psh <- peekByteOff p 0
+  pvs <- peekArray0 nullPtr (p `plusPtr` ptrSize)
+  sh  <- peekShape psh
+  let len = product sh
+  Arr sh <$> mapM (peekVec len) pvs
 
-instance Storable Tup where
-  sizeOf    _ = szInt + szPtr
-  alignment _ = 8
-  peek p = do
-    len :: CInt <- peek $ castPtr p
-    let offs = take (fromCInt len) $ iterate (szPtr +) szInt
-    fmap Tup $ forM offs $ peekByteOff (castPtr p)
-  poke p (Tup ts) = do
-    let len = toCInt $ length ts
-    poke (castPtr p) len
-    let ots = zip (iterate (szPtr +) szInt) ts
-    forM_ ots $ \(off,t) -> pokeByteOff p off t
+peekShape :: Ptr CInt -> IO [Int]
+peekShape = fmap (map fromCInt) . peekArray0 (-1)
 
-data Scalar
-  = Double
-  | Bool
-  | Int
-  deriving (Eq,Ord,Show,Bounded,Enum)
+-- }}}
 
-instance Storable Scalar where
-  sizeOf    _ = szInt
-  alignment _ = alignment (undefined :: CInt)
-  peek p = do
-    i :: CInt <- peek $ castPtr p
-    when (i < minBound || i > maxBound)
-      $ fail $ "Unrecognized Scalar type: " ++ show i
-    return $ fromCInt i
-  poke p = poke (castPtr p) . toCInt
+-- Scalar {{{
 
-toCInt :: Enum a => a -> CInt
-toCInt = toEnum . fromEnum
+data Scalar a where
+  Double :: Scalar Double
+  Int    :: Scalar Int
+  Bool   :: Scalar Bool
+
+deriving instance Eq   (Scalar a)
+deriving instance Ord  (Scalar a)
+deriving instance Show (Scalar a)
+
+peekScalar :: Ptr a -> IO AScalar
+peekScalar p = do
+  i :: CInt <- peek $ castPtr p
+  case i of
+    0 -> return $ AScalar Double
+    1 -> return $ AScalar Int
+    2 -> return $ AScalar Bool
+    _ -> fail $ "Unknown type tag: " ++ show i
+
+-- }}}
+
+-- Vec {{{
+
+data Vec where
+  (:::) :: Scalar a -> [a] -> Vec
+infixr 5 :::
+
+data AScalar where
+  AScalar :: Storable a => Scalar a -> AScalar
+
+withScalar :: AScalar -> (forall a. Storable a => Scalar a -> r) -> r
+withScalar (AScalar t) f = f t
+
+peekVec :: Int -> Ptr a -> IO Vec
+peekVec len p = do
+  t  <- peekScalar p
+  withScalar t $ \typ -> do
+    p' <- peekByteOff p ptrSize
+    (:::) typ <$> peekArray len p'
+
+-- }}}
 
 fromCInt :: Enum a => CInt -> a
 fromCInt = toEnum . fromEnum
 
-szInt :: Int
-szInt = sizeOf (undefined :: CInt)
+toCInt :: Enum a => a -> CInt
+toCInt = toEnum . fromEnum
 
-szPtr :: Int
-szPtr = sizeOf (undefined :: Ptr ())
+ptrSize :: Int
+ptrSize = sizeOf nullPtr
 

@@ -12,4 +12,8 @@ ak cell er ate rack et
 
 C Bindings for Accelerate, Racket Frontend to Accelerate
 
-sharedlib shows how to initialize the Haskell runtime and call an exported Haskell function.  It also demonstrates how to create and use a shared library.
+acc_hs  holds Haskell-side code
+acc_rkt holds Racket-side
+test directory holds common tests,
+test subdirectories hold language and feature specific tests.
+

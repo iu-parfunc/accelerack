@@ -2,7 +2,7 @@
 
 (require ffi/unsafe)
 (require "allocate.rkt")
-(require "unzip_tuple.rkt")
+(require "ArrayUtils.rkt")
 
 (provide verify-accelerack)
 
@@ -78,7 +78,7 @@
                         (if (equal? type _double) (dbl_vector? exp) 
                             #f))
                     (begin
-                      (printf "comes here")
+                      ;;(printf "comes here")
                     (check-tuple-expr type (unzip exp))))
                 '(#t)
                 '(#f "failed ! Invalid expression: type mismatch"))

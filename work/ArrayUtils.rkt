@@ -1,0 +1,220 @@
+#lang racket
+
+(require ffi/unsafe)
+(require (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
+(require "acc_header.rkt")
+
+(provide
+  unzip
+  zip
+  append-end
+  scalar?
+  string->ctype
+  ctype->symbol
+  symbol->ctype
+  mapType
+  ptr-ref*
+  list->md_array
+  md_array-length
+  getType
+  getDimension
+  getData)
+  
+
+;; Create empty list preserving structure of the data list 
+;; Arguments -> (empty list, list containing the payload)
+;; Return value -> list enclosing empty lists preserving the structure of data list
+
+(define (create-ls fin-ls data-ls)
+  (cond
+    ((null? data-ls) fin-ls)
+    ((pair? (car data-ls)) (cons (create-ls '() (car data-ls)) (create-ls fin-ls (cdr data-ls))))
+    (else (create-ls (cons '() fin-ls) (cdr data-ls)))))
+
+
+;; Insert to the end of the list
+;; Arguments -> (element e, list l)
+;; Return value -> list with e inserted at the end of l
+
+(define (append-end x ls)
+  (append ls (list x)))
+
+
+;; Distribute data list elements into new list structure
+;; Arguments -> (empty list, list containing the payload)
+;; Return value -> list enclosing the data populated into new structures
+
+(define (populate fin-ls data-ls)
+  (cond
+    ((null? data-ls) '())
+    ((pair? (car data-ls)) (cons (populate (car fin-ls) (car data-ls)) (populate (cdr fin-ls) (cdr data-ls))))
+    (else (cons (append-end (car data-ls) (car fin-ls)) (populate (cdr fin-ls) (cdr data-ls))))))
+
+
+;; Flatten the tuple list
+;; Arguments -> (list containing the payload)
+;; Return value -> list enclosing the flattened tuple data
+
+(define (unzip ls)
+ (letrec ((fin-ls (reverse (create-ls '() (reverse (car ls))))))
+         (foldl (lambda (x y) (populate y x)) fin-ls ls)))
+
+
+;; Zip the first element of each member in the data list
+;; Arguments -> (empty list, list containing the payload)
+;; Return value -> list enclosing first element of each member from data list zipped into new structure
+
+(define (zip-first fin-ls data-ls)
+  (cond
+    ((null? data-ls) '())
+    ((pair? (caar data-ls)) (cons (zip-first '() (car data-ls)) (zip-first fin-ls (cdr data-ls))))
+    (else (cons (caar data-ls) (zip-first fin-ls (cdr data-ls))))))
+
+
+;; Delete the first element of each member in the data list
+;; Arguments -> (list containing the payload)
+;; Return value -> list with first element removed from each member
+
+(define (delete-first data-ls)
+  (cond
+    ((null? data-ls) '())
+    ((pair? (caar data-ls)) (cons (delete-first (car data-ls)) (delete-first (cdr data-ls))))
+    (else (cons (cdar data-ls) (delete-first (cdr data-ls))))))
+
+
+;; Zip the list elements into original form from the flattened version
+;; Arguments -> (list containing the payload in flattened form)
+;; Return value -> list with data unraveled to original structure
+
+(define (zip ls)
+  (cond
+    ((null? (car ls)) '())
+    (else (cons (zip-first '() ls) (zip (delete-first ls))))))
+
+
+;; Function to check whether given type is scalar
+;; Arguments -> type
+;; Return value -> true for base ctypes
+;;                 false for other types
+
+(define (scalar? type)
+  (letrec ([check-type (lambda(i) (cond
+                                    ((equal? i scalar-length) #f)
+                                    ((equal? ((ctype-c->scheme scalar) i) type) #t)
+                                    (else (check-type (add1 i)))))])
+          (check-type 0)))
+
+
+;; Converts from string (corresponding to haskell type) to racket ctype
+;; Arguments -> string
+;; Return value -> ctype
+
+(define (string->ctype str)
+  (cond
+    ((equal? str "Double") _double)
+    ((equal? str "Int") _int)
+    ((equal? str "Bool") _bool)
+    (else #f)))
+
+
+;; Converts from ctype to symbol
+;; Arguments -> ctype
+;; Return value -> symbol
+
+(define (ctype->symbol type)
+  (cond
+    ((equal? _double type) '_double)
+    ((equal? _int type) '_int)
+    ((equal? _bool type) '_bool)
+    ((equal? _c-vector type) '_tuple)))
+
+
+;; Converts from symbol to ctype
+;; Arguments -> symbol
+;; Return value -> corresponding ctype
+
+(define (symbol->ctype type)
+  (cond
+    ((equal? '_double type) _double)
+    ((equal? '_int type) _int)
+    ((equal? '_bool type) _bool)
+    ((equal? '_gcpointer type) _gcpointer)))
+
+
+;; Map the scalar enum value to corresponding ctype
+;; Arguments -> scalar enum [int value]
+;; Return value -> ctype
+
+(define (mapType type)
+  (cond
+    ((equal? type 0) _c-vector-pointer)
+    ((equal? type 1) _gcpointer)
+    ((equal? type 2) _double)
+    ((equal? type 3) _int)
+    ((equal? type 4) _bool)
+    ((equal? type 5) '_scalar)
+    ((equal? type 6) '_tuple)))
+
+
+;; Iteratively reads the given memory location for given length
+;; Invalid length can lead to memory corruption and segmentation fault
+;; Arguments -> (cpointer, type, initial index for iteration, length)
+;; Return value -> list containing the values read from the memory location
+
+(define (ptr-ref* cptr type itr length)
+  (cond
+    ((zero? length) '())
+    (else (cons (ptr-ref cptr type itr) (ptr-ref* cptr type (add1 itr) (sub1 length))))))
+
+
+;; Converts a flattened list into its original unflattened version
+;; Arguments -> (flattened payload list, shape)
+;; Return value -> list in its original unflattened form
+
+(define (list->md_array data shape)
+  (if (null? shape)
+      data
+      (if (= (car shape) 0)
+          '()
+          (let* ((len (length shape)) 
+                 (func (if (= 1 (length shape))
+                           append
+                           cons)))
+              (func (list->md_array (take data (/ (length data) (car shape)))
+                                (cdr shape))
+                    (list->md_array (drop data (/ (length data) (car shape)))
+                                (cons (- (car shape) 1) (cdr shape))))))))
+
+
+;; Calculate the length of a flattened nested list
+;; Arguments -> shape
+;; Return value -> length of the flattened version
+
+(define md_array-length
+  (lambda (ls)
+    (cond
+      ((null? ls) 1)
+      (else (* (car ls) (md_array-length (cdr ls)))))))
+
+
+;; Return type of c-array pointer reference
+;; Arguments -> pointer to c-array
+;; Return value -> type
+
+(define (getType c-ref)
+  (c-array-type c-ref))
+
+
+;; Return shape of c-array pointer reference
+;; Arguments -> pointer to c-array
+;; Return value -> shape
+
+(define (getDimension c-ref)
+  (c-array-shape c-ref))
+
+;; Return payload of c-array pointer reference
+;; Arguments -> pointer to c-array
+;; Return value -> data
+
+(define (getData c-ref)
+  (c-array-data c-ref))

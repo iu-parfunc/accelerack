@@ -1,143 +1,107 @@
 #lang racket
 
-(require ffi/unsafe ffi/unsafe/define ffi/unsafe/cvector ffi/vector)
+(require ffi/unsafe ffi/unsafe/cvector)
 (require (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
+(require "acc_header.rkt")
+(require "ArrayUtils.rkt")
 
 (provide acc_alloc
-         list->md_array
-         getType
-         getData
-         getDimension
-         cptr
-         string->ctype
-         ctype->symbol
-         ptr-ref*
-         scalar?)
+         generatePayload
+         readData
+         readData*)
 
-(define-cstruct _c-array
-  ([length _int] ;; length of the Dimension list
-   [type _string]
-   [dimension _gcpointer]
-   [data _gcpointer]))
+;; Helper to generatePayload function
+;; Arguments -> (list containing the payload, type, initial empty list)
+;; Return value -> pointer to c-vector containing the payload informations 
 
-(define-cstruct _tuple
-   ([length _int]
-    [data _gcpointer]))
-
-(define _scalar
-  (_enum '(_double _int _bool)))
-
-(define scalar-length 3)
-
-(define _type
-  (_union _tuple-pointer _scalar))
-
-(define-struct type
-  (tuple
-   scalar))
-
-;;(define types '(("Double" _double) ("Int" _int)))
-
-(define libacclib (ffi-lib "libacclib"))
-(define-ffi-definer define-libintegrator libacclib)
-;;(define-libintegrator createStruct (_fun _pointer _pointer _string _string -> _c-array-pointer))
-(define-libintegrator modify (_fun _c-array-pointer _int _string -> _string))
-(define-libintegrator setType (_fun _tuple-pointer _scalar -> _type))
-
-(define (scalar? type)
-  (letrec ([check-type (lambda(i) (cond
-                                    ((equal? i scalar-length) #f)
-                                    ((equal? ((ctype-c->scheme _scalar) i) type) #t)
-                                    (else (check-type (add1 i)))))])
-          (check-type 0)))
-  
-(define (string->ctype str)
+(define (generatePayload-helper data type payload)
   (cond
-    ((equal? str "Double") _double)
-    ((equal? str "Int") _int)
-    ((equal? str "Bool") _bool)
-    (else #f)))
+    ((null? type) (make-c-vector (length payload) 0 (cvector-ptr (list->cvector payload _c-vector-pointer))))
+    ((equal? '_tuple (car type)) (generatePayload-helper data (cdr type) payload))
+    ((pair? (car type)) (let ([payload* (generatePayload-helper (car data) (car type) '())])
+                             (generatePayload-helper (cdr data) (cdr type) (append-end payload* payload))))
+    (else (generatePayload-helper (cdr data) (cdr type) 
+             (append-end (make-c-vector (length (car data)) 
+                                     ((ctype-scheme->c scalar) (car type)) 
+                                     (cvector-ptr (list->cvector (car data) (symbol->ctype (car type)))))
+                          payload)))))
 
-(define (ctype->symbol type)
+;; Stores the payload information into c-vector structure
+;; Arguments -> (list containing the payload, type, initial empty list)
+;; Return value -> pointer to c-vector containing the payload informations 
+
+(define (generatePayload data type payload)
+  (if (ctype? type)
+      (make-c-vector 
+        (length data) 
+        ((ctype-scheme->c scalar) (ctype->symbol type)) 
+        (cvector-ptr (list->cvector data type)))
+      (generatePayload-helper data type payload)))
+
+
+;; Helper to readData function
+;; Arguments -> list containing c-vector pointers
+;; Return value -> list with data read from memory pointed by c-vector pointers
+
+(define (readData-helper ls)
   (cond
-    ((equal? _double type) '_double)
-    ((equal? _int type) '_int)
-    ((equal? _bool type) '_bool)
-    ((equal? _tuple type) '_tuple)))
+    ((null? ls) '())
+    ((let ([element (ptr-ref (c-vector-data (car ls)) (mapType (c-vector-type (car ls))))])
+          (and (not (boolean? element)) 
+               (cpointer? element))) 
+     (cons (readData-helper 
+             (ptr-ref* 
+               (c-vector-data (car ls)) 
+               (mapType (c-vector-type (car ls))) 
+               0 
+               (c-vector-length (car ls))))
+           (readData-helper (cdr ls))))
+    (else (cons (ptr-ref* 
+                  (c-vector-data (car ls)) 
+                  (mapType (c-vector-type (car ls))) 
+                  0 
+                  (c-vector-length (car ls)))
+                (readData-helper (cdr ls))))))
 
-;(define (create-tuple tuple cvec)
-;  (cond
-;    ((null? tuple) (make-tuple (length cvec) (cvector-ptr (list->cvector cvec _string))))
-;    ((equal? (car tuple) '_tuple) (create-tuple (cdr tuple) cvec))
-;    ((pair? (car tuple)) (cons 
-(define types
-  (list->cvector (map symbol->string '(_int _bool)) _string))
 
-(define tuple-ptr
-  (make-tuple 16 (cvector-ptr types)))
+;; Read data from given memory location
+;; Arguments -> c-vector pointer
+;; Return value -> list with data read from given memory location
 
-(define cvalue
-  (setType tuple-ptr '_bool))
-  ;;(ptr-ref (setType type_str '_bool) _type 0))
+(define (readData cptr)
+  (letrec ([len (c-vector-length cptr)]
+           [cptr* (c-vector-data cptr)]
+           [type (mapType (c-vector-type cptr))]
+           [data (ptr-ref* cptr* type 0 len)])
+          (if (ctype? type)
+              (ptr-ref* cptr* type 0 len)
+              (readData-helper data))))
 
-(define rvalue
-  (make-type tuple-ptr '_bool))
 
-(define union-types
-  (lambda (types)
-    (let ((type-ptr (cvector-ptr types))
-          (tuple-ptr (make-tuple 16 (cvector-ptr types))))
-         (letrec ((cval (setType tuple-ptr '_bool))
-                  (rval (make-type  tuple-ptr '_bool)))
-          #t))))
+;; Read data from given memory location
+;; Arguments -> c-array pointer
+;; Return value -> list with data read from given memory location
 
-(define cptr "")
+(define (readData* cptr)
+  (letrec ([type (mapType (c-array-type cptr))]
+           [data-ptr (c-array-data cptr)]
+           [shape-ptr (c-array-shape cptr)]
+           [data (readData data-ptr)]
+           [shape (readData shape-ptr)])
+          (if (equal? type '_scalar)
+              (list->md_array data shape)
+              (zip (readData-helper data)))))
 
-(define get-length
-  (lambda (ls)
-    (cond
-      ((null? ls) 1)
-      (else (* (car ls) (get-length (cdr ls)))))))
 
-(define (ptr-ref* cptr type itr length)
-  (cond
-    ((zero? length) '())
-    (else (cons (ptr-ref cptr type itr) (ptr-ref* cptr type (add1 itr) (sub1 length))))))
+;; Allocate memory for the payload
+;; Arguments -> (type, shape,  payload, expression)
+;; Return value -> pointer to allocated memory location
 
-(define (acc_alloc _type _dimension _data exp) 
+(define (acc_alloc _type _shape _data exp) 
     (let
-      ((vec (list->cvector (flatten _data) _type))
-       (expr exp)
-       (dimension (list->cvector _dimension _int)))
-      (letrec
-       ((c-ref (make-c-array (length _dimension) "Double" (cvector-ptr dimension) (cvector-ptr vec)))
-        (type (if (equal? _type _int) "Int" "Double")))
-       (begin
-         (set! cptr c-ref)
-         ;;(modify c-ref (get-length _dimension) type)
-         (list->md_array (ptr-ref* (c-array-data c-ref) _double 0 (get-length _dimension)) _dimension)
-         (list->md_array (ptr-ref* (getData c-ref) _double 0 (get-length _dimension)) _dimension)
-         ))))
-
-(define (getType c-ref)
-  (c-array-type c-ref))
-
-(define (getDimension c-ref)
-  (c-array-dimension c-ref))
-
-(define (getData c-ref)
-  (c-array-data c-ref))
-
-(define (list->md_array data dimension)
-  (if (null? dimension)
-      data
-      (if (= (car dimension) 0)
-          '()
-          (let* ((len (length dimension)) 
-                 (func (if (= 1 (length dimension))
-                           append
-                           cons)))
-              (func (list->md_array (take data (/ (length data) (car dimension)))
-                                (cdr dimension))
-                    (list->md_array (drop data (/ (length data) (car dimension)))
-                                (cons (- (car dimension) 1) (cdr dimension))))))))
+      ([type (if (ctype? _type) ((ctype-scheme->c scalar) '_scalar) ((ctype-scheme->c scalar) '_tuple))]
+       [shape-ptr (generatePayload _shape _int '())]
+       [data-ptr (if (ctype? _type) (generatePayload (flatten _data) _type '()) (generatePayload (unzip _data) _type '()))]
+       [expr exp])
+      (make-c-array type shape-ptr data-ptr)))
+     

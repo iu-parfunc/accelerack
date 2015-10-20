@@ -3,6 +3,8 @@
 (require ffi/unsafe)
 (require "verify-accelerack.rkt")
 (require "allocate.rkt")
+(require "ArrayUtils.rkt")
+(require "acc_header.rkt")
 
 (provide acc
          generate)
@@ -74,3 +76,8 @@
 (define-syntax (_tuple stx)
   (syntax-case stx ()
     [(_ type ...) #'(cons '_tuple (map map-type (list type ...)))]))
+
+(acc (define x (use (vector _double '(2 3) '((2.0 3.2 11.2) (50.1 2.1 41.9))))))
+(readData* x)
+(acc (define y (use (vector (_tuple _int (_tuple _int _bool _bool)) '(3 2) '((2 (2 #t #f)) (1 (3 #f #f)) (4 (16 #t #f)))))))
+(readData* y)

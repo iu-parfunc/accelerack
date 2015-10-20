@@ -6,20 +6,14 @@ typedef enum
     } scalar;
 
 typedef struct array_data {
-    scalar *type;
+    scalar type;
     void *data;
 };
 
 typedef struct array {
+    int shape_length;
     int *shape;
+    int data_length;
     array_data *data;
 };
-
-// typedef struct accel_type {
-//     type_tag tag;
-//     union {
-//         accel_tuple *tuple;
-//         accel_scalar scalar;
-//     } type;
-// };
 

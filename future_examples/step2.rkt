@@ -12,7 +12,7 @@
 ;; The following returns #t:
 (procedure? sqr)
 
-(define-acc vec2 (map add1 vec))
+(define-acc vec2 (map sqr vec))
 
 ;; This should still be true, whether or not the computation
 ;; has happened eagerly or lazily:

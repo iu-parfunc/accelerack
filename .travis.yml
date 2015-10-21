@@ -14,10 +14,10 @@ before_install:
 
 install:
   - pwd
-  - cd acc_hs/
-  - stack setup --no-terminal 
-  - stack test --only-snapshot --no-terminal 
+  - cd acc_hs  && ./.prevalidate.sh && cd ..
+  - cd acc_rkt && ./.prevalidate.sh && cd ..
 
 script:
   - pwd 
-  - stack test --no-terminal 
+  - cd acc_hs  && ./.mainvalidate.sh && cd ..
+  - cd acc_rkt && ./.mainvalidate.sh && cd ..

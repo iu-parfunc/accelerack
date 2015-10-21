@@ -7,8 +7,10 @@ set -xe
 
 which -a stack
 
-cd acc_hs/
-stack setup --no-terminal 
-stack test --only-snapshot --no-terminal 
+TOP=`pwd`
 
-stack test --no-terminal 
+cd $TOP/acc_hs/
+./validate.sh
+
+cd $TOP/acc_rkt/
+./validate.sh

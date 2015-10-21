@@ -1,6 +1,4 @@
-[submodule "deps/sexp"]
-	path = deps/sexp
-	url = git@github.com:scvalex/sexp.git
 [submodule "acc_hs/deps/sexp"]
 	path = acc_hs/deps/sexp
-	url = git@github.com:scvalex/sexp.git
+#	url = git@github.com:scvalex/sexp.git
+        url = https://github.com/scvalex/sexp.git

@@ -7,4 +7,4 @@ test: so
 	racket allocate.rkt
 	racket verify-accelerack.rkt
 clean:
-	rm *.so
+	rm -f *.so

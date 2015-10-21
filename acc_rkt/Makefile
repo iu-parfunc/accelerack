@@ -1,5 +1,10 @@
+
+
+.PHONY: so clean test
+
 so:
 	gcc -shared -fPIC -o libacc.so acc_cfile.c
+
 test: so
 	racket acc_header.rkt
 	racket ArrayUtils.rkt

@@ -1,12 +1,14 @@
 #lang racket
 
-(require ffi/unsafe)
+(require ffi/unsafe
+         ffi/unsafe/define )
 (require "verify-accelerack.rkt")
 (require "allocate.rkt")
 (require "ArrayUtils.rkt")
 (require "acc_header.rkt")
 
 (provide acc
+         _tuple
          generate)
 
 (define generate build-list)
@@ -18,19 +20,29 @@
     (equal? (hash-ref ht id UNDEFINED) UNDEFINED))
   )
 
+(define libacclib (ffi-lib "libacc"))
+(define-ffi-definer define-libintegrator libacclib)
+(define-libintegrator rkt_handler (_fun _c-array-pointer _string -> _void))
+
 (define-syntax (acc stx)
   (syntax-case stx (define view load run get)
     
     ;Redefinitions are ignored.  Should throw an error.
     ; - but DrRacket's error-handling of redefinitions works well.  Comment out the guard and see.
-    [(acc (define x (use (vector type shape data)))) (identifier? #'x)
+    [(acc (define x (vector type shape data))) (identifier? #'x)
                                 #'(define x (let ((ret (verify-accelerack (vector type shape data))))
                                                  (if (car ret)
                                                      ;;(list->md_array (acc_alloc type shape data "use") shape)
                                                      (acc_alloc type shape data "use")
                                                      (error 'verify-accelerack (cadr ret)))))]
                                 ;#'(verify-accelerack (vector type shape data))
-    ; Variable definition
+    [(acc (map exp data))  #'(cpointer? data)
+                           #'(if (equal? exp 'add1)
+                                 (rkt_handler data "add1")
+                                 (if (equal? exp 'sub1) 
+                                     (rkt_handler data "sub1")
+                                     (error "function not defined")))]
+    ; Variable definition    
     [(acc (define x exp)) (and (identifier? #'x)
                                ; (undefined? (syntax->datum #'x))
                                )
@@ -76,8 +88,3 @@
 (define-syntax (_tuple stx)
   (syntax-case stx ()
     [(_ type ...) #'(cons '_tuple (map map-type (list type ...)))]))
-
-(acc (define x (use (vector _double '(2 3) '((2.0 3.2 11.2) (50.1 2.1 41.9))))))
-(readData* x)
-(acc (define y (use (vector (_tuple _int (_tuple _int _bool _bool)) '(3 2) '((2 (2 #t #f)) (1 (3 #f #f)) (4 (16 #t #f)))))))
-(readData* y)

@@ -7,6 +7,10 @@
 (provide
   unzip
   zip
+  zip-first
+  delete-first
+  create-ls
+  populate
   append-end
   scalar?
   string->ctype
@@ -16,6 +20,7 @@
   ptr-ref*
   list->md_array
   md_array-length
+  get-ctype
   getType
   getDimension
   getData)
@@ -25,11 +30,11 @@
 ;; Arguments -> (empty list, list containing the payload)
 ;; Return value -> list enclosing empty lists preserving the structure of data list
 
-(define (create-ls fin-ls data-ls)
+(define (create-ls data-ls)
   (cond
-    ((null? data-ls) fin-ls)
-    ((pair? (car data-ls)) (cons (create-ls '() (car data-ls)) (create-ls fin-ls (cdr data-ls))))
-    (else (create-ls (cons '() fin-ls) (cdr data-ls)))))
+    ((null? data-ls) '())
+    ((pair? (car data-ls)) (cons (create-ls (car data-ls)) (create-ls (cdr data-ls))))
+    (else (cons '() (create-ls (cdr data-ls))))))
 
 
 ;; Insert to the end of the list
@@ -56,7 +61,7 @@
 ;; Return value -> list enclosing the flattened tuple data
 
 (define (unzip ls)
- (letrec ((fin-ls (reverse (create-ls '() (reverse (car ls))))))
+ (letrec ((fin-ls (create-ls (car ls))))
          (foldl (lambda (x y) (populate y x)) fin-ls ls)))
 
 
@@ -88,7 +93,7 @@
 
 (define (zip ls)
   (cond
-    ((null? (car ls)) '())
+    ((null? (flatten ls)) '())
     (else (cons (zip-first '() ls) (zip (delete-first ls))))))
 
 
@@ -153,7 +158,15 @@
     ((equal? type 3) _int)
     ((equal? type 4) _bool)
     ((equal? type 5) '_scalar)
-    ((equal? type 6) '_tuple)))
+    ((equal? type 6) '_tuple)
+    ((equal? type 7) '_rkt-vector-pointer)
+    (else 'empty_type)))
+
+(define (get-ctype x)
+  (cond 
+    ((exact-integer? x) '_int)
+    ((double-flonum? x) '_double)
+    ((boolean? x) '_bool)))
 
 
 ;; Iteratively reads the given memory location for given length

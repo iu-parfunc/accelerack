@@ -45,3 +45,9 @@ fi
 echo "Running $RUN_INSTALLER to install Racket:"
 
 $RUN_INSTALLER --dest $RACKET_DIR <<EOF
+no
+"$RACKET_DIR"
+
+EOF
+
+exit 0

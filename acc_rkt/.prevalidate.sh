@@ -2,14 +2,22 @@
 
 set -xe
 
-if which racket; then 
+RACKETBIN="$HOME/racket/bin"
+if [ -d $RACKETBIN ]; then
+    export PATH=$RACKETBIN:$PATH
+fi
+
+if which racket; then
   echo "Racket found."
 else
   ./.get_racket.sh
+fi
+
+if [ -d $RACKETBIN ]; then
+    export PATH=$RACKETBIN:$PATH
 fi
 
 racket --version
 
 make clean
 make
-

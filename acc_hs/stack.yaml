@@ -1,6 +1,9 @@
 flags: {}
+
 packages:
-- '.'
-- sexp-0.7/
+ - ./acc-sexp
+ - ./deps/sexp
+
 extra-deps: []
+
 resolver: lts-3.5

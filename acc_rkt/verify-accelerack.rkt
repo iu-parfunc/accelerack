@@ -60,26 +60,33 @@
           ((and (pair? (car vec-list)) (equal? (length vec-list) (car shape))) (not (memv #f (map (lambda (x) (check-length x (cdr shape))) vec-list))))
           ((equal? (length vec-list) (car shape)) #t)
           (else #f))))
+  
+    (define (build-type type ls len shape)
+      (cond
+        ((zero? len) (list->md_array ls shape))
+        (else (build-type type (cons type ls) (sub1 len) shape))))
+
+    (define (verify-type type data)
+      (cond
+        ((equal? '_int type) (exact-integer? data))
+        ((equal? '_double type) (double-flonum? data))
+        ((equal? '_bool type) (boolean? data))))
     
-    (define check-tuple-expr
-      (lambda (type flat-list)
-        (match type
-          (`(_tuple ,x ...) (if (memv #f (map (lambda (y ls) (check-tuple-expr y ls)) x flat-list)) #f #t))
-          (`,x #:when (scalar? x) (if (equal? x '_int) (int_vector? flat-list)
-                                      (if (equal? x '_bool) (bool_vector? flat-list)
-                                          (if (equal? x '_double) (dbl_vector? flat-list) #f))))
-          (`,y #f))))
+    (define (check-tuple-expr type data)
+      (cond
+        ((null? type) #t)
+        ((equal? (car type) '_tuple) (check-tuple-expr (cdr type) data))
+        ((pair? (car type)) (and (check-tuple-expr (car type) (car data)) (check-tuple-expr (cdr type) (cdr data))))
+        (else (and (verify-type (car type) (car data)) (check-tuple-expr (cdr type) (cdr data))))))
 
     (define check-exp
       (lambda (exp shape type)
-        (if (check-length exp shape)
+        (if #t ;;(check-length exp shape)
             (if (if (ctype? type) 
                     (if (equal? type _int) (int_vector? exp) 
                         (if (equal? type _double) (dbl_vector? exp) 
                             #f))
-                    (begin
-                      ;;(printf "comes here")
-                    (check-tuple-expr type (unzip exp))))
+                    (check-tuple-expr (build-type type '() (md_array-length shape) shape) exp))
                 '(#t)
                 '(#f "failed ! Invalid expression: type mismatch"))
             '(#f "failed ! Invalid expression: length mismatch"))))

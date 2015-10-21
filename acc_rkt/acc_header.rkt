@@ -1,6 +1,7 @@
 #lang racket
 
-(require ffi/unsafe)
+(require ffi/unsafe
+         ffi/unsafe/define)
 
 (provide
    _c-array
@@ -15,6 +16,17 @@
    c-vector-type
    c-vector-data
    make-c-vector
+   rkt-vector
+   rkt-vector-length
+   rkt-vector-type
+   rkt-vector-data
+   rkt-vector?
+   make-rkt-vector
+   rkt-array
+   rkt-array-type
+   rkt-array-shape
+   rkt-array-data
+   make-rkt-array
    scalar
    scalar-length)
 
@@ -30,9 +42,22 @@
    [shape _c-vector-pointer]
    [data _c-vector-pointer]))
 
+;; Racket structure to store tuple/scalar information
+(define-struct rkt-vector
+   (length
+    type
+    data))
+
+;; Racket structure to store accelerate arrays information
+(define-struct rkt-array
+  (type
+   shape
+   data))
+
+
 ;; Enum for storing the type of scalar
 (define scalar
-  (_enum '(_tuple-pointer _gcpointer _double _int _bool _scalar _tuple)))
+  (_enum '(_c-vector-pointer _gcpointer _double _int _bool _scalar _tuple _rkt-vector-pointer)))
 
 ;; Number of scalar enum values defined
 (define scalar-length 7)

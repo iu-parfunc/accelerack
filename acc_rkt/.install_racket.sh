@@ -44,12 +44,10 @@ fi
 
 echo "Running $RUN_INSTALLER to install Racket:"
 
-mkdir -p "$RACKET_DIR"
-rm -rf "$RACKET_DIR/*"
+rm -rf "$RACKET_DIR"
 $RUN_INSTALLER --dest $RACKET_DIR <<EOF
 no
 "$RACKET_DIR"
-yes
 
 EOF
 

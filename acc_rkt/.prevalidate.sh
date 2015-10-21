@@ -5,7 +5,7 @@ set -xe
 if which racket; then 
   echo "Racket found."
 else
-  ./.get-racket.sh
+  ./.get_racket.sh
 fi
 
 racket --version

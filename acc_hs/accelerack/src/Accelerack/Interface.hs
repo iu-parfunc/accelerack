@@ -42,7 +42,7 @@ foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
   psh <- peekByteOff p intSize 
   Segment szsh tsh psh' <- peek psh
-  poke psh $ Segment szsh (toEnum 0) psh'
+  poke psh $ Segment (toEnum 0) tsh psh'
 
 add1Array :: Int -> Type (Ptr ()) -> IO ()
 add1Array len = \case

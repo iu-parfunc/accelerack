@@ -4,6 +4,10 @@
 
 module Main where
 
+import Language.Haskell.TH
+import Language.Haskell.TH.Ppr
+import Language.Haskell.Interpreter
+
 import Test.Tasty
 import Test.Tasty.QuickCheck
 import Test.Tasty.HUnit

@@ -22,8 +22,8 @@ parse = either fail return . (runWithKnown known . parseExp <=< lexSexp)
 
 foreign export ccall print_array :: Ptr () -> IO ()
 print_array p = do
-  a <- peekAccArray p
-  printAccArray a
+  a <- peekArrPtrs p
+  printArrPtrs a
 
 {-
 foreign export ccall run_accelerate :: Ptr () -> CString -> FunPtr AllocFun -> IO ()

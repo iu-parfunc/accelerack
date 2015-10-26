@@ -5,14 +5,15 @@ module Accelerack.Marshal where
 import Foreign
 import Foreign.C.Types
 import Foreign.Marshal.Array
+import Control.Applicative
 import Control.Monad
 import qualified Data.List as L
 
-peekAccArray :: Ptr a -> IO AccArray
-peekAccArray p = do
+peekArrPtrs :: Ptr a -> IO ArrPtrs
+peekArrPtrs p = do
   psh  <- peekByteOff p  intSize
   ptyp <- peekByteOff p (intSize + ptrSize)
-  AccArray <$> peekShape psh <*> peekType ptyp
+  ArrPtrs <$> peekShape psh <*> peekType ptyp
 
 peekShape :: Ptr a -> IO [Int]
 peekShape p = do
@@ -32,13 +33,13 @@ peekType p = do
       pts <- peekArray sztyp $ castPtr ptyp
       Tuple <$> mapM peekType pts
 
-data AccArray = AccArray
+data ArrPtrs = ArrPtrs
   { arrShape :: [Int]
   , arrData  :: Type (Ptr ())
   }
 
-printAccArray :: AccArray -> IO ()
-printAccArray a = do
+printArrPtrs :: ArrPtrs -> IO ()
+printArrPtrs a = do
   mapM_ putStrLn
     [ "Array Shape:"
     , renderShape sh

@@ -1,31 +1,24 @@
-#include <stdio.h>
-#include <stdbool.h>
+#include "acc_header.h"
 
-typedef enum
-{
-  tuple_pointer,
-  gcpointer,
-  double_value,
-  int_value,
-  bool_value,
-  scalar,
-  tuple
-}types;
+/*
+#define C_INT 0
+#define C_DOUBLE 1
+#define C_BOOL 2
+#define C_PTR 3
+#define ACC_PAYLOAD_PTR 4
+#define RKT_PAYLOAD_PTR 5
+#define SCALAR_PAYLOAD 6
+#define TUPLE_PAYLOAD 7
+*/
 
-typedef struct
-{
-  int length;
-  int type;
-  void *data;
-}cvector;
-
-typedef struct
-{
-  int type;
-  cvector *shape;
-  cvector *data;
-}carray;
-
+int C_INT = 0;
+int C_DOUBLE = 1;
+int C_BOOL = 2;
+int ACC_PAYLOAD_PTR = 3;
+int SCALAR_PAYLOAD = 4;
+int TUPLE_PAYLOAD = 5;
+int C_PTR = 6;
+int RKT_PAYLOAD_PTR = 7;
 
 void modify_vector (cvector *cv1, int value)
 {
@@ -33,7 +26,7 @@ void modify_vector (cvector *cv1, int value)
 
   switch (cv1->type)
   {
-    case tuple_pointer:
+    case acc_payload_ptr:
     {
       cvector **data = (cvector**) cv1->data;
 
@@ -51,7 +44,7 @@ void modify_vector (cvector *cv1, int value)
 
       for (i = 0; i < cv1->length; i++)
       {
-	data[i] += (double) value;
+	data[i] += (		double) value;
       }
 
       break;
@@ -108,3 +101,4 @@ void rkt_handler (carray *c1, char *expr)
 {
   modify_array(c1, expr);
 }
+

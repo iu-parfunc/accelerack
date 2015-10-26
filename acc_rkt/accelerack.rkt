@@ -8,6 +8,7 @@
 (require "acc_header.rkt")
 
 (provide acc
+         array
          _tuple
          generate)
 
@@ -24,16 +25,52 @@
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator rkt_handler (_fun _c-array-pointer _string -> _void))
 
+;; TODO - Need to rework the macros
+
+(define (process-data data)
+  (match data
+    ((list (list x ...) ...) (map process-data x))
+    (`(,x ...) (map process-data x))
+    (`,x (if (or (pair? x) (vector? x)) (vector->list* x) x))))
+
+(define-syntax (array stx)
+  (syntax-case stx ()
+
+    [(array (shape ...) type (data ...))
+                           #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
+                                                                 (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
+                                                (if (car ret)
+                                                      (acc_alloc type (syntax->datum (syntax (shape ...))) data* "use")
+                                                      (error 'verify-accelerack (cadr ret))))]
+    [(array (shape ...) type data)
+                           #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
+                                                (if (car ret)
+                                                     (acc_alloc type (syntax->datum (syntax (shape ...))) data "use")
+                                                     (error 'verify-accelerack (cadr ret))))]))
+
+(define map-type
+  (lambda (x)
+    (cond
+      ((ctype? x) (ctype->symbol x))
+      ((pair? x) (cons (map-type (car x)) (map-type (cdr x))))
+      (else x))))
+
+;; TODO - Need to rework the definition of tuple syntax
+(define-syntax (_tuple stx)
+  (syntax-case stx ()
+    [(_ type ...) #'(cons '_tuple (map map-type (list type ...)))]))
+
 (define-syntax (acc stx)
   (syntax-case stx (define view load run get)
     
     ;Redefinitions are ignored.  Should throw an error.
     ; - but DrRacket's error-handling of redefinitions works well.  Comment out the guard and see.
+    ;[(acc (define y (vector type #(shape ...) data))) (identifier? #'x) #'(define y (list shape ...))]
     [(acc (define x (vector type shape data))) (identifier? #'x)
-                                #'(define x (let ((ret (verify-accelerack (vector type shape data))))
+                                #'(define x (let ((ret (verify-accelerack (vector type shape (vector->list* data)))))
                                                  (if (car ret)
                                                      ;;(list->md_array (acc_alloc type shape data "use") shape)
-                                                     (acc_alloc type shape data "use")
+                                                     (acc_alloc type shape (vector->list* data) "use")
                                                      (error 'verify-accelerack (cadr ret)))))]
                                 ;#'(verify-accelerack (vector type shape data))
     [(acc (map exp data))  #'(cpointer? data)
@@ -76,15 +113,3 @@
     ; Handles multiple commands
     [(acc exp exp2 x ...) #'(begin (acc exp) (acc exp2 x ...))]
     ))
-
-(define map-type
-  (lambda (x)
-    (cond
-      ((ctype? x) (ctype->symbol x))
-      ((pair? x) (cons (map-type (car x)) (map-type (cdr x))))
-      (else x))))
-
-;; Need to rework the definition of tuple syntax
-(define-syntax (_tuple stx)
-  (syntax-case stx ()
-    [(_ type ...) #'(cons '_tuple (map map-type (list type ...)))]))

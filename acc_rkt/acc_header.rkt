@@ -3,21 +3,29 @@
 (require ffi/unsafe
          ffi/unsafe/define)
 
+(define libacclib (ffi-lib "libacc"))
+(define-ffi-definer define-libintegrator libacclib)
+(define-libintegrator C_INT _int)
+(define-libintegrator C_BOOL _int)
+(define-libintegrator C_DOUBLE _int)
+(define-libintegrator C_PTR _int)
+(define-libintegrator ACC_PAYLOAD_PTR _int)
+(define-libintegrator SCALAR_PAYLOAD _int)
+(define-libintegrator TUPLE_PAYLOAD _int)
+(define-libintegrator RKT_PAYLOAD_PTR _int)
+
 (provide
-   ;; C types, accessors and predicates:
-   _c-array c-array?
+   _c-array
    _c-array-pointer
    c-array-type
    c-array-shape
    c-array-data
    make-c-array
-   _c-vector c-vector?
+   _c-vector
    _c-vector-pointer
    c-vector-length
    c-vector-type
    c-vector-data
-
-   ;; Isomorphic Racket datatypes:
    make-c-vector
    rkt-vector
    rkt-vector-length
@@ -25,28 +33,25 @@
    rkt-vector-data
    rkt-vector?
    make-rkt-vector
-   rkt-array 
+   rkt-array
    rkt-array-type
    rkt-array-shape
    rkt-array-data
-   rkt-array?
    make-rkt-array
-
-   ;; C Enum types:
    scalar
    scalar-length)
 
-;; C structure to store tuple/scalar information (one payload)
+;; C structure to store tuple/scalar information
 (define-cstruct _c-vector
    ([length _int]
-    [type   _int]
-    [data   _gcpointer]))
+    [type _int]
+    [data _gcpointer]))
 
-;; C structure to store information for one logical accelerate array
+;; C structure to store accelerate arrays information
 (define-cstruct _c-array
-  ([type  _int] ;; This could be a tuple type, so you must look at the payload annotations.
+  ([type _int]
    [shape _c-vector-pointer]
-   [data  _c-vector-pointer]))
+   [data _c-vector-pointer]))
 
 ;; Racket structure to store tuple/scalar information
 (define-struct rkt-vector
@@ -63,8 +68,14 @@
 
 ;; Enum for storing the type of scalar
 (define scalar
-  ;; TODO: Rename these to avoid collissions with other symbols:
-  (_enum '(_c-vector-pointer _gcpointer _double _int _bool _scalar _tuple _rkt-vector-pointer)))
+  (_enum `(c-int = ,C_INT
+           c-double = ,C_DOUBLE
+           c-bool = ,C_BOOL
+           acc-payload-ptr = ,ACC_PAYLOAD_PTR
+           scalar-payload = ,SCALAR_PAYLOAD
+           tuple-payload = ,TUPLE_PAYLOAD
+           c-ptr = ,C_PTR
+           rkt-payload-ptr = ,RKT_PAYLOAD_PTR)))
 
 ;; Number of scalar enum values defined
 (define scalar-length 7)

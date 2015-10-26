@@ -15,14 +15,14 @@ peekArrPtrs p = do
   pdat <- peekByteOff p (intSize + ptrSize)
   ArrPtrs <$> peekShape psh <*> peekTypeData pdat
 
-peekShape :: Ptr a -> IO [Int]
+peekShape :: Ptr () -> IO [Int]
 peekShape p = do
   Segment szsh tsh psh <- peek $ castPtr p
   unless (tsh == IntTag) $
     fail $ "Bad Shape tag: " ++ show tsh
   peekArray szsh $ castPtr psh
 
-peekTypeData :: Ptr a -> IO (Type (Ptr ()))
+peekTypeData :: Ptr () -> IO (Type (Ptr ()))
 peekTypeData p = do
   Segment sztyp ttyp ptyp <- peek $ castPtr p
   case ttyp of
@@ -30,7 +30,7 @@ peekTypeData p = do
     DoubleTag -> return $ Double ptyp
     BoolTag   -> return $ Bool   ptyp
     TupleTag  -> do
-      pts <- peekArray sztyp (castPtr ptyp :: Ptr (Ptr ()))
+      pts <- peekArray sztyp $ castPtr ptyp
       Tuple <$> mapM peekTypeData pts
 
 data ArrPtrs = ArrPtrs
@@ -95,7 +95,22 @@ data TypeTag
   | DoubleTag   -- 1
   | BoolTag     -- 2
   | TupleTag    -- 3
-  deriving (Eq,Ord,Show,Bounded,Enum)
+  | Other Int
+  deriving (Eq,Ord,Show)
+
+instance Enum TypeTag where
+  fromEnum = \case
+    IntTag    -> 0
+    DoubleTag -> 1
+    BoolTag   -> 2
+    TupleTag  -> 3
+    Other n   -> n
+  toEnum = \case
+    0 -> IntTag
+    1 -> DoubleTag
+    2 -> BoolTag
+    3 -> TupleTag
+    n -> Other n
 
 data Segment = Segment
   { vSize :: Int

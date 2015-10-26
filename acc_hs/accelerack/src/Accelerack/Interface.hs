@@ -58,7 +58,6 @@ add1Array len = \case
     pokeArray ip $ map (+1) is
   Tuple ts -> forM_ ts $ add1Array len
 
-
 {-
 foreign export ccall run_accelerate :: Ptr () -> CString -> FunPtr AllocFun -> IO ()
 run_accelerate dp sp fp = do

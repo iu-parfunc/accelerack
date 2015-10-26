@@ -30,7 +30,7 @@ peekTypeData p = do
     DoubleTag -> return $ Double ptyp
     BoolTag   -> return $ Bool   ptyp
     TupleTag  -> do
-      pts <- peekArray sztyp $ castPtr ptyp
+      pts <- peekArray sztyp (castPtr ptyp :: Ptr (Ptr ()))
       Tuple <$> mapM peekTypeData pts
 
 data ArrPtrs = ArrPtrs

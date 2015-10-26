@@ -26,20 +26,20 @@ print_array p = do
   a <- peekArrPtrs p
   printArrPtrs a
 
+{-
 -- add1 to all array data
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
   a <- peekArrPtrs p
   add1Array (product $ arrShape a) $ arrData a
+-}
 
-{-
 -- modify type
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
   pdat <- peekByteOff p $ intSize + ptrSize
   Segment sz t pdat' <- peek pdat
-  poke pdat $ Segment 
--}
+  poke pdat $ Segment sz (toEnum 0) pdat'
 
 {-
 -- modify type

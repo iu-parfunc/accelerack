@@ -12,8 +12,8 @@ import qualified Data.List as L
 peekArrPtrs :: Ptr a -> IO ArrPtrs
 peekArrPtrs p = do
   psh  <- peekByteOff p  intSize
-  ptyp <- peekByteOff p (intSize + ptrSize)
-  ArrPtrs <$> peekShape psh <*> peekType ptyp
+  pdat <- peekByteOff p (intSize + ptrSize)
+  ArrPtrs <$> peekShape psh <*> peekTypeData pdat
 
 peekShape :: Ptr a -> IO [Int]
 peekShape p = do
@@ -22,8 +22,8 @@ peekShape p = do
     fail $ "Bad Shape tag: " ++ show tsh
   peekArray szsh $ castPtr psh
 
-peekType :: Ptr a -> IO (Type (Ptr ()))
-peekType p = do
+peekTypeData :: Ptr a -> IO (Type (Ptr ()))
+peekTypeData p = do
   Segment ttyp sztyp ptyp <- peek $ castPtr p
   case ttyp of
     IntTag    -> return $ Int    ptyp
@@ -31,7 +31,7 @@ peekType p = do
     BoolTag   -> return $ Bool   ptyp
     TupleTag  -> do
       pts <- peekArray sztyp $ castPtr ptyp
-      Tuple <$> mapM peekType pts
+      Tuple <$> mapM peekTypeData pts
 
 data ArrPtrs = ArrPtrs
   { arrShape :: [Int]

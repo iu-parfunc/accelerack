@@ -26,10 +26,15 @@ print_array p = do
   a <- peekArrPtrs p
   printArrPtrs a
 
+{-
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
   a <- peekArrPtrs p
   add1Array (product $ arrShape a) $ arrData a
+-}
+
+foreign export ccall modify_array :: Ptr () -> IO ()
+modify_array p = pokeByteOff p 0 (7 :: CInt)
 
 add1Array :: Int -> Type (Ptr ()) -> IO ()
 add1Array len = \case
@@ -37,7 +42,7 @@ add1Array len = \case
     let dp = castPtr p :: Ptr CDouble
     ds <- peekArray len dp
     pokeArray dp $ map (+1) ds
-  _ -> fail "Unexpected type"
+
 
 {-
 foreign export ccall run_accelerate :: Ptr () -> CString -> FunPtr AllocFun -> IO ()

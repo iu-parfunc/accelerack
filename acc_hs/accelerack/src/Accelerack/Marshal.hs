@@ -17,14 +17,14 @@ peekArrPtrs p = do
 
 peekShape :: Ptr a -> IO [Int]
 peekShape p = do
-  Segment tsh szsh psh <- peek $ castPtr p
+  Segment szsh tsh psh <- peek $ castPtr p
   unless (tsh == IntTag) $
     fail $ "Bad Shape tag: " ++ show tsh
   peekArray szsh $ castPtr psh
 
 peekTypeData :: Ptr a -> IO (Type (Ptr ()))
 peekTypeData p = do
-  Segment ttyp sztyp ptyp <- peek $ castPtr p
+  Segment sztyp ttyp ptyp <- peek $ castPtr p
   case ttyp of
     IntTag    -> return $ Int    ptyp
     DoubleTag -> return $ Double ptyp
@@ -98,8 +98,8 @@ data TypeTag
   deriving (Eq,Ord,Show,Bounded,Enum)
 
 data Segment = Segment
-  { vTag  :: TypeTag
-  , vSize :: Int
+  { vSize :: Int
+  , vTag  :: TypeTag
   , vData :: Ptr ()
   }
 
@@ -110,9 +110,9 @@ instance Storable Segment where
     <$> (fromCInt <$> peekByteOff p 0)
     <*> (fromCInt <$> peekByteOff p intSize)
     <*> peekByteOff p (2*intSize)
-  poke p (Segment t sz d) = do
-    pokeByteOff p 0           $ toCInt t
-    pokeByteOff p    intSize  $ toCInt sz
+  poke p (Segment sz t d) = do
+    pokeByteOff p 0           $ toCInt sz
+    pokeByteOff p    intSize  $ toCInt t
     pokeByteOff p (2*intSize)   d
 
 toCInt :: Enum a => a -> CInt

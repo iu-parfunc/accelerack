@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase, NamedFieldPuns #-}
 
 module Accelerack.Marshal where
 
@@ -8,6 +8,9 @@ import Foreign.Marshal.Array
 import Control.Applicative
 import Control.Monad
 import qualified Data.List as L
+
+import Data.Array.Accelerate as A hiding ((++), replicate, product)
+import Data.Array.Accelerate.IO (fromPtr, toPtr)
 
 peekArrPtrs :: Ptr a -> IO ArrPtrs
 peekArrPtrs p = do
@@ -32,6 +35,17 @@ peekTypeData p = do
     TupleTag  -> do
       pts <- peekArray sztyp $ castPtr ptyp
       Tuple <$> mapM peekTypeData pts
+
+toAccArray :: ArrPtrs -> IO (A.Array DIM1 Int)
+toAccArray ArrPtrs {arrShape= [len], arrData = Int ptr } =
+  fromPtr (Z :. len) ((), castPtr ptr :: Ptr Int)
+
+fromAccArray :: A.Array DIM1 Int -> IO ArrPtrs
+fromAccArray arr =
+  do let (Z :. sz) = A.arrayShape arr
+     ptr <- mallocArray sz
+     toPtr arr ((), ptr)
+     return $ ArrPtrs [sz] (Int$ castPtr ptr)
 
 data ArrPtrs = ArrPtrs
   { arrShape :: [Int]
@@ -139,6 +153,3 @@ fromCInt = toEnum . fromEnum
 intSize, ptrSize :: Int
 intSize = sizeOf (undefined :: CInt)
 ptrSize = sizeOf nullPtr
-
-
-

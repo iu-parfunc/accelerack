@@ -170,11 +170,11 @@
     ((equal? type 0) _int)
     ((equal? type 1) _double)
     ((equal? type 2) _bool)
-    ((equal? type 3) _gcpointer)
-    ((equal? type 4) _c-vector-pointer)
-    ((equal? type 5) 'rkt-payload-ptr )
-    ((equal? type 6) 'scalar-payload)
-    ((equal? type 7) 'tuple-payload)
+    ((equal? type 3) _c-vector-pointer)
+    ((equal? type 4) 'scalar-payload)
+    ((equal? type 5) 'tuple-payload)
+    ((equal? type 6) _gcpointer)
+    ((equal? type 7) 'rkt-payload-ptr )
     (else 'empty_type)))
 
 

@@ -14,11 +14,11 @@
 int C_INT = 0;
 int C_DOUBLE = 1;
 int C_BOOL = 2;
-int C_PTR = 3;
-int ACC_PAYLOAD_PTR = 4;
-int RKT_PAYLOAD_PTR = 5;
-int SCALAR_PAYLOAD = 6;
-int TUPLE_PAYLOAD = 7;
+int ACC_PAYLOAD_PTR = 3;
+int SCALAR_PAYLOAD = 4;
+int TUPLE_PAYLOAD = 5;
+int C_PTR = 6;
+int RKT_PAYLOAD_PTR = 7;
 
 void modify_vector (cvector *cv1, int value)
 {

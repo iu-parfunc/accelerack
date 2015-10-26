@@ -10,9 +10,9 @@
 (define-libintegrator C_DOUBLE _int)
 (define-libintegrator C_PTR _int)
 (define-libintegrator ACC_PAYLOAD_PTR _int)
-(define-libintegrator RKT_PAYLOAD_PTR _int)
 (define-libintegrator SCALAR_PAYLOAD _int)
 (define-libintegrator TUPLE_PAYLOAD _int)
+(define-libintegrator RKT_PAYLOAD_PTR _int)
 
 (provide
    _c-array
@@ -71,10 +71,10 @@
   (_enum `(c-int = ,C_INT
            c-double = ,C_DOUBLE
            c-bool = ,C_BOOL
-           c-ptr = ,C_PTR
            acc-payload-ptr = ,ACC_PAYLOAD_PTR
            scalar-payload = ,SCALAR_PAYLOAD
            tuple-payload = ,TUPLE_PAYLOAD
+           c-ptr = ,C_PTR
            rkt-payload-ptr = ,RKT_PAYLOAD_PTR)))
 
 ;; Number of scalar enum values defined

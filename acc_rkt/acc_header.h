@@ -15,11 +15,11 @@
 extern int C_INT;
 extern int C_DOUBLE;
 extern int C_BOOL;
-extern int C_PTR;
 extern int ACC_PAYLOAD_PTR;
-extern int RKT_PAYLOAD_PTR;
 extern int SCALAR_PAYLOAD;
 extern int TUPLE_PAYLOAD;
+extern int C_PTR;
+extern int RKT_PAYLOAD_PTR;
 
 
 typedef enum

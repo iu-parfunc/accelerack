@@ -41,13 +41,13 @@
    scalar
    scalar-length)
 
-;; C structure to store tuple/scalar information
+;; C structure to store tuple/scalar information (one payload)
 (define-cstruct _c-vector
    ([length _int]
     [type _int]
     [data _gcpointer]))
 
-;; C structure to store accelerate arrays information
+;; C structure to store accelerate arrays information (one logical array)
 (define-cstruct _c-array
   ([type _int]
    [shape _c-vector-pointer]

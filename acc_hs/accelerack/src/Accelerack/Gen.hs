@@ -5,8 +5,6 @@
 
 module Accelerack.Gen where
 
-import Data.Array.Accelerate hiding ((++))
-import Data.Array.Accelerate.Interpreter
 import Accelerack.Parse hiding (Type,Shape)
 import qualified Accelerack.Parse as P
 import qualified Data.List as L

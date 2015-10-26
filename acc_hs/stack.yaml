@@ -1,7 +1,7 @@
 flags: {}
 
 packages:
- - ./acc-sexp
+ - ./accelerack
  - ./deps/sexp
 
 extra-deps: []

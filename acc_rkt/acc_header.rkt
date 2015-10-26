@@ -73,9 +73,9 @@
            c-bool = ,C_BOOL
            c-ptr = ,C_PTR
            acc-payload-ptr = ,ACC_PAYLOAD_PTR
-           rkt-payload-ptr = ,RKT_PAYLOAD_PTR
            scalar-payload = ,SCALAR_PAYLOAD
-           tuple-payload = ,TUPLE_PAYLOAD)))
+           tuple-payload = ,TUPLE_PAYLOAD
+           rkt-payload-ptr = ,RKT_PAYLOAD_PTR)))
 
 ;; Number of scalar enum values defined
 (define scalar-length 7)

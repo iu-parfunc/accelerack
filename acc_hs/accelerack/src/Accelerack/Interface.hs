@@ -26,13 +26,11 @@ print_array p = do
   a <- peekArrPtrs p
   printArrPtrs a
 
-{-
 -- add1 to all array data
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
   a <- peekArrPtrs p
   add1Array (product $ arrShape a) $ arrData a
--}
 
 {-
 -- modify type

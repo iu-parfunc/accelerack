@@ -33,8 +33,16 @@ modify_array p = do
   add1Array (product $ arrShape a) $ arrData a
 -}
 
+{-
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = pokeByteOff p 0 (0 :: CInt)
+-}
+
+foreign export ccall modify_array :: Ptr () -> IO ()
+modify_array p = do
+  psh <- peekByteOff p intSize 
+  Segment tsh szsh psh' <- peek psh
+  poke psh $ Segment (toEnum 0) szsh psh'
 
 add1Array :: Int -> Type (Ptr ()) -> IO ()
 add1Array len = \case

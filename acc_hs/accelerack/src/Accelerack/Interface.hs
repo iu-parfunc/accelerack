@@ -34,7 +34,7 @@ modify_array p = do
 -}
 
 foreign export ccall modify_array :: Ptr () -> IO ()
-modify_array p = pokeByteOff p 0 (7 :: CInt)
+modify_array p = pokeByteOff p 0 (0 :: CInt)
 
 add1Array :: Int -> Type (Ptr ()) -> IO ()
 add1Array len = \case

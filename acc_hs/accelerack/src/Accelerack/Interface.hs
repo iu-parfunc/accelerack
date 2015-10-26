@@ -52,6 +52,11 @@ add1Array len = \case
     let dp = castPtr p :: Ptr CDouble
     ds <- peekArray len dp
     pokeArray dp $ map (+1) ds
+  Int p -> do
+    let ip = castPtr p :: Ptr CInt
+    is <- peekArray len ip
+    pokeArray ip $ map (+1) is
+  Tuple ts -> forM_ ts $ add1Array len
 
 
 {-

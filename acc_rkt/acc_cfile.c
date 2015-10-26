@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <stdbool.h>
+#include "acc_header.h"
 
 /*
 #define C_INT 0
@@ -20,34 +19,6 @@ int ACC_PAYLOAD_PTR = 4;
 int RKT_PAYLOAD_PTR = 5;
 int SCALAR_PAYLOAD = 6;
 int TUPLE_PAYLOAD = 7;
-
-
-typedef enum
-{
-  int_value,
-  double_value,
-  bool_value,
-  gcpointer,
-  acc_payload_ptr,
-  rkt_payload_ptr,
-  scalar,
-  tuple
-}types;
-
-typedef struct
-{
-  int length;
-  int type;
-  void *data;
-}cvector;
-
-typedef struct
-{
-  int type;
-  cvector *shape;
-  cvector *data;
-}carray;
-
 
 void modify_vector (cvector *cv1, int value)
 {
@@ -130,3 +101,4 @@ void rkt_handler (carray *c1, char *expr)
 {
   modify_array(c1, expr);
 }
+

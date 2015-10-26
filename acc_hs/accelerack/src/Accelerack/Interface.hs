@@ -46,7 +46,7 @@ modify_array p = do
 -- modify type length
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
-  pdat <- peekByteOff p $ intSize + ptrSize
+  pdat <- peekByteOff p $ 8 + ptrSize
   Segment sz t pdat' <- peek pdat
   poke pdat $ Segment (toEnum 1) t pdat'
 

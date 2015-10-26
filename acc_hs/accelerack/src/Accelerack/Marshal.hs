@@ -119,16 +119,16 @@ data Segment = Segment
   }
 
 instance Storable Segment where
-  sizeOf    _ = 2*8 + ptrSize
+  sizeOf    _ = 2*intSize + ptrSize
   alignment _ = 8
   peek p = Segment
     <$> (fromCInt <$> peekByteOff p 0)
-    <*> (fromCInt <$> peekByteOff p 8)
-    <*> peekByteOff p (2*8)
+    <*> (fromCInt <$> peekByteOff p intSize)
+    <*> peekByteOff p (2*intSize)
   poke p (Segment sz t d) = do
     pokeByteOff p 0           $ toCInt sz
-    pokeByteOff p 8           $ toCInt t
-    pokeByteOff p 16   d
+    pokeByteOff p intSize     $ toCInt t
+    pokeByteOff p (2*intSize)   d
 
 toCInt :: Enum a => a -> CInt
 toCInt = toEnum . fromEnum

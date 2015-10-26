@@ -34,21 +34,21 @@ modify_array p = do
   add1Array (product $ arrShape a) $ arrData a
 -}
 
+{-
 -- modify type tag
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
   pdat <- peekByteOff p $ intSize + ptrSize
   Segment sz t pdat' <- peek pdat
   poke pdat $ Segment sz (toEnum 0) pdat'
+-}
 
-{-
 -- modify type length
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
   pdat <- peekByteOff p $ intSize + ptrSize
   Segment sz t pdat' <- peek pdat
-  poke pdat $ Segment (toEnum 0) t pdat'
--}
+  poke pdat $ Segment (toEnum 1) t pdat'
 
 {-
 -- modify type

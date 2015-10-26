@@ -13,7 +13,7 @@ import Accelerack.Marshal
 import Control.Monad
 
 -- foreign import ccall "dynamic" mkAllocFun :: FunPtr AllocFun -> AllocFun
--- 
+--
 -- type AllocFun = Int -> Ptr CInt -> Ptr () -> IO (Ptr ())
 
 {-
@@ -29,7 +29,9 @@ print_array p = do
 -- add1 to all array data
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
-  a <- peekArrPtrs p
+  a0 <- peekArrPtrs p
+  a1 <- toAccArray a0
+  a  <- fromAccArray a1
   add1Array (product $ arrShape a) $ arrData a
 
 {-
@@ -60,7 +62,7 @@ modify_array p = pokeByteOff p 0 (0 :: CInt)
 -- modify shape length
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
-  psh <- peekByteOff p intSize 
+  psh <- peekByteOff p intSize
   Segment szsh tsh psh' <- peek psh
   poke psh $ Segment (toEnum 0) tsh psh'
 -}
@@ -86,4 +88,3 @@ run_accelerate dp sp fp = do
   -- infer type, shape
   -- arr <- mkAllocFun fp shlen shp typp
 -}
-

@@ -123,8 +123,8 @@ instance Storable Segment where
   alignment _ = 8
   peek p = Segment
     <$> (fromCInt <$> peekByteOff p 0)
-    <*> (fromCInt <$> peekByteOff p intSize)
-    <*> peekByteOff p (2*intSize)
+    <*> (fromCInt <$> peekByteOff p 8)
+    <*> peekByteOff p (2*8)
   poke p (Segment sz t d) = do
     pokeByteOff p 0           $ toCInt sz
     pokeByteOff p 8           $ toCInt t

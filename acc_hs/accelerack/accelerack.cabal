@@ -25,6 +25,7 @@ library
         template-haskell -any,
         haskell-src-meta -any
     default-language: Haskell2010
+    ghc-options: -o libhsifc.so -shared -dynamic -fPIC -lHSrts-ghc7.10.2
     hs-source-dirs: src
 
 test-suite test-accelerack
@@ -44,4 +45,4 @@ test-suite test-accelerack
                    tasty-quickcheck > 0.2.4, QuickCheck,
                    HUnit, time, text
     default-language: Haskell2010
-    ghc-options: -Wall -ddump-splices
+    ghc-options: -Wall

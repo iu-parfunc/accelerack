@@ -1,5 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Accelerack.Interface where
 
@@ -24,6 +25,19 @@ foreign export ccall print_array :: Ptr () -> IO ()
 print_array p = do
   a <- peekArrPtrs p
   printArrPtrs a
+
+foreign export ccall modify_array :: Ptr () -> IO ()
+modify_array p = do
+  a <- peekArrPtrs p
+  add1Array (product $ arrShape a) $ arrData a
+
+add1Array :: Int -> Type (Ptr ()) -> IO ()
+add1Array len = \case
+  Double p -> do
+    let dp = castPtr p :: Ptr CDouble
+    ds <- peekArray len dp
+    pokeArray dp $ map (+1) ds
+  _ -> fail "Unexpected type"
 
 {-
 foreign export ccall run_accelerate :: Ptr () -> CString -> FunPtr AllocFun -> IO ()

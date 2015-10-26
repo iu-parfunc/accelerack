@@ -11,7 +11,7 @@ library
     exposed-modules:
         Accelerack.Interface
         Accelerack.Marshal
-        Accelerack.Parse
+        -- Accelerack.Parse
         -- Accelerack.Run
         -- Accelerack.Gen
     build-depends:
@@ -21,11 +21,11 @@ library
         containers -any,
         hint -any,
         mtl -any,
-        sexp >=0.7,
+        -- sexp >=0.7,
         template-haskell -any,
         haskell-src-meta -any
     default-language: Haskell2010
-    ghc-options: -o libhsifc.so -shared -dynamic -fPIC -lHSrts-ghc7.10.2
+    -- ghc-options: -o libhsifc.so -shared -dynamic -fPIC -lHSrts-ghc7.10.2
     hs-source-dirs: src
 
 test-suite test-accelerack

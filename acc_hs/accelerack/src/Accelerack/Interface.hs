@@ -9,7 +9,7 @@ import Foreign.C
 import Foreign.Ptr
 
 import Accelerack.Marshal
-import Accelerack.Parse
+-- import Accelerack.Parse
 import Control.Monad
 
 foreign import ccall "dynamic" mkAllocFun :: FunPtr AllocFun -> AllocFun
@@ -18,8 +18,10 @@ foreign import ccall unsafe "acc.h modify_vector"
 
 type AllocFun = Int -> Ptr CInt -> Ptr () -> IO (Ptr ())
 
+{-
 parse :: String -> IO Exp
 parse = either fail return . (runWithKnown known . parseExp <=< lexSexp)
+-}
 
 foreign export ccall print_array :: Ptr () -> IO ()
 print_array p = do

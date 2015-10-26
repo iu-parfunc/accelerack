@@ -5,6 +5,7 @@
 (require "acc_header.rkt")
 
 (provide
+  vector->list*
   unzip
   zip
   zip-first
@@ -25,6 +26,18 @@
   getDimension
   getData)
   
+
+;; Convert given vector to list recursively
+;; Arguments -> vector or list with nested vectors
+;; Return value -> list with all nested vectors converted to list
+
+(define (vector->list* vec/ls)
+  (cond
+    ((vector? vec/ls) (vector->list* (vector->list vec/ls)))
+    ((null? vec/ls) '())
+    ((vector? (car vec/ls)) (cons (vector->list* (car vec/ls)) (vector->list* (cdr vec/ls))))
+    (else (cons (car vec/ls) (vector->list* (cdr vec/ls))))))
+
 
 ;; Create empty list preserving structure of the data list 
 ;; Arguments -> (empty list, list containing the payload)
@@ -128,10 +141,11 @@
 
 (define (ctype->symbol type)
   (cond
-    ((equal? _double type) '_double)
-    ((equal? _int type) '_int)
-    ((equal? _bool type) '_bool)
-    ((equal? _c-vector type) '_tuple)))
+    ((equal? _double type) 'c-double)
+    ((equal? _int type) 'c-int)
+    ((equal? _bool type) 'c-bool)
+    ((equal? _c-vector type) 'tuple-payload)
+    ((symbol? type) type)))
 
 
 ;; Converts from symbol to ctype
@@ -140,10 +154,11 @@
 
 (define (symbol->ctype type)
   (cond
-    ((equal? '_double type) _double)
-    ((equal? '_int type) _int)
-    ((equal? '_bool type) _bool)
-    ((equal? '_gcpointer type) _gcpointer)))
+    ((equal? 'c-double type) _double)
+    ((equal? 'c-int type) _int)
+    ((equal? 'c-bool type) _bool)
+    ((equal? 'c-ptr type) _gcpointer)
+    ((ctype? type) type)))
 
 
 ;; Map the scalar enum value to corresponding ctype
@@ -152,21 +167,26 @@
 
 (define (mapType type)
   (cond
-    ((equal? type 0) _c-vector-pointer)
-    ((equal? type 1) _gcpointer)
-    ((equal? type 2) _double)
-    ((equal? type 3) _int)
-    ((equal? type 4) _bool)
-    ((equal? type 5) '_scalar)
-    ((equal? type 6) '_tuple)
-    ((equal? type 7) '_rkt-vector-pointer)
+    ((equal? type 0) _int)
+    ((equal? type 1) _double)
+    ((equal? type 2) _bool)
+    ((equal? type 3) _gcpointer)
+    ((equal? type 4) _c-vector-pointer)
+    ((equal? type 5) 'rkt-payload-ptr )
+    ((equal? type 6) 'scalar-payload)
+    ((equal? type 7) 'tuple-payload)
     (else 'empty_type)))
+
+
+;; Map the actual type to scalar enum values
+;; Arguments -> type
+;; Return value -> scalar enum value
 
 (define (get-ctype x)
   (cond 
-    ((exact-integer? x) '_int)
-    ((double-flonum? x) '_double)
-    ((boolean? x) '_bool)))
+    ((exact-integer? x) 'c-int)
+    ((double-flonum? x) 'c-double)
+    ((boolean? x) 'c-bool)))
 
 
 ;; Iteratively reads the given memory location for given length

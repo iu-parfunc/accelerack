@@ -68,9 +68,9 @@
 
     (define (verify-type type data)
       (cond
-        ((equal? '_int type) (exact-integer? data))
-        ((equal? '_double type) (double-flonum? data))
-        ((equal? '_bool type) (boolean? data))))
+        ((equal? 'c-int type) (exact-integer? data))
+        ((equal? 'c-double type) (double-flonum? data))
+        ((equal? 'c-bool type) (boolean? data))))
     
     (define (check-tuple-expr type data)
       (cond
@@ -84,8 +84,9 @@
         (if #t ;;(check-length exp shape)
             (if (if (ctype? type) 
                     (if (equal? type _int) (int_vector? exp) 
-                        (if (equal? type _double) (dbl_vector? exp) 
-                            #f))
+                        (if (equal? type _double) (dbl_vector? exp)
+                            (if (equal? type _bool) (bool_vector? exp)
+                            #f)))
                     (check-tuple-expr (build-type type '() (md_array-length shape) shape) exp))
                 '(#t)
                 '(#f "failed ! Invalid expression: type mismatch"))

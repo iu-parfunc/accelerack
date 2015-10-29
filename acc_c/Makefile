@@ -5,4 +5,4 @@ rts:
 c:
 	gcc -shared -fPIC -o libacc.so acc_cfile.c
 clean:
-	rm *.o *.so
+	rm -f *.o *.so

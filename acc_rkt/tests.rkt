@@ -10,7 +10,7 @@
 (require "acc_header.rkt")
 (require "accelerack.rkt")
 
-(define libacclib (ffi-lib "libacc"))
+(define libacclib (ffi-lib "../acc_c/libacc"))
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator modify_vector (_fun _c-vector-pointer _int -> _void))
 (define-libintegrator modify_array (_fun _c-array-pointer _string -> _void))
@@ -18,7 +18,7 @@
 
 (test-case "test 1"
   (display "test 1\n")
-  (define t1 (array (2 3) _double (#(2.0 3.2 11.2) #(50.1 2.2 41.9))))
+  (define t1 (array (2 3) _double ((2.0 3.2 11.2) (50.1 2.2 41.9))))
   (define t1-c (car t1))
   (define t1-rkt (cadr t1))
   (display (readData* t1-c)) (newline)

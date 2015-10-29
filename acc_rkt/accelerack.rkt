@@ -21,7 +21,7 @@
     (equal? (hash-ref ht id UNDEFINED) UNDEFINED))
   )
 
-(define libacclib (ffi-lib "libacc"))
+(define libacclib (ffi-lib "../acc_c/libacc"))
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator rkt_handler (_fun _c-array-pointer _string -> _void))
 

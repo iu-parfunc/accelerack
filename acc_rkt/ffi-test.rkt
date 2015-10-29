@@ -35,7 +35,7 @@
 
 (define-ifc modify_array (_fun  _c-array-pointer -> _void))
 
-(define t1 (array (2 3) _int (#(2 3 11) #(50 2 41))))
+(define t1 (array (2 3) _int ((2 3 11) (50 2 41))))
 (define t1-c (car t1))
 (define t1-rkt (cadr t1))
 (printf "Before modify_array Call\n")

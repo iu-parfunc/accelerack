@@ -9,6 +9,9 @@ which -a stack
 
 TOP=`pwd`
 
+cd $TOP/acc_c/
+./validate.sh
+
 cd $TOP/acc_hs/
 ./validate.sh
 

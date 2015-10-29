@@ -19,5 +19,5 @@ fi
 
 racket --version
 
-make clean
-make
+#make clean
+#make

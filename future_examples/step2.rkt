@@ -5,12 +5,14 @@
 
 ;; Define-acc puts the computation into both namespaces:
 (define-acc vec (array (1 2 3 4)))
+vec ;; Prints "<accelerack-array>" or similar
 
 ;; sqr is a regular function and an Accelerack function:
-(define-acc (sqr x) (* x x))
+(define-acc (sqr x) (* x x)) ;; Samth: should this be define-acc-fun?
 
 ;; The following returns #t:
 (procedure? sqr)
+(sqr 3) ;; Prints 9.
 
 (define-acc vec2 (map sqr vec))
 

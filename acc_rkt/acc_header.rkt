@@ -3,7 +3,7 @@
 (require ffi/unsafe
          ffi/unsafe/define)
 
-(define libacclib (ffi-lib "libacc"))
+(define libacclib (ffi-lib "../acc_c/libacc"))
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator C_INT _int)
 (define-libintegrator C_BOOL _int)
@@ -41,13 +41,13 @@
    scalar
    scalar-length)
 
-;; C structure to store tuple/scalar information
+;; C structure to store tuple/scalar information (one payload)
 (define-cstruct _c-vector
    ([length _int]
     [type _int]
     [data _gcpointer]))
 
-;; C structure to store accelerate arrays information
+;; C structure to store accelerate arrays information (one logical array)
 (define-cstruct _c-array
   ([type _int]
    [shape _c-vector-pointer]

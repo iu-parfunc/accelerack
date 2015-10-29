@@ -4,6 +4,7 @@ packages:
  - ./accelerack
  - ./deps/sexp
 
-extra-deps: []
+extra-deps:
+ - accelerate-io-0.15.1.0
 
 resolver: lts-3.5

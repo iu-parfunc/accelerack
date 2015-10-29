@@ -17,6 +17,7 @@ library
     build-depends:
         base >=4.8 && <4.9,
         accelerate,
+        accelerate-io,
         bytestring,
         containers,
         hint,
@@ -44,8 +45,8 @@ executable libacc.so
 test-suite test-accelerack
     type:	    exitcode-stdio-1.0
     main-is:        Main.hs
-    hs-source-dirs: tests/ 
-                    
+    hs-source-dirs: tests/
+
     build-depends: accelerack
     build-depends: base >= 4.6 && < 4.9,
                    hint,
@@ -54,7 +55,7 @@ test-suite test-accelerack
                    mtl
 --                   , vector >=0.10
 --                   , random
-    build-depends: tasty, tasty-hunit, tasty-th, 
+    build-depends: tasty, tasty-hunit, tasty-th,
                    tasty-quickcheck > 0.2.4, QuickCheck,
                    HUnit, time, text
     default-language: Haskell2010

@@ -2,4 +2,5 @@
 
 set -xe
 
-./.prevalidate.sh
+make clean
+make

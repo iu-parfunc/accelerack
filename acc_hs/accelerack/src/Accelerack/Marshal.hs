@@ -132,6 +132,10 @@ data Segment = Segment
   , vData :: Ptr ()
   }
 
+newtype Payload = Payload
+  { getPayload :: Ptr ()
+  }
+
 instance Storable Segment where
   sizeOf    _ = 2*intSize + ptrSize
   alignment _ = 8

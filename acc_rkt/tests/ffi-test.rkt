@@ -2,9 +2,7 @@
 (require ffi/unsafe
          ffi/unsafe/define)
 
-(require "acc_allocate.rkt")
-(require "acc_header.rkt")
-(require "acc_syntax.rkt")
+(require accelerack)
 
 ; One time, I had to restart DrRacket in order for it to reload new copies of .so
 (printf "<-------------- Setting up the Haskell environment --------------->")
@@ -40,7 +38,7 @@
 (define t1-rkt (cadr t1))
 (printf "Before modify_array Call\n")
 (readData* t1-c)
-(modify_array t1-c)
+;;(modify_array t1-c)
 (printf "After modify_array Call\n")
 (readData* t1-c)
 
@@ -59,8 +57,8 @@
 
 (define-capi gpu (_fun _string -> _string))
 
-(printf "\ncalling gpu function:\n")
-(gpu "show (I.run $ (A.use (A.fromList (A.Z A.:.3 A.:.5) [1..] :: A.Array A.DIM2 Int)))")
+;;(printf "\ncalling gpu function:\n")
+;;(gpu "show (I.run $ (A.use (A.fromList (A.Z A.:.3 A.:.5) [1..] :: A.Array A.DIM2 Int)))")
 
 (printf "########## Exiting racket safely ############\n")
 

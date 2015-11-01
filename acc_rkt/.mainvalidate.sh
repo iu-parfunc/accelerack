@@ -9,4 +9,4 @@ if [ -d $RACKETBIN ]; then
 fi
 
 
-racket tests.rkt
+racket tests/tests.rkt

@@ -1,11 +1,11 @@
 #lang racket
 
 (require ffi/unsafe
-         ffi/unsafe/define )
-(require "verify-accelerack.rkt")
-(require "allocate.rkt")
-(require "ArrayUtils.rkt")
-(require "acc_header.rkt")
+         ffi/unsafe/define
+         accelerack/acc_parse
+         accelerack/acc_allocate
+         accelerack/acc_arrayutils
+         accelerack/acc_header)
 
 (provide acc
          array
@@ -21,7 +21,7 @@
     (equal? (hash-ref ht id UNDEFINED) UNDEFINED))
   )
 
-(define libacclib (ffi-lib "../acc_c/libacc"))
+;;(define libacclib (ffi-lib "../../acc_c/libacc"))
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator rkt_handler (_fun _c-array-pointer _string -> _void))
 

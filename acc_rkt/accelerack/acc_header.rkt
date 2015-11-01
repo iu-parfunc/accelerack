@@ -3,6 +3,8 @@
 (require ffi/unsafe
          ffi/unsafe/define)
 
+(provide libacclib)
+
 (define libacclib (ffi-lib "../acc_c/libacc"))
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator C_INT _int)

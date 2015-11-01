@@ -1,8 +1,9 @@
 #lang racket
 
-(require ffi/unsafe)
-(require (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
-(require "acc_header.rkt")
+(require ffi/unsafe
+         accelerack/acc_header
+         (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
+
 
 (provide
   vector->list*

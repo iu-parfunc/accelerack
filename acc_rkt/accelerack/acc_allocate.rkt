@@ -1,10 +1,10 @@
 #lang racket
 
 (require ffi/unsafe 
-         ffi/unsafe/cvector)
-(require (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
-(require "acc_header.rkt")
-(require "ArrayUtils.rkt")
+         ffi/unsafe/cvector
+         accelerack/acc_header
+         accelerack/acc_arrayutils
+         (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 (provide acc_alloc
          generatePayload

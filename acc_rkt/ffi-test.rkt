@@ -2,9 +2,9 @@
 (require ffi/unsafe
          ffi/unsafe/define)
 
-(require "allocate.rkt")
+(require "acc_allocate.rkt")
 (require "acc_header.rkt")
-(require "accelerack.rkt")
+(require "acc_syntax.rkt")
 
 ; One time, I had to restart DrRacket in order for it to reload new copies of .so
 (printf "<-------------- Setting up the Haskell environment --------------->")

@@ -1,8 +1,7 @@
 #lang racket
 
-(require ffi/unsafe)
-(require "allocate.rkt")
-(require "ArrayUtils.rkt")
+(require ffi/unsafe
+         accelerack/acc_arrayutils)
 
 (provide verify-accelerack)
 

@@ -2,8 +2,8 @@
 
 (require ffi/unsafe 
          ffi/unsafe/cvector
-         accelerack/acc_header
-         accelerack/acc_arrayutils
+         accelerack/src/acc_header
+         accelerack/src/acc_arrayutils
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 (provide acc_alloc

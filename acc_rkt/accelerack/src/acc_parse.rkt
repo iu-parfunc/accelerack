@@ -1,7 +1,7 @@
 #lang racket
 
 (require ffi/unsafe
-         accelerack/acc_arrayutils)
+         accelerack/src/acc_arrayutils)
 
 (provide verify-accelerack)
 

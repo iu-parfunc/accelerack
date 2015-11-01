@@ -1,7 +1,7 @@
 #lang racket
 
 (require ffi/unsafe
-         accelerack/acc_header
+         accelerack/src/acc_header
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 

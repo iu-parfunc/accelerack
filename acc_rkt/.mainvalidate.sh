@@ -10,3 +10,4 @@ fi
 
 
 racket tests/tests.rkt
+racket tests/ffi-tests.rkt

@@ -21,11 +21,14 @@ parse :: String -> IO Exp
 parse = either fail return . (runWithKnown known . parseExp <=< lexSexp)
 -}
 
+{-
 foreign export ccall print_array :: Ptr () -> IO ()
 print_array p = do
   a <- peekArrPtrs p
   printArrPtrs a
+-}
 
+{-
 -- add1 to all array data
 foreign export ccall modify_array :: Ptr () -> IO ()
 modify_array p = do
@@ -33,6 +36,7 @@ modify_array p = do
   a1 <- toAccArray a0
   a  <- fromAccArray a1
   add1Array (product $ arrShape a) $ arrData a
+-}
 
 {-
 -- modify type tag

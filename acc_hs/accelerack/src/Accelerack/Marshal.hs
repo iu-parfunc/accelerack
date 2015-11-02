@@ -1,3 +1,11 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase, NamedFieldPuns #-}
 
 module Accelerack.Marshal where
@@ -8,9 +16,11 @@ import Foreign.Marshal.Array
 import Control.Applicative
 import Control.Monad
 import qualified Data.List as L
+import GHC.Exts (Constraint)
 
 import Data.Array.Accelerate as A hiding ((++), replicate, product)
-import Data.Array.Accelerate.IO (fromPtr, toPtr)
+import Data.Array.Accelerate.Array.Sugar as A hiding ((++), replicate, product)
+import Data.Array.Accelerate.IO (fromPtr, toPtr,BlockPtrs)
 
 peekArrPtrs :: Ptr a -> IO ArrPtrs
 peekArrPtrs p = do
@@ -35,6 +45,150 @@ peekTypeData p = do
     TupleTag  -> do
       pts <- peekArray sztyp $ castPtr ptyp
       Tuple <$> mapM peekTypeData pts
+
+data Some f where
+  Some :: f a -> Some f
+
+data SomeC c f where
+  SomeC :: c a => f a -> SomeC c f
+
+(>>-) :: Some f -> (forall a. f a -> r) -> r
+Some a >>- f = f a
+infixl 1 >>-
+
+ret :: f a -> Some f
+ret = Some
+
+(>>~) :: SomeC c f -> (forall a. c a => f a -> r) -> r
+SomeC a >>~ f = f a
+infixl 1 >>~
+
+retC :: c a => f a -> SomeC c f
+retC = SomeC
+
+data AccShape :: * -> * where
+  ShZ :: AccShape Z
+  ShS :: Int -> AccShape sh -> AccShape (sh :. Int)
+
+someShape :: [Int] -> Some AccShape
+someShape = \case
+  []   -> ret ShZ
+  n:ns -> someShape ns >>- ret . ShS n
+
+getShape :: AccShape sh -> sh
+getShape = \case
+  ShZ      -> Z
+  ShS n sh -> getShape sh :. n
+
+data AccBlockPtrs :: * -> * where
+  Nil     :: AccBlockPtrs ()
+  BoolP   :: Ptr Bool
+          -> AccBlockPtrs Bool
+  IntP    :: Ptr Int
+          -> AccBlockPtrs Bool
+  DoubleP :: Ptr Double
+          -> AccBlockPtrs Bool
+  Tup2    :: AccBlockPtrs a -> AccBlockPtrs b
+          -> AccBlockPtrs (a,b)
+  Tup3    :: AccBlockPtrs a -> AccBlockPtrs b
+          -> AccBlockPtrs c
+          -> AccBlockPtrs (a,b,c)
+  Tup4    :: AccBlockPtrs a -> AccBlockPtrs b
+          -> AccBlockPtrs c -> AccBlockPtrs d
+          -> AccBlockPtrs (a,b,c,d)
+  Tup5    :: AccBlockPtrs a -> AccBlockPtrs b
+          -> AccBlockPtrs c -> AccBlockPtrs d
+          -> AccBlockPtrs e
+          -> AccBlockPtrs (a,b,c,d,e)
+  Tup6    :: AccBlockPtrs a -> AccBlockPtrs b
+          -> AccBlockPtrs c -> AccBlockPtrs d
+          -> AccBlockPtrs e -> AccBlockPtrs f
+          -> AccBlockPtrs (a,b,c,d,e,f)
+  Tup7    :: AccBlockPtrs a -> AccBlockPtrs b
+          -> AccBlockPtrs c -> AccBlockPtrs d
+          -> AccBlockPtrs e -> AccBlockPtrs f
+          -> AccBlockPtrs g
+          -> AccBlockPtrs (a,b,c,d,e,f,g)
+  Tup8    :: AccBlockPtrs a -> AccBlockPtrs b
+          -> AccBlockPtrs c -> AccBlockPtrs d
+          -> AccBlockPtrs e -> AccBlockPtrs f
+          -> AccBlockPtrs g -> AccBlockPtrs h
+          -> AccBlockPtrs (a,b,c,d,e,f,g,h)
+
+{-
+someBlockPtrs :: Type (Ptr ()) -> Some AccBlockPtrs
+someBlockPtrs = \case
+  Double p                -> ret $ DoubleP $ castPtr p
+  Int    p                -> ret $ undefined
+  Bool   p                -> ret $ undefined
+  Tuple []                -> ret Nil
+  Tuple [a]               -> someBlockPtrs a
+  Tuple [a,b]             -> someBlockPtrs a >>- \pa ->
+                             someBlockPtrs b >>- \pb ->
+                             ret $ Tup2 pa pb
+  Tuple [a,b,c]           -> someBlockPtrs a >>- \pa ->
+                             someBlockPtrs b >>- \pb ->
+                             someBlockPtrs c >>- \pc ->
+                             ret $ Tup3 pa pb pc
+  Tuple [a,b,c,d]         -> someBlockPtrs a >>- \pa ->
+                             someBlockPtrs b >>- \pb ->
+                             someBlockPtrs c >>- \pc ->
+                             someBlockPtrs d >>- \pd ->
+                             ret $ Tup4 pa pb pc pd
+  Tuple [a,b,c,d,e]       -> someBlockPtrs a >>- \pa ->
+                             someBlockPtrs b >>- \pb ->
+                             someBlockPtrs c >>- \pc ->
+                             someBlockPtrs d >>- \pd ->
+                             someBlockPtrs e >>- \pe ->
+                             ret $ Tup5 pa pb pc pd pe
+  Tuple [a,b,c,d,e,f]     -> someBlockPtrs a >>- \pa ->
+                             someBlockPtrs b >>- \pb ->
+                             someBlockPtrs c >>- \pc ->
+                             someBlockPtrs d >>- \pd ->
+                             someBlockPtrs e >>- \pe ->
+                             someBlockPtrs f >>- \pf ->
+                             ret $ Tup6 pa pb pc pd pe pf
+  Tuple [a,b,c,d,e,f,g]   -> someBlockPtrs a >>- \pa ->
+                             someBlockPtrs b >>- \pb ->
+                             someBlockPtrs c >>- \pc ->
+                             someBlockPtrs d >>- \pd ->
+                             someBlockPtrs e >>- \pe ->
+                             someBlockPtrs f >>- \pf ->
+                             someBlockPtrs g >>- \pg ->
+                             ret $ Tup7 pa pb pc pd pe pf pg
+  Tuple [a,b,c,d,e,f,g,h] -> someBlockPtrs a >>- \pa ->
+                             someBlockPtrs b >>- \pb ->
+                             someBlockPtrs c >>- \pc ->
+                             someBlockPtrs d >>- \pd ->
+                             someBlockPtrs e >>- \pe ->
+                             someBlockPtrs f >>- \pf ->
+                             someBlockPtrs g >>- \pg ->
+                             someBlockPtrs h >>- \ph ->
+                             ret $ Tup8 pa pb pc pd pe pf pg ph
+  _                       -> error "Unsupported type"
+-}
+
+{-
+getBlockPtrs :: AccBlockPtrs e -> BlockPtrs (EltRepr e)
+getBlockPtrs = \case
+  Nil  {} -> ()
+  Base {} -> _
+  Tup2 {} -> undefined
+  Tup3 {} -> undefined
+  Tup4 {} -> undefined
+  Tup5 {} -> undefined
+  Tup6 {} -> undefined
+  Tup7 {} -> undefined
+  Tup8 {} -> undefined
+-}
+
+{-
+someArray :: (Shape sh, Elt e)
+  => sh
+  -> AccBlockPtrs (BlockPtrs (EltRepr e))
+  -> IO (A.Array sh e)
+someArray sh 
+-}
 
 toAccArray :: ArrPtrs -> IO (A.Array DIM1 Int)
 toAccArray ArrPtrs {arrShape= [len], arrData = Int ptr } =

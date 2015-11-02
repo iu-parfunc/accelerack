@@ -6,11 +6,11 @@
 
 ; One time, I had to restart DrRacket in order for it to reload new copies of .so
 (printf "<-------------- Setting up the Haskell environment --------------->")
-(define lib-capi (ffi-lib "../../acc_hs/libcapi"))
-(define-ffi-definer define-capi lib-capi)
+; (define lib-capi (ffi-lib "../../acc_hs/libcapi"))
+; (define-ffi-definer define-capi lib-capi)
 
-(define lib-ifc (ffi-lib "../../acc_hs/libhsifc"))
-(define-ffi-definer define-ifc lib-ifc)
+;  (define lib-ifc (ffi-lib "../../acc_hs/libhsifc"))
+;  (define-ffi-definer define-ifc lib-ifc)
 
 (define lib-rts (ffi-lib "../../acc_c/librts"))
 (define-ffi-definer define-rts lib-rts)

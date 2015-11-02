@@ -18,6 +18,6 @@ if [ -d $RACKETBIN ]; then
 fi
 
 racket --version
-raco pkg install --link accelerack
+raco pkg update --link accelerack
 #make clean
 #make

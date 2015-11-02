@@ -3,3 +3,4 @@ so:
 
 clean:
 	rm libhsifc.so
+	rm -f *.o *.h *.hi

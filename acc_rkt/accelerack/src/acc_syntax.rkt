@@ -22,7 +22,7 @@
   )
 
 (define-ffi-definer define-libintegrator libacclib)
-(define-libintegrator rkt_handler (_fun _c-array-pointer _string -> _void))
+(define-libintegrator rkt_handler (_fun _acc-array-pointer _string -> _void))
 
 ;; TODO - Need to rework the macros
 

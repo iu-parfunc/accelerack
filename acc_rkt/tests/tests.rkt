@@ -7,12 +7,11 @@
 
 (require accelerack)
 
-
-;(define libacclib (ffi-lib "../acc_c/libacc"))
+;(define libacclib (ffi-lib "../../acc_c/libacc"))
 (define-ffi-definer define-libintegrator libacclib)
-(define-libintegrator modify_vector (_fun _c-vector-pointer _int -> _void))
-(define-libintegrator modify_array (_fun _c-array-pointer _string -> _void))
-(define-libintegrator rkt_handler (_fun _c-array-pointer _string -> _void))
+(define-libintegrator modify_vector (_fun _segment-pointer _int -> _void))
+(define-libintegrator modify_array (_fun _acc-array-pointer _string -> _void))
+(define-libintegrator rkt_handler (_fun _acc-array-pointer _string -> _void))
 
 (test-case "test 1"
   (display "test 1\n")

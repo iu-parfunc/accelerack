@@ -1,5 +1,7 @@
 #lang racket
 
+;; Define core types for Accelerack arrays and their constituient parts.
+
 (require ffi/unsafe
          ffi/unsafe/define
          racket/runtime-path)
@@ -20,12 +22,17 @@
 (define-libintegrator RKT_PAYLOAD_PTR _int)
 
 (provide
-   _acc-array
-   _acc-array-pointer
+
+   ;; The public type for Accelerate/Accelerack arrays:
+   acc-array?
    acc-array-type
    acc-array-shape
    acc-array-data
    make-acc-array
+
+   _acc-array
+   _acc-array-pointer
+
    _segment
    _segment-pointer
    segment-length
@@ -38,6 +45,8 @@
    rkt-segment-data
    rkt-segment?
    make-rkt-segment
+
+   ;; Racket-side versions of the C struct data (not currently used)
    rkt-acc-array
    rkt-acc-array-type
    rkt-acc-array-shape

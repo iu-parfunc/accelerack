@@ -1,4 +1,7 @@
 #lang racket/base
+
+;; Test C FFI and load code from ../acc_c
+
 (require ffi/unsafe
          ffi/unsafe/define)
 
@@ -42,7 +45,7 @@
 (printf "After modify_array Call\n")
 (readData* t1-c)
 
-(define t4 (array (2 2 3) (_tuple _int (_tuple _int (_tuple _int _double))) 
+(define t4 (array (2 2 3) (_tuple _int (_tuple _int (_tuple _int _double)))
                     (((#(2 #(2 #(3 1.1))) #(1 #(3 #(5 2.2))) #(4 #(16 #(7 3.3)))) (#(4 #(5 #(3 4.4))) #(1 #(6 #(15 5.5))) #(14 #(26 #(7 6.6)))))
                      ((#(12 #(12 #(13 7.7))) #(11 #(13 #(15 7.7))) #(14 #(26 #(17 7.7)))) (#(14 #(25 #(13 1.1))) #(11 #(16 #(25 8.8))) #(24 #(26 #(17 2.2))))))))
 (define t4-c (car t4))
@@ -61,4 +64,3 @@
 (gpu "show (run $ (use (fromList (Z :.3 :.5) [1..] :: Array DIM2 Int)))")
 
 (printf "########## Exiting racket safely ############\n")
-

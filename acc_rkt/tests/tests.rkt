@@ -1,7 +1,9 @@
 #lang racket
 
-(require ffi/unsafe 
-         ffi/unsafe/define 
+;; General tests??
+
+(require ffi/unsafe
+         ffi/unsafe/define
          ffi/unsafe/cvector
          rackunit)
 
@@ -32,8 +34,8 @@
 
 (test-case "test 3"
   (display "test 3\n")
-  (define t3 (array (2 3) (_tuple _int (_tuple _int (_tuple _int _bool))) 
-                    ((#(2 #(2 #(3 #t))) #(1 #(3 #(5 #t))) #(4 #(16 #(7 #t)))) 
+  (define t3 (array (2 3) (_tuple _int (_tuple _int (_tuple _int _bool)))
+                    ((#(2 #(2 #(3 #t))) #(1 #(3 #(5 #t))) #(4 #(16 #(7 #t))))
                      (#(4 #(5 #(3 #f))) #(1 #(6 #(15 #f))) #(14 #(26 #(7 #t)))))))
   (define t3-c (car t3))
   (define t3-rkt (cadr t3))
@@ -43,7 +45,7 @@
 
 (test-case "test 4"
   (display "test 4\n")
-  (define t4 (array (2 2 3) (_tuple _int (_tuple _int (_tuple _int _bool))) 
+  (define t4 (array (2 2 3) (_tuple _int (_tuple _int (_tuple _int _bool)))
                     (((#(2 #(2 #(3 #t))) #(1 #(3 #(5 #t))) #(4 #(16 #(7 #t)))) (#(4 #(5 #(3 #f))) #(1 #(6 #(15 #f))) #(14 #(26 #(7 #t)))))
                      ((#(12 #(12 #(13 #t))) #(11 #(13 #(15 #t))) #(14 #(26 #(17 #t)))) (#(14 #(25 #(13 #f))) #(11 #(16 #(25 #f))) #(24 #(26 #(17 #t))))))))
   (define t4-c (car t4))
@@ -66,9 +68,9 @@
 (test-case "test 6"
   (display "test 6\n")
   (define t6 (array (2 2 3) (_tuple _int _bool (_tuple _double))
-                    (((#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0))) 
-                      (#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0)))) 
-                     ((#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0))) 
+                    (((#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0)))
+                      (#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0))))
+                     ((#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0)))
                       (#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0)))))))
   (define t6-c (car t6))
   (define t6-rkt (cadr t6))

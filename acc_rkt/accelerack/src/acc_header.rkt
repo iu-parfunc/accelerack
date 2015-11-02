@@ -6,7 +6,7 @@
 
 (provide libacclib)
 
-(define-runtime-path libacc "../acc_c/libacc")
+(define-runtime-path libacc "../../../acc_c/libacc")
 
 (define libacclib (ffi-lib libacc))
 (define-ffi-definer define-libintegrator libacclib)

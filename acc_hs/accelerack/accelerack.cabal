@@ -40,6 +40,7 @@ executable libacc-hs.so
                    containers,
                    template-haskell,
                    mtl
+    -- This would look for it as a "C Library" which it doesn't have path to find:
     --extra-libraries: HSrts-ghc7.10.2
     ghc-options: -shared -dynamic -fPIC
     default-language: Haskell2010

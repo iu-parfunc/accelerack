@@ -10,7 +10,7 @@
 (require accelerack)
 
 
-(define libacchslib (ffi-lib "../acc_hs/.stack-work/install/x86_64-linux/lts-3.5/7.10.2/bin/libacc-hs.so"))
+; (define libacchslib (ffi-lib "../acc_hs/.stack-work/install/x86_64-linux/lts-3.5/7.10.2/bin/libacc-hs.so"))
 ; (define-ffi-definer define-libintegrator libacclib)
 ; (define-libintegrator modify_vector (_fun _c-vector-pointer _int -> _void))
 ; (define-libintegrator modify_array (_fun _c-array-pointer _string -> _void))

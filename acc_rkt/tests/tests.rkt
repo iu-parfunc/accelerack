@@ -11,7 +11,7 @@
 (require accelerack)
 
 
-(define-runtime-path libacc_hs "../../acc_hs/.stack-work/install/x86_64-linux/lts-3.5/7.10.2/bin/libacc-hs.so")
+(define-runtime-path libacc_hs "../../build/libacc-hs.so")
 (define libacchslib (ffi-lib libacc_hs))
 ; (define-ffi-definer define-libintegrator libacclib)
 ; (define-libintegrator modify_vector (_fun _c-vector-pointer _int -> _void))

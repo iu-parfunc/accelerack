@@ -17,52 +17,52 @@
 (define-libintegrator RKT_PAYLOAD_PTR _int)
 
 (provide
-   _c-array
-   _c-array-pointer
-   c-array-type
-   c-array-shape
-   c-array-data
-   make-c-array
-   _c-vector
-   _c-vector-pointer
-   c-vector-length
-   c-vector-type
-   c-vector-data
-   make-c-vector
-   rkt-vector
-   rkt-vector-length
-   rkt-vector-type
-   rkt-vector-data
-   rkt-vector?
-   make-rkt-vector
-   rkt-array
-   rkt-array-type
-   rkt-array-shape
-   rkt-array-data
-   make-rkt-array
+   _acc-array
+   _acc-array-pointer
+   acc-array-type
+   acc-array-shape
+   acc-array-data
+   make-acc-array
+   _segment
+   _segment-pointer
+   segment-length
+   segment-type
+   segment-data
+   make-segment
+   rkt-segment
+   rkt-segment-length
+   rkt-segment-type
+   rkt-segment-data
+   rkt-segment?
+   make-rkt-segment
+   rkt-acc-array
+   rkt-acc-array-type
+   rkt-acc-array-shape
+   rkt-acc-array-data
+   make-rkt-acc-array
    scalar
    scalar-length)
 
 ;; C structure to store tuple/scalar information (one payload)
-(define-cstruct _c-vector
+(define-cstruct _segment
    ([length _int]
     [type _int]
     [data _gcpointer]))
 
 ;; C structure to store accelerate arrays information (one logical array)
-(define-cstruct _c-array
+(define-cstruct _acc-array
   ([type _int]
-   [shape _c-vector-pointer]
-   [data _c-vector-pointer]))
+   [shape _segment-pointer]
+   [data _segment-pointer]))
 
 ;; Racket structure to store tuple/scalar information
-(define-struct rkt-vector
+(define-struct rkt-segment
    (length
     type
     data))
 
 ;; Racket structure to store accelerate arrays information
-(define-struct rkt-array
+(define-struct rkt-acc-array
   (type
    shape
    data))

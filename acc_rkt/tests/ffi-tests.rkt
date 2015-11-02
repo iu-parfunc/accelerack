@@ -31,14 +31,14 @@
 
 (printf "########## Ready to call haskell functions ###########\n")
 
-(define-ifc modify_array (_fun  _c-array-pointer -> _void))
+(define-ifc modify_array (_fun _acc-array-pointer -> _void))
 
 (define t1 (array (2 3) _int ((2 3 11) (50 2 41))))
 (define t1-c (car t1))
 (define t1-rkt (cadr t1))
 (printf "Before modify_array Call\n")
 (readData* t1-c)
-;;(modify_array t1-c)
+;(modify_array t1-c)
 (printf "After modify_array Call\n")
 (readData* t1-c)
 
@@ -49,7 +49,7 @@
 (define t4-rkt (cadr t4))
 ;(printf "Before modify_array Call\n")
 ;(readData* t4-c)
-;;(c-vector-type (c-array-data t4-c))
+;;(segment-type (acc-array-data t4-c))
 ;(modify_array t4-c)
 ;(printf "After modify_array Call\n")
 ;(readData* t4-c)
@@ -57,8 +57,8 @@
 
 (define-capi gpu (_fun _string -> _string))
 
-;;(printf "\ncalling gpu function:\n")
-;;(gpu "show (I.run $ (A.use (A.fromList (A.Z A.:.3 A.:.5) [1..] :: A.Array A.DIM2 Int)))")
+(printf "\ncalling gpu function:\n")
+(gpu "show (run $ (use (fromList (Z :.3 :.5) [1..] :: Array DIM2 Int)))")
 
 (printf "########## Exiting racket safely ############\n")
 

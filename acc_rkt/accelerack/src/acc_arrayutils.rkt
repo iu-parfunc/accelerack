@@ -145,7 +145,7 @@
     ((equal? _double type) 'c-double)
     ((equal? _int type) 'c-int)
     ((equal? _bool type) 'c-bool)
-    ((equal? _c-vector type) 'tuple-payload)
+    ((equal? _segment type) 'tuple-payload)
     ((symbol? type) type)))
 
 
@@ -171,7 +171,7 @@
     ((equal? type 0) _int)
     ((equal? type 1) _double)
     ((equal? type 2) _bool)
-    ((equal? type 3) _c-vector-pointer)
+    ((equal? type 3) _segment-pointer)
     ((equal? type 4) 'scalar-payload)
     ((equal? type 5) 'tuple-payload)
     ((equal? type 6) _gcpointer)
@@ -231,24 +231,24 @@
       (else (* (car ls) (md_array-length (cdr ls)))))))
 
 
-;; Return type of c-array pointer reference
-;; Arguments -> pointer to c-array
+;; Return type of acc-array pointer reference
+;; Arguments -> pointer to acc-array
 ;; Return value -> type
 
 (define (getType c-ref)
-  (c-array-type c-ref))
+  (acc-array-type c-ref))
 
 
-;; Return shape of c-array pointer reference
-;; Arguments -> pointer to c-array
+;; Return shape of acc-array pointer reference
+;; Arguments -> pointer to acc-array
 ;; Return value -> shape
 
 (define (getDimension c-ref)
-  (c-array-shape c-ref))
+  (acc-array-shape c-ref))
 
-;; Return payload of c-array pointer reference
-;; Arguments -> pointer to c-array
+;; Return payload of acc-array pointer reference
+;; Arguments -> pointer to acc-array
 ;; Return value -> data
 
 (define (getData c-ref)
-  (c-array-data c-ref))
+  (acc-array-data c-ref))

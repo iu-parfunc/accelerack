@@ -1,9 +1,14 @@
 all: rts c
 
+# GHC=`stack exec ghc --`
+# GHC=~/.stack/programs/x86_64-osx/ghc-7.10.2/bin/ghc
+GHC=~/.stack/programs/x86_64-linux/ghc-7.10.2/bin/ghc
+GCC=gcc
+
 rts:
-	ghc --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc7.10.2
+	$(GHC) --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc7.10.2
 c:
-	gcc -shared -fPIC -o libacc.so acc_cfile.c
+	$(GCC) -shared -fPIC -o libacc.so acc_cfile.c
 
 clean:
 	rm -f *.o *.so

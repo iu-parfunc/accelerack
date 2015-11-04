@@ -8,6 +8,4 @@ if [ -d $RACKETBIN ]; then
     export PATH=$RACKETBIN:$PATH
 fi
 
-
-racket tests/tests.rkt
-racket tests/ffi-tests.rkt
+raco test ../acc_rkt

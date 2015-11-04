@@ -3,105 +3,164 @@
 ;; General tests??
 
 (require ffi/unsafe
-         ffi/unsafe/define
-         ffi/unsafe/cvector
+         ;ffi/unsafe/define
+         ;ffi/unsafe/cvector
+         ;racket/runtime-path
          rackunit
-         racket/runtime-path)
+         rackunit/text-ui)
 
 (require accelerack)
-
-(define-runtime-path libacc_hs "../../build/libacc-hs.so")
+(require "test-utils.rkt")
+;(define-runtime-path libacc_hs "../../build/libacc-hs.so")
 ;; Disabling for now, gets a link error on stg_forkOnzh
-(define libacchslib (ffi-lib libacc_hs))
+;(define libacchslib (ffi-lib libacc_hs))
 
 ; (define-ffi-definer define-libintegrator libacclib)
 ; (define-libintegrator modify_vector (_fun _c-vector-pointer _int -> _void))
 ; (define-libintegrator modify_array (_fun _c-array-pointer _string -> _void))
 ; (define-libintegrator rkt_handler (_fun _c-array-pointer _string -> _void))
 
-(test-case "test 1"
-  (display "test 1\n")
-  (define t1 (array (2 3) _double ((2.0 3.2 11.2) (50.1 2.2 41.9))))
-  (define t1-c (car t1))
-  (define t1-rkt (cadr t1))
-  (display (readData* t1-c)) (newline)
-  (display (readData*-rkt t1-rkt)) (newline) (newline))
+(define acc-invalid-test_cases (test-suite
+  "invalid test cases"
+  
+  (test-case "test-case 1"
+             "test-case 1"
+             (check-exn exn:fail?
+                        (lambda ()
+                          (array () _int #f)))
+             (display "Test 1 Success !!!") (newline))
 
-(test-case "test 2"
-  (display "test 2\n")
-  (define t2 (array (3) (_tuple _int (_tuple _int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f)))))
-  (define t2-c (car t2))
-  (define t2-rkt (cadr t2))
-  (display (readData* t2-c)) (newline)
-  (display (readData*-rkt t2-rkt)) (newline) (newline))
+  (test-case "test-case 2"
+             "test-case 2"
+             (check-exn exn:fail?
+                        (lambda ()
+                          (array () _double #f)))
+             (display "Test 2 Success !!!") (newline))
+  
+  (test-case "test-case 3"
+             "test-case 3"
+             (check-exn exn:fail?
+                        (lambda ()
+                          (array (2 3) _int 5)))
+             (display "Test 3 Success !!!") (newline))
 
-(test-case "test 3"
-  (display "test 3\n")
-  (define t3 (array (2 3) (_tuple _int (_tuple _int (_tuple _int _bool)))
-                    ((#(2 #(2 #(3 #t))) #(1 #(3 #(5 #t))) #(4 #(16 #(7 #t))))
-                     (#(4 #(5 #(3 #f))) #(1 #(6 #(15 #f))) #(14 #(26 #(7 #t)))))))
-  (define t3-c (car t3))
-  (define t3-rkt (cadr t3))
-  (display (readData* t3-c)) (newline)
-  (acc (map 'add1 t3-c))
-  (display (readData* t3-c)) (newline) (newline))
+  (test-case "test-case 4"
+             "test-case 4"
+             (check-exn exn:fail?
+                        (lambda ()
+                          (array (9) _int (1 2 3 4 5 6 7 8))))
+             (display "Test 4 Success !!!") (newline))
+  
+  (test-case "test-case 5"
+             "test-case 5"
+             (check-exn exn:fail?
+                        (lambda ()
+                          (array (4) (_tuple _int (_tuple _int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))))
+             (display "Test 5 Success !!!") (newline))))
 
-(test-case "test 4"
-  (display "test 4\n")
-  (define t4 (array (2 2 3) (_tuple _int (_tuple _int (_tuple _int _bool)))
-                    (((#(2 #(2 #(3 #t))) #(1 #(3 #(5 #t))) #(4 #(16 #(7 #t)))) (#(4 #(5 #(3 #f))) #(1 #(6 #(15 #f))) #(14 #(26 #(7 #t)))))
-                     ((#(12 #(12 #(13 #t))) #(11 #(13 #(15 #t))) #(14 #(26 #(17 #t)))) (#(14 #(25 #(13 #f))) #(11 #(16 #(25 #f))) #(24 #(26 #(17 #t))))))))
-  (define t4-c (car t4))
-  (define t4-rkt (cadr t4))
-  (display (readData* t4-c)) (newline)
-  (display (readData*-rkt t4-rkt)) (newline)
-  (acc (map 'add1 t4-c))
-  (display (readData* t4-c)) (newline) (newline))
+(define acc-valid-test_cases (test-suite
+  "valid test cases"
+  
+  (test-case "test-case 1"
+             "test-case 1"
+             (letrec ([ls (array () _int 24)]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)])
+                     (check-equal? '(24) (readData* cptr)))
+             (display "Test 1 Success !!!") (newline))
 
-(test-case "test 5"
-  (display "test 5\n")
-  (define t5 (array (3) (_tuple _int (_tuple _int (_tuple _int _int))) (#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 13))))))
-  (define t5-c (car t5))
-  (define t5-rkt (cadr t5))
-  (display (readData* t5-c)) (newline)
-  (acc (map 'sub1 t5-c))
-  (display (readData* t5-c)) (newline)
-  (display (readData*-rkt t5-rkt)) (newline) (newline))
+  (test-case "test-case 2"
+             "test-case 2"
+             (letrec ([ls (array (8) _int (1 2 3 4 5 6 7 8))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)])
+                     (check-equal? '(1 2 3 4 5 6 7 8) (readData* cptr)))
+             (display "Test 2 Success !!!") (newline))
 
-(test-case "test 6"
-  (display "test 6\n")
-  (define t6 (array (2 2 3) (_tuple _int _bool (_tuple _double))
-                    (((#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0)))
-                      (#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0))))
-                     ((#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0)))
-                      (#(0 #f #(0.0)) #(0 #f #(0.0)) #(0 #f #(0.0)))))))
-  (define t6-c (car t6))
-  (define t6-rkt (cadr t6))
-  (display (readData* t6-c)) (newline)
-  (acc (map 'add1 t6-c))
-  (display (readData* t6-c)) (newline)
-  (display (readData*-rkt t6-rkt)) (newline) (newline))
+  (test-case "test-case 3"
+             "test-case 3"
+             (letrec ([ls (array (2 4) _bool ((#t #t #t #t) (#f #f #f #f)))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)])
+                     (check-equal? '((#t #t #t #t) (#f #f #f #f)) (readData* cptr)))
+             (display "Test 3 Success !!!") (newline))
 
-(test-case "test 7"
-  (display "test 7\n")
-  (define t7 (array (8) _int (1 2 3 4 5 6 7 8)))
-  (define t7-c (car t7))
-  (define t7-rkt (cadr t7))
-  (display (readData* t7-c)) (newline)
-  (display (readData*-rkt t7-rkt)) (newline) (newline))
+  (test-case "test-case 4"
+             "test-case 4"
+             (letrec ([ls (array (2 3) _double ((2.0 3.2 11.2) (50.1 2.2 41.9)))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)])
+                     (check-equal? (readData* cptr) (readData*-rkt rktptr)))
+             (display "Test 4 Success !!!") (newline))
 
-(test-case "test 8"
-  (display "test 8\n")
-  (define t8 (array () _int 24))
-  (define t8-c (car t8))
-  (define t8-rkt (cadr t8))
-  (display (readData* t8-c)) (newline)
-  (display (readData*-rkt t8-rkt)) (newline) (newline))
+  (test-case "test-case 5"
+             "test-case 5"
+             (letrec ([ls (array (3) (_tuple _int (_tuple _int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)])
+                     (check-equal? (readData* cptr) (readData*-rkt rktptr)))
+             (display "Test 5 Success !!!") (newline))
 
-(test-case "test 9"
-  (display "test 9\n")
-  (define t9 (array (2 4) _bool ((#t #t #t #t) (#f #f #f #f))))
-  (define t9-c (car t9))
-  (define t9-rkt (cadr t9))
-  (display (readData* t9-c)) (newline)
-  (display (readData*-rkt t9-rkt)) (newline) (newline))
+  (test-case "test-case 6"
+             "test-case 6"
+             (letrec ([ls (array (2 3)
+                                 (_tuple _int (_tuple _int (_tuple _int _int)))
+                                 ((#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 7))))
+                                  (#(4 #(5 #(3 7))) #(1 #(6 #(15 6))) #(14 #(26 #(7 5))))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [data (readData* cptr)])
+                     (begin
+                       (acc (map 'add1 cptr))
+                       (check-equal? (readData* cptr) (add1* data))))
+             (display "Test 6 Success !!!") (newline))
+
+  (test-case "test-case 7"
+             "test-case 7"
+             (letrec ([ls (array (2 2 3)
+                                 (_tuple _int _double (_tuple _double))
+                                 (((#(0 1.1 #(0.0)) #(0 2.2 #(0.0)) #(0 3.3 #(0.0)))
+                                   (#(0 3.3 #(0.0)) #(0 5.5 #(0.0)) #(0 7.7 #(0.0))))
+                                  ((#(0 2.2 #(0.0)) #(0 3.3 #(0.0)) #(0 4.4 #(0.0)))
+                                   (#(0 4.4 #(0.0)) #(0 6.6 #(0.0)) #(0 1.1 #(0.0))))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [data (readData* cptr)])
+                     (begin
+                       (acc (map 'add1 cptr))
+                       (check-equal? (readData* cptr) (add1* data))))
+             (display "Test 7 Success !!!") (newline))
+
+  (test-case "test-case 8"
+             "test-case 8"
+             (letrec ([ls (array (2 2 3)
+                                 (_tuple _int (_tuple _int (_tuple _int _double)))
+                                 (((#(2 #(2 #(3 1.1))) #(1 #(3 #(5 2.2))) #(4 #(16 #(7 4.3))))
+                                   (#(4 #(5 #(3 2.1))) #(1 #(6 #(15 5.4))) #(14 #(26 #(7 23.3)))))
+                                  ((#(12 #(12 #(13 4.3))) #(11 #(13 #(15 12.1))) #(14 #(26 #(17 21.6))))
+                                   (#(14 #(25 #(13 7.5))) #(11 #(16 #(25 8.3))) #(24 #(26 #(17 2.7)))))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [data (readData* cptr)])
+                     (begin
+                       (acc (map 'add1 cptr))
+                       (check-equal? (readData* cptr) (add1* data))))
+             (display "Test 8 Success !!!") (newline))
+
+  (test-case "test-case 9"
+             "test-case 9"
+             (letrec ([ls (array (3) (_tuple _int (_tuple _int (_tuple _int _int))) (#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 13)))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [data (readData* cptr)])
+                     (begin
+                       (acc (map 'sub1 cptr))
+                       (check-equal? (readData* cptr) (sub1* data))))
+             (display "Test 9 Success !!!") (newline))))
+
+(display "\n<----------- Invalid test-cases Run ----------->\n")
+(if (run-tests acc-invalid-test_cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))
+(display "\n<----------- Valid test-cases Run ----------->\n")
+(if (run-tests acc-valid-test_cases) (display "\n!!! Test Run Successfull !!!\n\n") (display "\n!!! Test Run Failed !!!\n\n"))
+
+

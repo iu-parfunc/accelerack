@@ -19,5 +19,6 @@ fi
 
 racket --version
 raco pkg install --skip-installed --link accelerack
+raco pkg install -u --auto c-defs
 #make clean
 #make

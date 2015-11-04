@@ -9,7 +9,8 @@ cache:
 before_install:
 - mkdir -p ~/.local/bin
 - export PATH=~/.local/bin:$PATH
-- travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.6.0/stack-0.1.6.0-linux-x86_64.tar.gz | tar -zx -C ~/.local/bin/stack
+- travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.6.0/stack-0.1.6.0-linux-x86_64.tar.gz | tar -zx -C ~/.local/bin
+- mv ~/.local/bin/stack-0.1.6.0-linux-x86_64/stack ~./local/bin/stack
 - chmod a+x ~/.local/bin/stack
 - cat /proc/cpuinfo | grep name
 

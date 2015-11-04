@@ -18,7 +18,7 @@ if [ -d $RACKETBIN ]; then
 fi
 
 racket --version
-raco pkg install --skip-installed --link accelerack
 raco pkg install -u --auto c-defs
+raco pkg install --skip-installed --link accelerack
 #make clean
 #make

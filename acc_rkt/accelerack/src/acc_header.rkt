@@ -4,22 +4,28 @@
 
 (require ffi/unsafe
          ffi/unsafe/define
-         racket/runtime-path)
+         racket/runtime-path
+         c-defs)
 
-(provide libacclib)
-
-(define-runtime-path libacc "../../../acc_c/libacc")
-
-(define libacclib (ffi-lib libacc))
-(define-ffi-definer define-libintegrator libacclib)
-(define-libintegrator C_INT _int)
-(define-libintegrator C_BOOL _int)
-(define-libintegrator C_DOUBLE _int)
-(define-libintegrator C_PTR _int)
-(define-libintegrator ACC_PAYLOAD_PTR _int)
-(define-libintegrator SCALAR_PAYLOAD _int)
-(define-libintegrator TUPLE_PAYLOAD _int)
-(define-libintegrator RKT_PAYLOAD_PTR _int)
+;; Import the acc type definitions from the c header file to maintain consistent naming with haskell
+(define-runtime-path acc_types "../../../acc_c/acc_types.h")
+(define ACC_TYPES (c-defs (path->string acc_types)))
+(define-values (C_INT
+                C_DOUBLE
+                C_BOOL
+                ACC_PAYLOAD_PTR
+                SCALAR_PAYLOAD
+                TUPLE_PAYLOAD
+                C_PTR
+                RKT_PAYLOAD_PTR)
+  (ACC_TYPES "%d" "C_INT"
+                  "C_DOUBLE"
+                  "C_BOOL"
+                  "ACC_PAYLOAD_PTR"
+                  "SCALAR_PAYLOAD"
+                  "TUPLE_PAYLOAD"
+                  "C_PTR"
+                  "RKT_PAYLOAD_PTR"))
 
 (provide
 

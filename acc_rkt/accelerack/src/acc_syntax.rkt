@@ -2,6 +2,7 @@
 
 (require ffi/unsafe
          ffi/unsafe/define
+	 racket/runtime-path
          accelerack/src/acc_parse
          accelerack/src/acc_allocate
          accelerack/src/acc_arrayutils
@@ -21,6 +22,10 @@
     (equal? (hash-ref ht id UNDEFINED) UNDEFINED))
   )
 
+;; TODO - The calls to functions in libacclib need to be replaced by calls to haskell functions
+
+(define-runtime-path libacc "../../../acc_c/libacc.so")
+(define libacclib (ffi-lib libacc))
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator rkt_handler (_fun _acc-array-pointer _string -> _void))
 

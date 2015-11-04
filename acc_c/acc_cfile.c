@@ -1,24 +1,8 @@
+/******************************************************************
+* C file having functions to add and sub acc arrays (for testing) *
+*******************************************************************/
+
 #include "acc_header.h"
-
-/*
-#define C_INT 0
-#define C_DOUBLE 1
-#define C_BOOL 2
-#define C_PTR 3
-#define ACC_PAYLOAD_PTR 4
-#define RKT_PAYLOAD_PTR 5
-#define SCALAR_PAYLOAD 6
-#define TUPLE_PAYLOAD 7
-*/
-
-int C_INT = 0;
-int C_DOUBLE = 1;
-int C_BOOL = 2;
-int ACC_PAYLOAD_PTR = 3;
-int SCALAR_PAYLOAD = 4;
-int TUPLE_PAYLOAD = 5;
-int C_PTR = 6;
-int RKT_PAYLOAD_PTR = 7;
 
 void modify_vector (cvector *cv1, int value)
 {
@@ -44,7 +28,7 @@ void modify_vector (cvector *cv1, int value)
 
       for (i = 0; i < cv1->length; i++)
       {
-	data[i] += (		double) value;
+	data[i] += (double) value;
       }
 
       break;
@@ -76,15 +60,6 @@ void modify_vector (cvector *cv1, int value)
 
 void modify_array (carray *c1, char *expr)
 {
-  if (scalar == c1->type)
-  {
-    printf("Scalar data :\n");
-  }
-  else
-  {
-    printf("Tuple data :\n");
-  }
-
   int data = 0;
 
   if (0 == strcmp("add1", expr))

@@ -16,8 +16,8 @@ before_install:
 install:
   - pwd
   - cd acc_c   && ./.prevalidate.sh && cd ..
-  - cd acc_hs  && ./.prevalidate.sh && cd ..
   - cd acc_rkt && ./.prevalidate.sh && cd ..
+  - cd acc_hs  && ./.prevalidate.sh && cd ..
 
 script:
   - pwd 

@@ -1,17 +1,22 @@
 #lang racket
 
-(require ffi/unsafe 
+(require (except-in ffi/unsafe ->)
          ffi/unsafe/cvector
          accelerack/src/acc_header
          accelerack/src/acc_arrayutils
+         racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
-(provide acc_alloc
-         generatePayload
-         readData
-         readData*
-         readData-rkt
-         readData*-rkt)
+(provide
+  (contract-out
+    [acc_alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) string? pair?)]
+    [generatePayload (-> pair? (or/c ctype? symbol?) pair?)] 
+    [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) pair?)]
+    [readData (-> segment? (or/c null? pair?))]
+    [readData* (-> acc-array? pair?)]
+    [readData-rkt (-> rkt-segment? pair?)]
+    [readData*-rkt (-> rkt-acc-array? pair?)]))
+
 
 ;; Helper to generatePayload function
 ;; Arguments -> (list containing the payload, type, initial empty list)
@@ -28,13 +33,13 @@
     ((pair? (caar data)) (letrec ([payload* (generatePayload-helper (car data) '() '())]
                                   [payload*-c (car payload*)]
                                   [payload*-rkt (cadr payload*)])
-                              (generatePayload-helper (cdr data) (append-end payload*-c payload-c) (append-end payload*-rkt payload-rkt))))
+                                 (generatePayload-helper (cdr data) (append-end payload*-c payload-c) (append-end payload*-rkt payload-rkt))))
     (else (let ([payload* (list->cvector (car data) (symbol->ctype (get-ctype (caar data))))])
                (generatePayload-helper (cdr data) 
-                                        (append-end (make-segment (length (car data)) ((ctype-scheme->c scalar) (get-ctype (caar data)))
-                                                                   (cvector-ptr payload*))
+                                       (append-end (make-segment (length (car data)) ((ctype-scheme->c scalar) (get-ctype (caar data)))
+                                                                 (cvector-ptr payload*))
                                                     payload-c)
-                                        (append-end (make-rkt-segment (length (car data)) 
+                                       (append-end (make-rkt-segment (length (car data)) 
                                                                      ((ctype-scheme->c scalar) (get-ctype (caar data)))
                                                                      payload*)
                                                     payload-rkt))))))
@@ -47,8 +52,8 @@
 (define (generatePayload data type)
   (if (ctype? type)
       (let ([payload (list->cvector data type)])
-           (list 
-             (make-segment 
+           (list
+             (make-segment
                (length data) 
                ((ctype-scheme->c scalar) (ctype->symbol type)) 
                (cvector-ptr payload))
@@ -92,11 +97,10 @@
   (letrec ([len (segment-length cptr)]
            [cptr* (segment-data cptr)]
            [type (mapType (segment-type cptr))]
-           [data (ptr-ref* cptr* type 0 len)])
-          (if (ctype? type)
+           [data (if (equal? type 'empty-type) '() (ptr-ref* cptr* type 0 len))])
+          (if (and (ctype? type) (not (equal? _segment-pointer type))) 
               data
               (readData-helper data))))
-
 
 ;; Read data from given memory location
 ;; Arguments -> acc-array pointer
@@ -110,7 +114,7 @@
            [shape (readData shape-ptr)])
           (if (equal? type 'scalar-payload)
               (list->md_array data shape)
-              (zip (readData-helper data)))))
+              (zip data)))) ;; (readData-helper data)
 
 ;; Helper to readData function
 ;; Arguments -> list containing segment pointers
@@ -172,9 +176,9 @@
 
 (define (getUnit-scalar type)
   (cond
-    ((equal? '_int type) 0)
-    ((equal? '_double type) 0.0)
-    ((equal? '_bool type)#f)))
+    ((equal? _int type) 0)
+    ((equal? _double type) 0.0)
+    ((equal? _bool type) #f)))
 
 
 ;; Allocates a result structure
@@ -195,10 +199,13 @@
 
 (define (alloc-unit shape type)
   (letrec ([type-data (if (ctype? type) (getUnit-scalar type) (getUnit-tuple type))]
-           [init-data (car (alloc-unit* (reverse shape) type-data '()))])
-          (if (ctype? (symbol->ctype type)) 
-              (generatePayload (flatten init-data) type)
-              (generatePayload (unzip init-data) type))))
+           [type* (if (ctype? type) ((ctype-scheme->c scalar) 'scalar-payload) ((ctype-scheme->c scalar) 'tuple-payload))]
+           [shape* (if (null? shape) '(1) shape)]
+           [shape** (generatePayload shape* _int)]
+           [init-data (car (alloc-unit* (reverse shape*) type-data '()))]
+           [data (if (ctype? type) (generatePayload (flatten init-data) type) (generatePayload (unzip init-data) type))])
+          (list (make-acc-array type* (car shape**) (car data))
+                (make-rkt-acc-array type* (cadr shape**) (cadr data)))))
 
 ;; Allocate memory for the payload
 ;; Arguments -> (type, shape,  payload, expression)

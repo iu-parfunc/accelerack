@@ -156,11 +156,111 @@
                      (begin
                        (acc (map 'sub1 cptr))
                        (check-equal? (readData* cptr) (sub1* data))))
-             (display "Test 9 Success !!!") (newline))))
+             (display "Test 9 Success !!!") (newline))
+  (test-case "test-case 10"
+             "test-case 10"
+             (letrec ([ls (array (3) (_tuple _int (_tuple _int _bool _bool) _double) (#(2 #(2 #t #f) 1.1) #(1 #(3 #f #f) 3.3) #(4 #(16 #t #f) 2.4)))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)])
+                     (check-equal? (readData* cptr) (readData*-rkt rktptr)))
+             (display "Test 10 Success !!!") (newline))
+  #|(test-case "test-case 11"
+             "test-case 11"
+             (letrec ([ls (array (2 3 4 5) (_tuple _int (_tuple _bool) _double)
+                                           ((((#(2 #(#t) 1.1) #(1 #(#t) 3.3) #(4 #(#t) 2.4) #(5 #(#t) 3.4) #(6 #(#t) 2.4))
+                                              (#(3 #(#t) 1.1) #(6 #(#t) 3.3) #(9 #(#t) 2.4) #(15 #(#f) 13.4) #(16 #(#t) 21.4))
+                                              (#(4 #(#t) 1.1) #(7 #(#t) 3.3) #(10 #(#t) 2.4) #(25 #(#f) 23.4) #(26 #(#f) 22.4))
+                                              (#(5 #(#t) 1.1) #(8 #(#t) 3.3) #(11 #(#t) 2.4) #(35 #(#t) 33.4) #(16 #(#t) 23.4)))
+
+                                             ((#(12 #(#t) 1.1) #(1 #(#t) 3.3) #(4 #(#t) 2.4) #(5 #(#t) 3.4) #(6 #(#t) 2.4))
+                                              (#(13 #(#t) 1.1) #(6 #(#t) 3.3) #(9 #(#t) 2.4) #(15 #(#f) 13.4) #(16 #(#t) 21.4))
+                                              (#(14 #(#t) 1.1) #(7 #(#t) 3.3) #(10 #(#t) 2.4) #(25 #(#f) 23.4) #(26 #(#f) 22.4))
+                                              (#(15 #(#t) 1.1) #(8 #(#t) 3.3) #(11 #(#t) 2.4) #(35 #(#t) 33.4) #(16 #(#t) 23.4)))
+
+                                             ((#(22 #(#t) 1.1) #(1 #(#t) 2.3) #(4 #(#t) 21.4) #(5 #(#t) 3.4) #(6 #(#t) 2.4))
+                                              (#(23 #(#t) 1.1) #(16 #(#t) 3.3) #(9 #(#t) 22.4) #(15 #(#f) 13.4) #(16 #(#t) 21.4))
+                                              (#(24 #(#t) 1.1) #(3 #(#t) 2.3) #(10 #(#t) 12.4) #(25 #(#f) 23.4) #(3 #(#f) 22.4))
+                                              (#(25 #(#t) 1.1) #(4 #(#t) 3.3) #(11 #(#t) 22.4) #(35 #(#f) 33.4) #(6 #(#t) 23.4))))
+
+                                            (((#(12 #(#t) 1.1) #(1 #(#t) 1.3) #(4 #(#t) 2.4) #(0 #(#t) 3.4) #(6 #(#t) 2.4))
+                                              (#(13 #(#t) 1.1) #(6 #(#t) 3.3) #(9 #(#t) 2.4) #(1 #(#f) 13.4) #(16 #(#t) 21.4))
+                                              (#(14 #(#t) 1.1) #(7 #(#t) 13.3) #(10 #(#t) 2.4) #(2 #(#f) 3.4) #(26 #(#f) 22.4))
+                                              (#(15 #(#t) 1.1) #(8 #(#t) 3.3) #(11 #(#t) 2.4) #(3 #(#t) 5.4) #(16 #(#f) 23.4)))
+
+                                             ((#(2 #(#t) 1.1) #(1 #(#t) 2.3) #(4 #(#t) 2.4) #(5 #(#t) 3.4) #(6 #(#t) 2.4))
+                                              (#(3 #(#t) 1.1) #(6 #(#t) 3.3) #(9 #(#f) 2.4) #(1 #(#f) 13.4) #(16 #(#t) 21.4))
+                                              (#(4 #(#t) 1.1) #(7 #(#t) 2.3) #(10 #(#f) 2.4) #(2 #(#f) 23.4) #(26 #(#f) 22.4))
+                                              (#(5 #(#t) 1.1) #(8 #(#t) 3.3) #(11 #(#t) 2.4) #(3 #(#t) 33.4) #(16 #(#t) 23.4)))
+
+                                             ((#(72 #(#t) 1.1) #(1 #(#t) 2.3) #(4 #(#t) 21.4) #(1 #(#t) 3.4) #(6 #(#t) 2.4))
+                                              (#(63 #(#t) 1.1) #(6 #(#t) 3.3) #(8 #(#t) 2.4) #(2 #(#f) 3.4) #(16 #(#t) 21.4))
+                                              (#(54 #(#t) 1.1) #(7 #(#t) 2.3) #(1 #(#t) 12.4) #(3 #(#f) 1.4) #(3 #(#f) 22.4))
+                                              (#(35 #(#t) 1.1) #(2 #(#t) 3.3) #(7 #(#t) 7.4) #(4 #(#f) 3.4) #(6 #(#t) 23.4))))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)])
+                     (check-equal? (readData* cptr) (readData*-rkt rktptr)))
+             (display "Test 11 Success !!!") (newline))|#
+  (test-case "test-case 12"
+             "test-case 12"
+             (letrec ([ls (array () _int 99)]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [temp (acc-map add1 cptr)])
+                     (check-equal? (readData* temp) (map add1 (readData* cptr))))
+             (display "Test 12 Success !!!") (newline))
+  (test-case "test-case 13"
+             "test-case 13"
+             (letrec ([ls (array (6) _int (98 99 100 101 102 103))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [temp (acc-map sub1 cptr)])
+                     (check-equal? (readData* temp) (map sub1 (readData* cptr))))
+             (display "Test 13 Success !!!") (newline))
+  (test-case "test-case 14"
+             "test-case 14"
+             (letrec ([ls (array (2 3) _int ((198 199 200) (301 331 109)))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [temp (acc-map (lambda (x) (+ x 10)) cptr)])
+                     (check-equal? (readData (acc-array-data temp)) (map (lambda (x) (+ x 10)) (readData (acc-array-data cptr)))))
+             (display "Test 14 Success !!!") (newline))
+  (test-case "test-case 15"
+             "test-case 15"
+             (letrec ([ls (array (2 3 4) _int (((1 2 3 4) (5 6 7 8) (9 10 11 12)) ((13 14 15 16) (17 18 19 20) (21 22 23 24))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [temp (acc-map (lambda (x) (+ x 100)) cptr)])
+                     (check-equal? (readData (acc-array-data temp)) (map (lambda (x) (+ x 100)) (readData (acc-array-data cptr)))))
+             (display "Test 15 Success !!!") (newline))
+  (test-case "test-case 16"
+             "test-case 16"
+             (letrec ([ls (array (3) (_tuple _int (_tuple _int _int _double)) (#(2 #(2 2 2.2)) #(1 #(3 4 4.4)) #(4 #(6 5 5.5))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [temp (acc-map add1 cptr)])
+                     (begin
+                       (acc (map 'add1 cptr))
+                       (check-equal? (readData* temp) (readData* cptr))))
+             (display "Test 16 Success !!!") (newline))
+  (test-case "test-case 17"
+             "test-case 17"
+             (letrec ([ls (array (2 2 3) (_tuple _int _double (_tuple _double))
+                                 (((#(1 1.1 #(0.1)) #(2 2.2 #(1.0)) #(3 3.3 #(1.1)))
+                                   (#(2 3.3 #(0.2)) #(3 5.5 #(2.0)) #(6 7.7 #(2.2))))
+                                  ((#(3 2.2 #(0.3)) #(4 3.3 #(3.0)) #(7 4.4 #(3.3)))
+                                   (#(4 4.4 #(0.4)) #(5 6.6 #(4.0)) #(8 1.1 #(4.4))))))]
+                      [cptr (car ls)]
+                      [rktptr (cadr ls)]
+                      [temp (acc-map sub1 cptr)])
+                     (begin
+                       (acc (map 'sub1 cptr))
+                       (check-equal? (readData* temp) (readData* cptr))))
+             (display "Test 17 Success !!!") (newline))))
 
 (display "\n<----------- Invalid test-cases Run ----------->\n")
 (if (run-tests acc-invalid-test_cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))
 (display "\n<----------- Valid test-cases Run ----------->\n")
 (if (run-tests acc-valid-test_cases) (display "\n!!! Test Run Successfull !!!\n\n") (display "\n!!! Test Run Failed !!!\n\n"))
+
 
 

@@ -6,6 +6,7 @@
 
 
 (provide
+  get-tuple-type
   vector->list*
   unzip
   zip
@@ -27,6 +28,28 @@
   getDimension
   getData)
   
+
+(define (get-tuple-type-helper data type)
+  (cond
+    ((null? data) type)
+    ((pair? (caar data)) (letrec ([type* (get-tuple-type-helper (car data) '())]
+                                  [type** (cons '_tuple type*)])
+                                 (get-tuple-type-helper (cdr data) (append-end type** type))))
+    (else (letrec ([type* (get-ctype* (caar data))]
+                   [type** (append-end type* type)])
+                  (get-tuple-type-helper (cdr data) type**)))))
+
+(define (get-tuple-type-helper* data shape)
+  (cond
+    ((null? (cdr shape)) data)
+    (else (get-tuple-type-helper* (car data) (cdr shape)))))
+
+(define (get-tuple-type data shape)
+  (letrec ([data* (get-tuple-type-helper* data shape)]
+           [type '(_tuple)]
+           [tuple-type (get-tuple-type-helper data* type)])
+          tuple-type))
+
 
 ;; Convert given vector to list recursively
 ;; Arguments -> vector or list with nested vectors
@@ -189,6 +212,11 @@
     ((double-flonum? x) 'c-double)
     ((boolean? x) 'c-bool)))
 
+(define (get-ctype* x)
+  (cond 
+    ((exact-integer? x) '_int)
+    ((double-flonum? x) '_double)
+    ((boolean? x) '_bool)))
 
 ;; Iteratively reads the given memory location for given length
 ;; Invalid length can lead to memory corruption and segmentation fault

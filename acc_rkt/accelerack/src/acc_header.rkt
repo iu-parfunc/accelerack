@@ -39,12 +39,15 @@
    _acc-array
    _acc-array-pointer
 
+   segment?
    _segment
    _segment-pointer
    segment-length
    segment-type
    segment-data
    make-segment
+
+   ;; Racket-side versions of the C struct data (not currently used)
    rkt-segment
    rkt-segment-length
    rkt-segment-type
@@ -52,7 +55,7 @@
    rkt-segment?
    make-rkt-segment
 
-   ;; Racket-side versions of the C struct data (not currently used)
+   rkt-acc-array?
    rkt-acc-array
    rkt-acc-array-type
    rkt-acc-array-shape

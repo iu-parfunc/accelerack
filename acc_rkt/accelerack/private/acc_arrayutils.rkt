@@ -1,7 +1,7 @@
 #lang racket
 
 (require (except-in ffi/unsafe ->)
-         accelerack/src/acc_header
+         accelerack/private/acc_header
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 

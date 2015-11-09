@@ -1,15 +1,15 @@
 #lang racket
 
-(#%require accelerack/src/acc_allocate
-           accelerack/src/acc_arrayutils
-           accelerack/src/acc_header
-           accelerack/src/acc_syntax
-	   accelerack/src/acc_parse
-           accelerack/src/acc_racket_ops)
+(#%require accelerack/private/acc_allocate
+           accelerack/private/acc_arrayutils
+           accelerack/private/acc_header
+           accelerack/private/acc_syntax
+	   accelerack/private/acc_parse
+           accelerack/private/acc_racket_ops)
 
-(#%provide (all-from accelerack/src/acc_allocate)
-           (all-from accelerack/src/acc_arrayutils)
-           (all-from accelerack/src/acc_header)
-           (all-from accelerack/src/acc_syntax)
-	   (all-from accelerack/src/acc_parse)
-           (all-from accelerack/src/acc_racket_ops))
+(#%provide (all-from accelerack/private/acc_allocate)
+           (all-from accelerack/private/acc_arrayutils)
+           (all-from accelerack/private/acc_header)
+           (all-from accelerack/private/acc_syntax)
+	   (all-from accelerack/private/acc_parse)
+           (all-from accelerack/private/acc_racket_ops))

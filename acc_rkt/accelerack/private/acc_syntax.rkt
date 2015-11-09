@@ -3,10 +3,10 @@
 (require ffi/unsafe
          ffi/unsafe/define
 	 racket/runtime-path
-         accelerack/src/acc_parse
-         accelerack/src/acc_allocate
-         accelerack/src/acc_arrayutils
-         accelerack/src/acc_header)
+         accelerack/private/acc_parse
+         accelerack/private/acc_allocate
+         accelerack/private/acc_arrayutils
+         accelerack/private/acc_header)
 
 (provide acc
          array

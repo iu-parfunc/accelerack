@@ -9,7 +9,7 @@
 
 (provide
   (contract-out
-    [acc_alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) string? pair?)]
+    [acc_alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) pair?)]
     [generatePayload (-> pair? (or/c ctype? symbol?) pair?)] 
     [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) pair?)]
     [readData (-> segment? (or/c null? pair?))]
@@ -211,7 +211,7 @@
 ;; Arguments -> (type, shape,  payload, expression)
 ;; Return value -> pointer to allocated memory location
 
-(define (acc_alloc _type _shape _data exp) 
+(define (acc_alloc _type _shape _data) 
     (letrec
       ([type (if (ctype? _type) ((ctype-scheme->c scalar) 'scalar-payload) ((ctype-scheme->c scalar) 'tuple-payload))] 
        [shape (generatePayload _shape _int)]
@@ -219,8 +219,7 @@
        [shape-ptr-rkt (cadr shape)]
        [data (if (ctype? _type) (generatePayload (flatten _data) _type) (generatePayload (unzip _data) _type))]
        [data-ptr-c (car data)]
-       [data-ptr-rkt (cadr data)]
-       [expr exp])
+       [data-ptr-rkt (cadr data)])
       (list (make-acc-array type shape-ptr-c data-ptr-c)
             (make-rkt-acc-array type shape-ptr-rkt data-ptr-rkt))))
      

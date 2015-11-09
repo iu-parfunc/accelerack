@@ -1,9 +1,12 @@
 #lang racket
 
-(require ffi/unsafe
+(require (except-in ffi/unsafe ->)
+         racket/contract
          accelerack/src/acc_arrayutils)
 
-(provide verify-accelerack)
+(provide
+  (contract-out
+    [verify-accelerack (-> vector? pair?)]))
 
 (define (verify-accelerack exp)
   (define check-tuple

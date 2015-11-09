@@ -1,32 +1,34 @@
 #lang racket
 
-(require ffi/unsafe
+(require (except-in ffi/unsafe ->)
          accelerack/src/acc_header
+         racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 
 (provide
-  get-tuple-type
-  vector->list*
-  unzip
-  zip
-  zip-first
-  delete-first
-  create-ls
-  populate
-  append-end
-  scalar?
-  string->ctype
-  ctype->symbol
-  symbol->ctype
-  mapType
-  ptr-ref*
-  list->md_array
-  md_array-length
-  get-ctype
-  getType
-  getDimension
-  getData)
+  (contract-out
+    [get-tuple-type (-> pair? pair? pair?)]
+    [vector->list* (-> (or/c pair? vector?) pair?)]
+    [unzip (-> (or/c null? pair?) (or/c null? pair?))]
+    [zip (-> (or/c null? pair?) (or/c null? pair?) )]
+    [zip-first (-> (or/c pair? null?) (or/c null? pair?) (or/c null? pair?))]
+    [delete-first (-> (or/c pair? null?) (or/c null? pair?))]
+    [create-ls (-> (or/c null? pair?) (or/c null? pair?))]
+    [populate (-> (or/c null? pair?) pair? pair?)]
+    [append-end (-> any/c (or/c pair? null?) pair?)]
+    [scalar? (-> symbol? boolean?)]
+    [string->ctype (-> string? ctype?)]
+    [ctype->symbol (-> ctype? symbol?)]
+    [symbol->ctype (-> symbol? ctype?)]
+    [mapType (-> integer? (or/c ctype? symbol?))]
+    [ptr-ref* (-> cpointer? ctype? integer? integer? any/c)]
+    [list->md_array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
+    [md_array-length (-> (or/c null? pair?) integer?)]
+    [get-ctype (-> any/c symbol?)]
+    [getType (-> acc-array? integer?)]
+    [getDimension (-> acc-array? segment?)]
+    [getData (-> acc-array? segment?)]))
   
 
 (define (get-tuple-type-helper data type)

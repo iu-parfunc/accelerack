@@ -218,9 +218,9 @@
 (display "\n<----------- Accelerate test-cases Run ----------->\n")
 (if (run-tests accelerate-test-cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))
 
-(define-hs gpu (_fun _string -> _string))
+;;(define-hs gpu (_fun _string -> _string))
 
-(printf "\nSample GPU computation function:\n")
-(gpu "show (run $ (use (fromList (Z :.3 :.5) [1..] :: Array DIM2 Int)))")
+;;(printf "\nSample GPU computation function:\n")
+;;(gpu "show (run $ (use (fromList (Z :.3 :.5) [1..] :: Array DIM2 Int)))")
 
 (printf "########## Exiting racket safely ############\n")

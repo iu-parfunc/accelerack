@@ -4,7 +4,7 @@
 {-# LANGUAGE LambdaCase #-} 
 
 module Example where
-import Language.Haskell.Interpreter
+-- import Language.Haskell.Interpreter
 
 import Foreign
 import Foreign.C
@@ -66,7 +66,7 @@ instance Storable AccArray where
 
 -- Exporting defined functions
 foreign export ccall entrypoint :: Int -> IO Int
-foreign export ccall gpu :: CString -> IO CString
+-- foreign export ccall gpu :: CString -> IO CString
 foreign export ccall accelerateMap :: Ptr AccArray -> Int32 -> IO ()
 foreign export ccall modifySegment :: Ptr Segment -> Int32 -> IO ()
 
@@ -82,6 +82,7 @@ parseEither x1 =
     Right q  -> return q
 
 -- Sample GPU computation function
+{-
 gpu :: CString -> IO CString
 gpu x = do
   print "Hello from Haskell"
@@ -90,6 +91,7 @@ gpu x = do
   x <- parseEither x1
   new_str <- newCString x
   return new_str
+-}
 
 -- Converts from haskell array to accelerate array
 toAccArray :: Segment -> IO (A.Array DIM1 Int32)

@@ -1,3 +1,6 @@
+GHC=ghc
+GHC_VERSION=$(shell $(GHC) --numeric-version)
+
 all: rts c
 
 # GHC=`stack exec ghc --`
@@ -7,7 +10,7 @@ OS=$(shell if [ `uname` == "Darwin" ]; then echo osx; else echo linux; fi)
 GCC=gcc
 
 rts:
-	ghc --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc7.6.3
+	$(GHC) --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc$(GHC_VERSION)
 c:
 	$(GCC) -shared -fPIC -o libacc.so acc_cfile.c
 

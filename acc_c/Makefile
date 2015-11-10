@@ -3,7 +3,7 @@ all: rts c
 # GHC=`stack exec ghc --`
 OS=$(shell if [ `uname` == "Darwin" ]; then echo osx; else echo linux; fi)
 
-GHC=~/.stack/programs/x86_64-$(OS)/ghc-7.10.2/bin/ghc
+GHC=~/.stack/programs/x86_64-$(OS)/ghc-7.6.3/bin/ghc
 GCC=gcc
 
 rts:

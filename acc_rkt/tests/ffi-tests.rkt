@@ -10,13 +10,13 @@
 (require accelerack)
 
 (printf "<-------------- Setting up the Haskell environment --------------->")
-(define lib-hs (ffi-lib "../../acc_hs/librachs"))
+(define lib-hs (ffi-lib "../acc_hs/librachs"))
 (define-ffi-definer define-hs lib-hs)
 
-(define lib-ifc (ffi-lib "../../acc_hs/libhsifc"))
-(define-ffi-definer define-ifc lib-ifc)
+;;(define lib-ifc (ffi-lib "../../acc_hs/libhsifc"))
+;;(define-ffi-definer define-ifc lib-ifc)
 
-(define lib-rts (ffi-lib "../../acc_c/librts"))
+(define lib-rts (ffi-lib "../acc_c/librts"))
 (define-ffi-definer define-rts lib-rts)
 
 

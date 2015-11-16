@@ -25,10 +25,7 @@
     [ptr-ref* (-> cpointer? ctype? integer? integer? any/c)]
     [list->md-array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
     [md-array-length (-> (or/c null? pair?) integer?)]
-    [get-ctype (-> any/c symbol?)]
-    [get-type (-> acc-array? integer?)]
-    [get-dimension (-> acc-array? segment?)]
-    [get-data (-> acc-array? segment?)]))
+    [get-ctype (-> any/c symbol?)]))
   
 
 (define (get-tuple-type-helper data type)

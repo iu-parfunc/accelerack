@@ -68,10 +68,10 @@ data AccShape :: * -> * where
   ShZ :: AccShape Z
   ShS :: Int -> AccShape sh -> AccShape (sh :. Int)
 
-someShape :: [Int] -> Some AccShape
+someShape :: [Int] -> SomeC Shape AccShape
 someShape = \case
-  []   -> ret ShZ
-  n:ns -> someShape ns >>- ret . ShS n
+  []   -> retC ShZ
+  n:ns -> someShape ns >>~ retC . ShS n
 
 getShape :: AccShape sh -> sh
 getShape = \case
@@ -113,66 +113,66 @@ data AccBlockPtrs :: * -> * where
           -> AccBlockPtrs g -> AccBlockPtrs h
           -> AccBlockPtrs (a,b,c,d,e,f,g,h)
 
-someBlockPtrs :: Type (Ptr ()) -> Some AccBlockPtrs
+someBlockPtrs :: Type (Ptr ()) -> SomeC Elt AccBlockPtrs
 someBlockPtrs = \case
-  Double p                -> ret $ DoubleP $ castPtr p
-  Int    p                -> ret $ IntP    $ castPtr p
-  Bool   p                -> ret $ BoolP   $ castPtr p
-  Tuple []                -> ret Nil
+  Double p                -> retC $ DoubleP $ castPtr p
+  Int    p                -> retC $ IntP    $ castPtr p
+  Bool   p                -> retC $ BoolP   $ castPtr p
+  Tuple []                -> retC Nil
   Tuple [a]               -> someBlockPtrs a
-  Tuple [a,b]             -> someBlockPtrs a >>- \pa ->
-                             someBlockPtrs b >>- \pb ->
-                             ret $ Tup2 pa pb
-  Tuple [a,b,c]           -> someBlockPtrs a >>- \pa ->
-                             someBlockPtrs b >>- \pb ->
-                             someBlockPtrs c >>- \pc ->
-                             ret $ Tup3 pa pb pc
-  Tuple [a,b,c,d]         -> someBlockPtrs a >>- \pa ->
-                             someBlockPtrs b >>- \pb ->
-                             someBlockPtrs c >>- \pc ->
-                             someBlockPtrs d >>- \pd ->
-                             ret $ Tup4 pa pb pc pd
-  Tuple [a,b,c,d,e]       -> someBlockPtrs a >>- \pa ->
-                             someBlockPtrs b >>- \pb ->
-                             someBlockPtrs c >>- \pc ->
-                             someBlockPtrs d >>- \pd ->
-                             someBlockPtrs e >>- \pe ->
-                             ret $ Tup5 pa pb pc pd pe
-  Tuple [a,b,c,d,e,f]     -> someBlockPtrs a >>- \pa ->
-                             someBlockPtrs b >>- \pb ->
-                             someBlockPtrs c >>- \pc ->
-                             someBlockPtrs d >>- \pd ->
-                             someBlockPtrs e >>- \pe ->
-                             someBlockPtrs f >>- \pf ->
-                             ret $ Tup6 pa pb pc pd pe pf
-  Tuple [a,b,c,d,e,f,g]   -> someBlockPtrs a >>- \pa ->
-                             someBlockPtrs b >>- \pb ->
-                             someBlockPtrs c >>- \pc ->
-                             someBlockPtrs d >>- \pd ->
-                             someBlockPtrs e >>- \pe ->
-                             someBlockPtrs f >>- \pf ->
-                             someBlockPtrs g >>- \pg ->
-                             ret $ Tup7 pa pb pc pd pe pf pg
-  Tuple [a,b,c,d,e,f,g,h] -> someBlockPtrs a >>- \pa ->
-                             someBlockPtrs b >>- \pb ->
-                             someBlockPtrs c >>- \pc ->
-                             someBlockPtrs d >>- \pd ->
-                             someBlockPtrs e >>- \pe ->
-                             someBlockPtrs f >>- \pf ->
-                             someBlockPtrs g >>- \pg ->
-                             someBlockPtrs h >>- \ph ->
-                             ret $ Tup8 pa pb pc pd pe pf pg ph
+  Tuple [a,b]             -> someBlockPtrs a >>~ \pa ->
+                             someBlockPtrs b >>~ \pb ->
+                             retC $ Tup2 pa pb
+  Tuple [a,b,c]           -> someBlockPtrs a >>~ \pa ->
+                             someBlockPtrs b >>~ \pb ->
+                             someBlockPtrs c >>~ \pc ->
+                             retC $ Tup3 pa pb pc
+  Tuple [a,b,c,d]         -> someBlockPtrs a >>~ \pa ->
+                             someBlockPtrs b >>~ \pb ->
+                             someBlockPtrs c >>~ \pc ->
+                             someBlockPtrs d >>~ \pd ->
+                             retC $ Tup4 pa pb pc pd
+  Tuple [a,b,c,d,e]       -> someBlockPtrs a >>~ \pa ->
+                             someBlockPtrs b >>~ \pb ->
+                             someBlockPtrs c >>~ \pc ->
+                             someBlockPtrs d >>~ \pd ->
+                             someBlockPtrs e >>~ \pe ->
+                             retC $ Tup5 pa pb pc pd pe
+  Tuple [a,b,c,d,e,f]     -> someBlockPtrs a >>~ \pa ->
+                             someBlockPtrs b >>~ \pb ->
+                             someBlockPtrs c >>~ \pc ->
+                             someBlockPtrs d >>~ \pd ->
+                             someBlockPtrs e >>~ \pe ->
+                             someBlockPtrs f >>~ \pf ->
+                             retC $ Tup6 pa pb pc pd pe pf
+  Tuple [a,b,c,d,e,f,g]   -> someBlockPtrs a >>~ \pa ->
+                             someBlockPtrs b >>~ \pb ->
+                             someBlockPtrs c >>~ \pc ->
+                             someBlockPtrs d >>~ \pd ->
+                             someBlockPtrs e >>~ \pe ->
+                             someBlockPtrs f >>~ \pf ->
+                             someBlockPtrs g >>~ \pg ->
+                             retC $ Tup7 pa pb pc pd pe pf pg
+  Tuple [a,b,c,d,e,f,g,h] -> someBlockPtrs a >>~ \pa ->
+                             someBlockPtrs b >>~ \pb ->
+                             someBlockPtrs c >>~ \pc ->
+                             someBlockPtrs d >>~ \pd ->
+                             someBlockPtrs e >>~ \pe ->
+                             someBlockPtrs f >>~ \pf ->
+                             someBlockPtrs g >>~ \pg ->
+                             someBlockPtrs h >>~ \ph ->
+                             retC $ Tup8 pa pb pc pd pe pf pg ph
   _                       -> error "Unsupported type"
 
-getBlockPtrs :: AccBlockPtrs e -> BlockPtrs (EltRepr e)
+getBlockPtrs :: Elt e => AccBlockPtrs e -> BlockPtrs (EltRepr' e)
 getBlockPtrs = \case
   Nil  {}              -> ()
-  BoolP p              -> ((),castPtr p)
-  IntP  p              -> ((),castPtr p)
-  DoubleP p            -> ((),castPtr p)
-  Tup2 a b             -> (getBlockPtrs a,_)
-  Tup3 a b c           -> ((getBlockPtrs a,_),_)
-  Tup4 a b c d         -> (((getBlockPtrs a,_),_),_)
+  BoolP p              -> castPtr p
+  IntP  p              -> castPtr p
+  DoubleP p            -> castPtr p
+  Tup2 a b             -> undefined -- (getBlockPtrs a,_)
+  Tup3 a b c           -> undefined -- ((getBlockPtrs a,_),_)
+  Tup4 a b c d         -> undefined -- (((getBlockPtrs a,_),_),_)
   Tup5 a b c d e       -> undefined
   Tup6 a b c d e f     -> undefined
   Tup7 a b c d e f g   -> undefined

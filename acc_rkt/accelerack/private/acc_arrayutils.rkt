@@ -261,24 +261,27 @@
       (else (* (car ls) (md-array-length (cdr ls)))))))
 
 
+
+;; Not used currently
+
 ;; Return type of acc-array pointer reference
 ;; Arguments -> pointer to acc-array
 ;; Return value -> type
 
-(define (get-type c-ref)
-  (acc-array-type c-ref))
+;;(define (get-type c-ref)
+  ;;(acc-array-type c-ref))
 
 
 ;; Return shape of acc-array pointer reference
 ;; Arguments -> pointer to acc-array
 ;; Return value -> shape
 
-(define (get-dimension c-ref)
-  (acc-array-shape c-ref))
+;;(define (get-dimension c-ref)
+  ;;(acc-array-shape c-ref))
 
 ;; Return payload of acc-array pointer reference
 ;; Arguments -> pointer to acc-array
 ;; Return value -> data
 
-(define (get-data c-ref)
-  (acc-array-data c-ref))
+;;(define (get-data c-ref)
+  ;;(acc-array-data c-ref))

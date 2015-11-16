@@ -80,6 +80,7 @@ getShape = \case
   ShZ      -> Z
   ShS n sh -> getShape sh :. n
 
+{-
 data AccBlockPtrs :: * -> * where
   Nil     :: AccBlockPtrs ()
   BoolP   :: Ptr Bool
@@ -114,6 +115,7 @@ data AccBlockPtrs :: * -> * where
           -> AccBlockPtrs e -> AccBlockPtrs f
           -> AccBlockPtrs g -> AccBlockPtrs h
           -> AccBlockPtrs (a,b,c,d,e,f,g,h)
+-}
 
 {-
 someBlockPtrs :: Type (Ptr ()) -> Some AccBlockPtrs

@@ -73,7 +73,7 @@
   
     (define (build-type type ls len shape)
       (cond
-        ((zero? len) (list->md_array ls shape))
+        ((zero? len) (list->md-array ls shape))
         (else (build-type type (cons type ls) (sub1 len) shape))))
 
     (define (verify-type type data)
@@ -100,8 +100,8 @@
                         '(#t)
                        '(#f "failed ! Invalid expression: type mismatch"))
                    '(#f "failed ! Invalid expression: length mismatch"))
-                (if (check-tuple-expr-length (build-type type '() (md_array-length shape) shape) exp)
-                    (if (check-tuple-expr (build-type type '() (md_array-length shape) shape) exp)
+                (if (check-tuple-expr-length (build-type type '() (md-array-length shape) shape) exp)
+                    (if (check-tuple-expr (build-type type '() (md-array-length shape) shape) exp)
                         '(#t)
                        '(#f "failed ! Invalid expression: type mismatch"))
                    '(#f "failed ! Invalid expression: length mismatch")))))

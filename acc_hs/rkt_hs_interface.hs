@@ -4,7 +4,6 @@
 {-# LANGUAGE LambdaCase #-} 
 
 module Example where
--- import Language.Haskell.Interpreter
 
 import Foreign
 import Foreign.C
@@ -13,24 +12,26 @@ import Foreign.Marshal.Array
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.State
 
 import Data.Array.Accelerate as A hiding ((++), replicate, product)
 import Data.Array.Accelerate.IO (fromPtr, toPtr)
 import Data.Array.Accelerate.Interpreter as I
 
+import Data.IORef
 import qualified Data.List as L
 
 
 -- C structure to store tuple/scalar information (one payload)
 data Segment = Segment { 
-    slength :: Int
-  , stype :: Int
-  , sdata :: Ptr Int
+    slength :: CInt
+  , stype :: CInt
+  , sdata :: Ptr ()
 } deriving Show
 
 -- C structure to store accelerate arrays information (one logical array)
 data AccArray = AccArray { 
-    atype :: Int
+    atype :: CInt
   , ashape :: Ptr Segment
   , adata :: Ptr Segment
 } deriving Show
@@ -66,9 +67,10 @@ instance Storable AccArray where
 
 -- Exporting defined functions
 foreign export ccall entrypoint :: Int -> IO Int
+foreign export ccall accelerateMap :: Ptr AccArray -> Ptr AccArray -> CInt -> IO ()
+foreign export ccall modifySegment :: Ptr Segment -> Ptr Segment -> CInt -> CInt -> IO ()
+foreign export ccall accelerateZipWith :: Ptr AccArray -> Ptr AccArray -> Ptr AccArray -> CInt -> IO ()
 -- foreign export ccall gpu :: CString -> IO CString
-foreign export ccall accelerateMap :: Ptr AccArray -> Int32 -> IO ()
-foreign export ccall modifySegment :: Ptr Segment -> Int32 -> IO ()
 
 -- Racket entry point function
 entrypoint :: Int -> IO Int
@@ -94,18 +96,32 @@ gpu x = do
 -}
 
 -- Converts from haskell array to accelerate array
-toAccArray :: Segment -> IO (A.Array DIM1 Int32)
-toAccArray Segment {slength = len, stype = ty, sdata = ptr } = do
-  arr <- fromPtr (Z :. len) ((), castPtr ptr :: Ptr Int32)
+toAccArrayInt :: Segment -> IO (A.Array DIM1 Int32)
+toAccArrayInt Segment {slength = len, stype = ty, sdata = ptr } = do
+  arr <- fromPtr (Z :. Prelude.fromIntegral len) ((), castPtr ptr :: Ptr Int32)
   return arr
 
 -- Converts from accelerate array to haskell array
-fromAccArray :: A.Array DIM1 Int32 -> IO Segment
-fromAccArray arr =
+fromAccArrayInt :: A.Array DIM1 Int32 -> IO Segment
+fromAccArrayInt arr =
   do let (Z :. sz) = A.arrayShape arr
      ptr <- mallocArray sz
      toPtr arr ((), ptr)
-     return $ Segment (toEnum sz) (toEnum 0) (castPtr ptr :: Ptr Int)
+     return $ Segment (Prelude.fromIntegral sz) (Prelude.fromIntegral 0) (castPtr ptr :: Ptr ())
+
+-- Converts from haskell array to accelerate array
+toAccArrayDbl :: Segment -> IO (A.Array DIM1 Double)
+toAccArrayDbl Segment {slength = len, stype = ty, sdata = ptr } = do
+  arr <- fromPtr (Z :. Prelude.fromIntegral len) ((), castPtr ptr :: Ptr Double)
+  return arr
+
+-- Converts from accelerate array to haskell array
+fromAccArrayDbl :: A.Array DIM1 Double -> IO Segment
+fromAccArrayDbl arr =
+  do let (Z :. sz) = A.arrayShape arr
+     ptr <- mallocArray sz
+     toPtr arr ((), ptr)
+     return $ Segment (Prelude.fromIntegral sz) (Prelude.fromIntegral 1) (castPtr ptr :: Ptr ())
 
 -- Peek values from Segment
 peekSegmentPtrs :: Ptr Segment -> IO Segment
@@ -136,27 +152,136 @@ pokeArrayPtrs p accarray = do
         (\hsc_ptr -> pokeByteOff hsc_ptr 16) p $ adata accarray
 
 -- Compute accelerate map
-accmap :: A.Array DIM1 Int32 -> Int32 -> IO (A.Array DIM1 Int32)
-accmap arr val = do
+accmapInt :: A.Array DIM1 Int32 -> Int32 -> IO (A.Array DIM1 Int32)
+accmapInt arr val = do
        let value = the (unit (constant val))
        return $ I.run $ A.map (+ value) (A.use arr)
 
+accmapDbl :: A.Array DIM1 Double -> Double -> IO (A.Array DIM1 Double)
+accmapDbl arr val = do
+       let value = the (unit (constant val))
+       -- print (show $ I.run $ A.map (+ value) (A.use arr))
+       return $ I.run $ A.map (+ value) (A.use arr)
+
 -- Invoked from racket to access accelerate
-accelerateMap p val = do
+accelerateMap :: Ptr AccArray -> Ptr AccArray -> CInt -> IO ()
+accelerateMap p res val = do
   AccArray atyp ashp adata <- peek p
-  modifySegment adata val
+  AccArray rtyp rshp rdata <- peek res
+  Segment ls ts ds <- peek adata
+  modifySegment adata rdata ts val
+
+
+incr ref val = modifyIORef ref (+ val)
+
+test ref f = do { val <- readIORef ref; return (f val) }
+
+while test action = do
+  val <- test
+  if val then do {action;Example.while test action}
+         else return ()
+
 
 -- modify segment - used by accelerateMap
-modifySegment p val = do
-  a0 <- peekSegmentPtrs p
-  a1 <- toAccArray a0
-  a2 <- accmap a1 val
-  a3  <- fromAccArray a2
-  p' <- malloc
-  pokeSegmentPtrs p' a3
-  Segment lseg tseg dseg <- peek p'
-  poke p $ Segment lseg tseg dseg
-  -- add1Array 10 dseg
+modifySegment :: Ptr Segment -> Ptr Segment -> CInt -> CInt -> IO ()
+modifySegment p res ts val =
+  case (Prelude.fromIntegral ts) of
+  0 -> do
+       -- let pt = castPtr ds :: Ptr Int
+       ia0 <- peekSegmentPtrs p
+       ia1 <- toAccArrayInt ia0
+       ia2 <- accmapInt ia1 (Prelude.fromIntegral val)
+       ia3 <- fromAccArrayInt ia2
+       p'  <- malloc
+       pokeSegmentPtrs p' ia3
+       Segment lseg tseg dseg <- peek p'
+       poke res $ Segment lseg tseg dseg
+  1 -> do
+       da0 <- peekSegmentPtrs p
+       da1 <- toAccArrayDbl da0
+       da2 <- accmapDbl da1 (Prelude.realToFrac val)
+       da3 <- fromAccArrayDbl da2
+       p'  <- malloc
+       pokeSegmentPtrs p' da3
+       Segment lseg tseg dseg <- peek p'
+       poke res $ Segment lseg tseg dseg
+  2 -> putStrLn "Dont Care for Boolean !!!\n"
+  3 -> do
+       Segment lseg tseg dseg <- peek p
+       Segment rlseg rtseg rdseg <- peek res
+       ref <- newIORef 0
+       offset <- newIORef 0
+       let ptrSize = 8
+       Example.while (test ref (< (Prelude.fromIntegral lseg)))
+        (do
+          offset' <- readIORef offset
+          dsg  <- peekByteOff dseg offset'
+          rdsg  <- peekByteOff rdseg offset'
+          Segment ls ts ds <- peek dsg
+          modifySegment (castPtr dsg :: Ptr Segment) (castPtr rdsg :: Ptr Segment) ts val
+          incr offset ptrSize
+          incr ref 1)
+       -- poke res $ Segment lseg tseg dseg
+  _ -> putStrLn "Dont Care Case !!!\n"
+
+
+-- Compute accelerate zipwith
+zipWithInt :: A.Array DIM1 Int32 -> A.Array DIM1 Int32 -> Int -> IO (A.Array DIM1 Int32)
+zipWithInt arr1 arr2 bin = 
+  case bin of
+    0 -> do return $ I.run $ A.zipWith (+) (A.use arr1) (A.use arr2)
+    1 -> do return $ I.run $ A.zipWith (-) (A.use arr1) (A.use arr2)
+    2 -> do return $ I.run $ A.zipWith (*) (A.use arr1) (A.use arr2)
+
+zipWithDbl :: A.Array DIM1 Double -> A.Array DIM1 Double -> Int -> IO (A.Array DIM1 Double)
+zipWithDbl arr1 arr2 bin = 
+  case bin of
+    0 -> do return $ I.run $ A.zipWith (+) (A.use arr1) (A.use arr2)
+    1 -> do return $ I.run $ A.zipWith (-) (A.use arr1) (A.use arr2)
+    2 -> do return $ I.run $ A.zipWith (*) (A.use arr1) (A.use arr2)
+    3 -> do return $ I.run $ A.zipWith (/) (A.use arr1) (A.use arr2)
+
+-- Invoked from racket to access accelerate
+accelerateZipWith :: Ptr AccArray -> Ptr AccArray -> Ptr AccArray -> CInt -> IO ()
+accelerateZipWith p1 p2 res bin = do
+  AccArray atyp ashp adata <- peek p1
+  AccArray btyp bshp bdata <- peek p2
+  AccArray rtyp rshp rdata <- peek res
+  Segment ls ts ds <- peek adata
+  Segment ls' ts' ds' <- peek bdata
+  modifySegment' adata bdata rdata ts bin
+
+
+-- modify segment - used by accelerateZipWith
+modifySegment' :: Ptr Segment -> Ptr Segment -> Ptr Segment -> CInt -> CInt -> IO ()
+modifySegment' p1 p2 res ts bin =
+  case (Prelude.fromIntegral ts) of
+    0 -> do
+       ia0 <- peekSegmentPtrs p1
+       ia1 <- toAccArrayInt ia0
+       ib0 <- peekSegmentPtrs p2
+       ib1 <- toAccArrayInt ib0
+       ia2 <- zipWithInt ia1 ib1 (Prelude.fromIntegral bin)
+       ia3 <- fromAccArrayInt ia2
+       p'  <- malloc
+       pokeSegmentPtrs p' ia3
+       Segment lseg tseg dseg <- peek p'
+       poke res $ Segment lseg tseg dseg
+    1 -> do
+       da0 <- peekSegmentPtrs p1
+       da1 <- toAccArrayDbl da0
+       db0 <- peekSegmentPtrs p2
+       db1 <- toAccArrayDbl db0
+       da2 <- zipWithDbl da1 db1 (Prelude.fromIntegral bin)
+       da3 <- fromAccArrayDbl da2
+       p'  <- malloc
+       pokeSegmentPtrs p' da3
+       Segment lseg tseg dseg <- peek p'
+       poke res $ Segment lseg tseg dseg
+    2 -> putStrLn "Dont Care for Boolean !!!\n"
+    3 -> putStrLn "Dont Care for Tuple !!!\n"
+    _ -> putStrLn "Dont Care Case !!!\n"
+
 
 -- add 1 to int array - currently not used
 add1Array :: Int -> Ptr Int -> IO ()

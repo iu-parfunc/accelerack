@@ -44,12 +44,12 @@
                            #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
                                                                  (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
                                                 (if (car ret)
-                                                      (acc_alloc type (syntax->datum (syntax (shape ...))) data*)
+                                                      (acc-alloc type (syntax->datum (syntax (shape ...))) data*)
                                                       (error 'verify-accelerack (cadr ret))))]
     [(array (shape ...) type data)
                            #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
                                                 (if (car ret)
-                                                     (acc_alloc type (syntax->datum (syntax (shape ...))) data)
+                                                     (acc-alloc type (syntax->datum (syntax (shape ...))) data)
                                                      (error 'verify-accelerack (cadr ret))))]))
 
 (define map-type
@@ -73,8 +73,8 @@
     [(acc (define x (vector type shape data))) (identifier? #'x)
                                 #'(define x (let ((ret (verify-accelerack (vector type shape (vector->list* data)))))
                                                  (if (car ret)
-                                                     ;;(list->md_array (acc_alloc type shape data "use") shape)
-                                                     (acc_alloc type shape (vector->list* data) "use")
+                                                     ;;(list->md-array (acc-alloc type shape data "use") shape)
+                                                     (acc-alloc type shape (vector->list* data) "use")
                                                      (error 'verify-accelerack (cadr ret)))))]
                                 ;#'(verify-accelerack (vector type shape data))
     [(acc (map exp data))  #'(cpointer? data)

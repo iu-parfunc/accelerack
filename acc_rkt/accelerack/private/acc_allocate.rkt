@@ -9,7 +9,7 @@
 
 (provide
   (contract-out
-    [acc_alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) pair?)]
+    [acc-alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) pair?)]
     [generatePayload (-> pair? (or/c ctype? symbol?) pair?)] 
     [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) pair?)]
     [readData (-> segment? (or/c null? pair?))]
@@ -113,7 +113,7 @@
            [data (readData data-ptr)]
            [shape (readData shape-ptr)])
           (if (equal? type 'scalar-payload)
-              (list->md_array data shape)
+              (list->md-array data shape)
               (zip data)))) ;; (readData-helper data)
 
 ;; Helper to readData function
@@ -154,7 +154,7 @@
            [data (readData-rkt data-ptr)]
            [shape (readData-rkt shape-ptr)])
           (if (equal? type 'scalar-payload)
-              (list->md_array data shape)
+              (list->md-array data shape)
               (zip data))))
 
 ;; Get a list corresponding to given type
@@ -211,7 +211,7 @@
 ;; Arguments -> (type, shape,  payload, expression)
 ;; Return value -> pointer to allocated memory location
 
-(define (acc_alloc _type _shape _data) 
+(define (acc-alloc _type _shape _data) 
     (letrec
       ([type (if (ctype? _type) ((ctype-scheme->c scalar) 'scalar-payload) ((ctype-scheme->c scalar) 'tuple-payload))] 
        [shape (generatePayload _shape _int)]

@@ -164,7 +164,7 @@
                       [rktptr (cadr ls)])
                      (check-equal? (readData* cptr) (readData*-rkt rktptr)))
              (display "Test 10 Success !!!") (newline))
-  (test-case "test-case 11"
+  #|(test-case "test-case 11"
              "test-case 11"
              (letrec ([ls (array (2 3 4 5) (_tuple _int (_tuple _bool) _double)
                                            ((((#(2 #(#t) 1.1) #(1 #(#t) 3.3) #(4 #(#t) 2.4) #(5 #(#t) 3.4) #(6 #(#t) 2.4))
@@ -199,7 +199,7 @@
                       [cptr (car ls)]
                       [rktptr (cadr ls)])
                      (check-equal? (readData* cptr) (readData*-rkt rktptr)))
-             (display "Test 11 Success !!!") (newline))
+             (display "Test 11 Success !!!") (newline))|#
   (test-case "test-case 12"
              "test-case 12"
              (letrec ([ls (array () _int 99)]

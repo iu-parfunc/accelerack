@@ -16,17 +16,21 @@
 
 (provide 
  (contract-out 
-  [acc-map (-> procedure? acc-array? acc-array?)])
+  [acc-map (-> procedure? acc-array? acc-array?)]
+  [type (-> (or/c acc-array? segment?) integer?)]
+  [shape (-> acc-array? pair?)]
+  [acc-zipwith (-> (-> number? number? number?) acc-array? acc-array? acc-array?)]
+  [add (-> number? number? number?)]
+  [sub (-> number? number? number?)]
+  [mult (-> number? number? number?)]
+  [div (-> number? number? number?)])
  )
 
 ;; Eventually: must take acc-manifest-array? or acc-deferred-array?
 
 ;; "arraySize" in Accelerate.  Convert camel case to hyphens:
 (define (array-size arr) 
-  (md_array-length (shape arr)))
-
-;;(define (array-set!! arr ind val) (error 'finishme ""))
-;;(define (!! arr ind) (error 'finishme ""))
+  (md-array-length (shape arr)))
 
 ;; returns the type of the given acc array
 (define (type arr)
@@ -95,3 +99,75 @@
               (equal? (type input-arr) acc-double)) (let ([len (acc-length input-arr)])
                                                          (for ([i (in-range 0 len)])
                                                               (array-set!! arr-ref i (fn (array-get input-arr i)))))])))
+
+;; add two numbers
+(define (add x y)
+  (+ x y))
+
+;; subtract two numbers
+(define (sub x y)
+  (- x y))
+
+;; multiply two numbers
+(define (mult x y)
+  (* x y))
+
+;; divide two numbers
+(define (div x y)
+  (/ x y))
+
+;; Find the shape of the result array
+;; Arguments -> reference to array 1,reference to array 2, empty list  
+;; Return value -> shape list
+
+(define (find-shape a1 a2 ls)
+  (cond
+    ((null? a1) ls)
+    (else (if (< (car a1) (car a2))
+              (find-shape (cdr a1) (cdr a2) (append ls (list (car a1))))
+              (find-shape (cdr a1) (cdr a2) (append ls (list (car a2))))))))
+
+
+;; Find the length of the row in a payload
+;; Arguments -> shape
+;; Return value -> length
+
+(define (row-length shape)
+  (cond
+    ((equal? 1 (length shape)) (car shape))
+    ((null? (cadr shape)) (car shape))
+    (else (row-length (cdr shape)))))
+
+
+;; Perform zipwith accelerate function
+;; Arguments -> binary function, reference to array 1,reference to array 2
+;; Return value -> result array
+
+(define (acc-zipwith fn arr1 arr2)
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (readData* arr1)) (shape arr1)) (mapType (type arr1)))]
+           [shape* (find-shape (shape arr1) (shape arr2) '())]
+           [temp* (car (alloc-unit shape* type*))]
+           [len (array-size temp*)]
+           [rlen1 (if (null? (shape arr1)) 1 (row-length (shape arr1)))]
+           [rlen2 (if (null? (shape arr2)) 1 (row-length (shape arr2)))]
+           [tlen  (if (null? (shape temp*)) 1 (row-length (shape temp*)))])
+          (begin
+            (zipwith-helper temp* arr1 arr2 0 0 0 tlen rlen1 rlen2 1 1 len fn)
+            temp*)))
+
+;; Helper function for acc-zipwithh
+;; Arguments -> reference to result array , reference to array 1, reference to array 2, index for result array, index for array 1,
+;;              index for array 3, row length of result array, row length of array 1, row length of array 2, helper to increment array 1 index,
+;;              helper to increment array 2 index, length of result array, binary function
+;; Return value -> empty list / [side effect - sets the temp array]
+
+(define (zipwith-helper temp arr1 arr2 i j k tlen rlen1 rlen2 t1 t2 len fn)
+  (cond
+    ((equal? i len) '())
+    ((zero? (remainder (+ i 1) tlen)) (begin
+                                        (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
+                                        (zipwith-helper temp arr1 arr2 (add1 i) (* t1 rlen1) (* t2 rlen2) tlen rlen1 rlen2 (add1 t1) (add1 t2) len fn)))
+    (else (begin
+            (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
+            (zipwith-helper temp arr1 arr2 (add1 i) (add1 j) (add1 k) tlen rlen1 rlen2 t1 t2 len fn)))))
+

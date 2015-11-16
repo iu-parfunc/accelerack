@@ -23,12 +23,12 @@
     [symbol->ctype (-> symbol? ctype?)]
     [mapType (-> integer? (or/c ctype? symbol?))]
     [ptr-ref* (-> cpointer? ctype? integer? integer? any/c)]
-    [list->md_array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
-    [md_array-length (-> (or/c null? pair?) integer?)]
+    [list->md-array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
+    [md-array-length (-> (or/c null? pair?) integer?)]
     [get-ctype (-> any/c symbol?)]
-    [getType (-> acc-array? integer?)]
-    [getDimension (-> acc-array? segment?)]
-    [getData (-> acc-array? segment?)]))
+    [get-type (-> acc-array? integer?)]
+    [get-dimension (-> acc-array? segment?)]
+    [get-data (-> acc-array? segment?)]))
   
 
 (define (get-tuple-type-helper data type)
@@ -235,7 +235,7 @@
 ;; Arguments -> (flattened payload list, shape)
 ;; Return value -> list in its original unflattened form
 
-(define (list->md_array data shape)
+(define (list->md-array data shape)
   (if (null? shape)
       data
       (if (= (car shape) 0)
@@ -244,9 +244,9 @@
                  (func (if (= 1 (length shape))
                            append
                            cons)))
-              (func (list->md_array (take data (/ (length data) (car shape)))
+              (func (list->md-array (take data (/ (length data) (car shape)))
                                 (cdr shape))
-                    (list->md_array (drop data (/ (length data) (car shape)))
+                    (list->md-array (drop data (/ (length data) (car shape)))
                                 (cons (- (car shape) 1) (cdr shape))))))))
 
 
@@ -254,18 +254,18 @@
 ;; Arguments -> shape
 ;; Return value -> length of the flattened version
 
-(define md_array-length
+(define md-array-length
   (lambda (ls)
     (cond
       ((null? ls) 1)
-      (else (* (car ls) (md_array-length (cdr ls)))))))
+      (else (* (car ls) (md-array-length (cdr ls)))))))
 
 
 ;; Return type of acc-array pointer reference
 ;; Arguments -> pointer to acc-array
 ;; Return value -> type
 
-(define (getType c-ref)
+(define (get-type c-ref)
   (acc-array-type c-ref))
 
 
@@ -273,12 +273,12 @@
 ;; Arguments -> pointer to acc-array
 ;; Return value -> shape
 
-(define (getDimension c-ref)
+(define (get-dimension c-ref)
   (acc-array-shape c-ref))
 
 ;; Return payload of acc-array pointer reference
 ;; Arguments -> pointer to acc-array
 ;; Return value -> data
 
-(define (getData c-ref)
+(define (get-data c-ref)
   (acc-array-data c-ref))

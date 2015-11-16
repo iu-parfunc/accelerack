@@ -1,6 +1,6 @@
 
 # GHC=ghc
-GHC="stack exec ghc --"
+GHC= stack exec ghc --
 GHC_VERSION=$(shell $(GHC) --numeric-version)
 
 so:

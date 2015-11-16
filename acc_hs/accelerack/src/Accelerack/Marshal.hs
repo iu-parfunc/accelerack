@@ -22,22 +22,20 @@ import Data.Array.Accelerate as A hiding ((++), replicate, product)
 import Data.Array.Accelerate.Array.Sugar as A hiding ((++), replicate, product)
 import Data.Array.Accelerate.IO (fromPtr, toPtr,BlockPtrs)
 
-peekArrPtrs :: Ptr a -> IO ArrPtrs
+peekArrPtrs :: Ptr ArrPtrs -> IO ArrPtrs
 peekArrPtrs p = do
   psh  <- peekByteOff p  intSize
   pdat <- peekByteOff p (intSize + ptrSize)
   ArrPtrs <$> peekShape psh <*> peekTypeData pdat
 
-peekShape :: Ptr () -> IO [Int]
-peekShape p = do
-  Segment szsh tsh psh <- peek $ castPtr p
+peekShape :: Ptr Segment -> IO [Int]
+peekShape = peek >=> \(Segment szsh tsh psh) -> do
   unless (tsh == IntTag) $
     fail $ "Bad Shape tag: " ++ show tsh
   peekArray szsh $ castPtr psh
 
-peekTypeData :: Ptr () -> IO (Type (Ptr ()))
-peekTypeData p = do
-  Segment sztyp ttyp ptyp <- peek $ castPtr p
+peekTypeData :: Ptr Segment -> IO (Type (Ptr ()))
+peekTypeData = peek >=> \(Segment sztyp ttyp ptyp) -> do
   case ttyp of
     IntTag    -> return $ Int    ptyp
     DoubleTag -> return $ Double ptyp
@@ -80,7 +78,6 @@ getShape = \case
   ShZ      -> Z
   ShS n sh -> getShape sh :. n
 
-{-
 data AccBlockPtrs :: * -> * where
   Nil     :: AccBlockPtrs ()
   BoolP   :: Ptr Bool
@@ -115,14 +112,12 @@ data AccBlockPtrs :: * -> * where
           -> AccBlockPtrs e -> AccBlockPtrs f
           -> AccBlockPtrs g -> AccBlockPtrs h
           -> AccBlockPtrs (a,b,c,d,e,f,g,h)
--}
 
-{-
 someBlockPtrs :: Type (Ptr ()) -> Some AccBlockPtrs
 someBlockPtrs = \case
   Double p                -> ret $ DoubleP $ castPtr p
-  Int    p                -> ret $ undefined
-  Bool   p                -> ret $ undefined
+  Int    p                -> ret $ IntP    $ castPtr p
+  Bool   p                -> ret $ BoolP   $ castPtr p
   Tuple []                -> ret Nil
   Tuple [a]               -> someBlockPtrs a
   Tuple [a,b]             -> someBlockPtrs a >>- \pa ->
@@ -168,21 +163,20 @@ someBlockPtrs = \case
                              someBlockPtrs h >>- \ph ->
                              ret $ Tup8 pa pb pc pd pe pf pg ph
   _                       -> error "Unsupported type"
--}
 
-{-
 getBlockPtrs :: AccBlockPtrs e -> BlockPtrs (EltRepr e)
 getBlockPtrs = \case
-  Nil  {} -> ()
-  Base {} -> _
-  Tup2 {} -> undefined
-  Tup3 {} -> undefined
-  Tup4 {} -> undefined
-  Tup5 {} -> undefined
-  Tup6 {} -> undefined
-  Tup7 {} -> undefined
-  Tup8 {} -> undefined
--}
+  Nil  {}              -> ()
+  BoolP p              -> ((),castPtr p)
+  IntP  p              -> ((),castPtr p)
+  DoubleP p            -> ((),castPtr p)
+  Tup2 a b             -> (getBlockPtrs a,_)
+  Tup3 a b c           -> ((getBlockPtrs a,_),_)
+  Tup4 a b c d         -> (((getBlockPtrs a,_),_),_)
+  Tup5 a b c d e       -> undefined
+  Tup6 a b c d e f     -> undefined
+  Tup7 a b c d e f g   -> undefined
+  Tup8 a b c d e f g h -> undefined
 
 {-
 someArray :: (Shape sh, Elt e)

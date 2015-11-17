@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE PolyKinds #-}
@@ -14,13 +15,18 @@ import Foreign
 import Foreign.C.Types
 import Foreign.Marshal.Array
 import Control.Applicative
+import Control.Arrow
 import Control.Monad
 import qualified Data.List as L
 import GHC.Exts (Constraint)
+import Data.Maybe (catMaybes)
+import Data.IORef
 
 import Data.Array.Accelerate as A hiding ((++), replicate, product)
 import Data.Array.Accelerate.Array.Sugar as A hiding ((++), replicate, product)
 import Data.Array.Accelerate.IO (fromPtr, toPtr,BlockPtrs)
+import Data.Array.Accelerate.Array.Data
+import Data.Typeable
 
 peekArrPtrs :: Ptr ArrPtrs -> IO ArrPtrs
 peekArrPtrs p = do
@@ -83,9 +89,9 @@ data AccBlockPtrs :: * -> * where
   BoolP   :: Ptr Bool
           -> AccBlockPtrs Bool
   IntP    :: Ptr Int
-          -> AccBlockPtrs Bool
+          -> AccBlockPtrs Int
   DoubleP :: Ptr Double
-          -> AccBlockPtrs Bool
+          -> AccBlockPtrs Double
   Tup2    :: AccBlockPtrs a -> AccBlockPtrs b
           -> AccBlockPtrs (a,b)
   Tup3    :: AccBlockPtrs a -> AccBlockPtrs b
@@ -164,38 +170,123 @@ someBlockPtrs = \case
                              retC $ Tup8 pa pb pc pd pe pf pg ph
   _                       -> error "Unsupported type"
 
-getBlockPtrs :: Elt e => AccBlockPtrs e -> BlockPtrs (EltRepr' e)
+getBlockPtrs :: AccBlockPtrs e -> BlockPtrs (EltRepr e)
 getBlockPtrs = \case
+  Nil  {}              -> ()
+  BoolP p              -> ((),castPtr p)
+  IntP  p              -> ((),castPtr p)
+  DoubleP p            -> ((),castPtr p)
+  Tup2 a b             -> (getBlockPtrs a                    , getBlockPtrs' b)
+  Tup3 a b c           -> (getBlockPtrs (Tup2 a b)           , getBlockPtrs' c)
+  Tup4 a b c d         -> (getBlockPtrs (Tup3 a b c)         , getBlockPtrs' d)
+  Tup5 a b c d e       -> (getBlockPtrs (Tup4 a b c d)       , getBlockPtrs' e) 
+  Tup6 a b c d e f     -> (getBlockPtrs (Tup5 a b c d e)     , getBlockPtrs' f) 
+  Tup7 a b c d e f g   -> (getBlockPtrs (Tup6 a b c d e f)   , getBlockPtrs' g) 
+  Tup8 a b c d e f g h -> (getBlockPtrs (Tup7 a b c d e f g) , getBlockPtrs' h) 
+
+getBlockPtrs' :: AccBlockPtrs e -> BlockPtrs (EltRepr' e)
+getBlockPtrs' = \case
   Nil  {}              -> ()
   BoolP p              -> castPtr p
   IntP  p              -> castPtr p
   DoubleP p            -> castPtr p
-  Tup2 a b             -> undefined -- (getBlockPtrs a,_)
-  Tup3 a b c           -> undefined -- ((getBlockPtrs a,_),_)
-  Tup4 a b c d         -> undefined -- (((getBlockPtrs a,_),_),_)
-  Tup5 a b c d e       -> undefined
-  Tup6 a b c d e f     -> undefined
-  Tup7 a b c d e f g   -> undefined
-  Tup8 a b c d e f g h -> undefined
+  Tup2 a b             -> (getBlockPtrs a,getBlockPtrs' b)
+  Tup3 a b c           -> (getBlockPtrs (Tup2 a b)           , getBlockPtrs' c)  
+  Tup4 a b c d         -> (getBlockPtrs (Tup3 a b c)         , getBlockPtrs' d)  
+  Tup5 a b c d e       -> (getBlockPtrs (Tup4 a b c d)       , getBlockPtrs' e)  
+  Tup6 a b c d e f     -> (getBlockPtrs (Tup5 a b c d e)     , getBlockPtrs' f)  
+  Tup7 a b c d e f g   -> (getBlockPtrs (Tup6 a b c d e f)   , getBlockPtrs' g)  
+  Tup8 a b c d e f g h -> (getBlockPtrs (Tup7 a b c d e f g) , getBlockPtrs' h)  
+
+toAccArray :: (Shape sh,Elt e)
+  => AccShape sh
+  -> AccBlockPtrs e
+  -> IO (A.Array sh e)
+toAccArray sh ps = fromPtr (getShape sh) (getBlockPtrs ps)
 
 {-
-someArray :: (Shape sh, Elt e)
-  => sh
-  -> AccBlockPtrs (BlockPtrs (EltRepr e))
-  -> IO (A.Array sh e)
-someArray sh 
+data ArrPtrs = ArrPtrs
+  { arrShape :: [Int]
+  , arrData  :: Type (Ptr ())
+  }
+data Type ann
+  = Double ann
+  | Int    ann
+  | Bool   ann
+  | Tuple [Type ann]
+  deriving (Eq,Ord,Show)
 -}
 
+fromAccArray :: forall sh e. (Shape sh, Elt e) => A.Array sh e -> IO (ArrPtrs,IO ())
+fromAccArray arr = do
+  fin <- newIORef $ return ()
+  (aps,bps)  <- allocPtrs fin tr
+  toPtr arr bps
+  (,) aps <$> readIORef fin
+  where
+  allocRecord :: Storable a => IORef (IO ()) -> IO (Ptr a)
+  allocRecord fin = do
+    p <- malloc
+    modifyIORef fin (free p >>)
+    return p
+  allocPtrs :: IORef (IO ()) -> ArrayEltR er -> IO (ArrPtrs,BlockPtrs er)
+  allocPtrs fin = \case
+    ArrayEltRunit     -> undefined
+    ArrayEltRint      -> undefined -- allocRecord fin
+    ArrayEltRint8     -> undefined -- allocRecord fin
+    ArrayEltRint16    -> undefined -- allocRecord fin
+    ArrayEltRint32    -> undefined -- allocRecord fin
+    ArrayEltRint64    -> undefined -- allocRecord fin
+    ArrayEltRword     -> undefined -- allocRecord fin
+    ArrayEltRword8    -> undefined -- allocRecord fin
+    ArrayEltRword16   -> undefined -- allocRecord fin
+    ArrayEltRword32   -> undefined -- allocRecord fin
+    ArrayEltRword64   -> undefined -- allocRecord fin
+    ArrayEltRcshort   -> undefined -- allocRecord fin
+    ArrayEltRcushort  -> undefined -- allocRecord fin
+    ArrayEltRcint     -> undefined -- allocRecord fin
+    ArrayEltRcuint    -> undefined -- allocRecord fin
+    ArrayEltRclong    -> undefined -- allocRecord fin
+    ArrayEltRculong   -> undefined -- allocRecord fin
+    ArrayEltRcllong   -> undefined -- allocRecord fin
+    ArrayEltRcullong  -> undefined -- allocRecord fin
+    ArrayEltRfloat    -> undefined -- allocRecord fin
+    ArrayEltRdouble   -> undefined -- allocRecord fin
+    ArrayEltRcfloat   -> undefined -- allocRecord fin
+    ArrayEltRcdouble  -> undefined -- allocRecord fin
+    ArrayEltRbool     -> undefined -- allocRecord fin
+    ArrayEltRchar     -> undefined -- allocRecord fin
+    ArrayEltRcchar    -> undefined -- allocRecord fin
+    ArrayEltRcschar   -> undefined -- allocRecord fin
+    ArrayEltRcuchar   -> undefined -- allocRecord fin
+    ArrayEltRpair a b -> undefined -- (,) <$> allocPtrs fin a <*> allocPtrs fin b
+  ----
+  mkArrPtrs :: Type (Ptr ()) -> ArrPtrs
+  mkArrPtrs = undefined -- ArrPtrs $ dims $ A.arrayShape arr
+  dims :: ArrayEltR (EltRepr sh) -> sh -> [Int]
+  dims = \case
+    ArrayEltRunit                -> \_ -> []
+    ArrayEltRpair a ArrayEltRint -> undefined -- (,) <$> allocPtrs fin a <*> allocPtrs fin b
+    _                            -> error $ "Bad shape repr"
+  sh :: ArrayEltR (EltRepr sh)
+  sh = arrayElt
+  tr :: ArrayEltR (EltRepr e)
+  tr = arrayElt
+
+{-
 toAccArray :: ArrPtrs -> IO (A.Array DIM1 Int)
 toAccArray ArrPtrs {arrShape= [len], arrData = Int ptr } =
   fromPtr (Z :. len) ((), castPtr ptr :: Ptr Int)
+-}
 
+{-
 fromAccArray :: A.Array DIM1 Int -> IO ArrPtrs
 fromAccArray arr =
   do let (Z :. sz) = A.arrayShape arr
      ptr <- mallocArray sz
      toPtr arr ((), ptr)
      return $ ArrPtrs [sz] (Int$ castPtr ptr)
+-}
 
 data ArrPtrs = ArrPtrs
   { arrShape :: [Int]

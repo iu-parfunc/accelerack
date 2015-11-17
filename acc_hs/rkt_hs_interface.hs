@@ -1,7 +1,9 @@
 {-# Language TypeOperators #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE CPP                      #-}
-{-# LANGUAGE LambdaCase #-} 
+{-# LANGUAGE LambdaCase #-}
+
+-- | This module is to support FFI tests on the Racket side.
 
 module Example where
 
@@ -23,14 +25,14 @@ import qualified Data.List as L
 
 
 -- C structure to store tuple/scalar information (one payload)
-data Segment = Segment { 
+data Segment = Segment {
     slength :: CInt
   , stype :: CInt
   , sdata :: Ptr ()
 } deriving Show
 
 -- C structure to store accelerate arrays information (one logical array)
-data AccArray = AccArray { 
+data AccArray = AccArray {
     atype :: CInt
   , ashape :: Ptr Segment
   , adata :: Ptr Segment
@@ -227,14 +229,14 @@ modifySegment p res ts val =
 
 -- Compute accelerate zipwith
 zipWithInt :: A.Array DIM1 Int32 -> A.Array DIM1 Int32 -> Int -> IO (A.Array DIM1 Int32)
-zipWithInt arr1 arr2 bin = 
+zipWithInt arr1 arr2 bin =
   case bin of
     0 -> do return $ I.run $ A.zipWith (+) (A.use arr1) (A.use arr2)
     1 -> do return $ I.run $ A.zipWith (-) (A.use arr1) (A.use arr2)
     2 -> do return $ I.run $ A.zipWith (*) (A.use arr1) (A.use arr2)
 
 zipWithDbl :: A.Array DIM1 Double -> A.Array DIM1 Double -> Int -> IO (A.Array DIM1 Double)
-zipWithDbl arr1 arr2 bin = 
+zipWithDbl arr1 arr2 bin =
   case bin of
     0 -> do return $ I.run $ A.zipWith (+) (A.use arr1) (A.use arr2)
     1 -> do return $ I.run $ A.zipWith (-) (A.use arr1) (A.use arr2)
@@ -289,4 +291,3 @@ add1Array len p =  do
     let ip = castPtr p :: Ptr Int
     is <- peekArray len ip
     pokeArray ip $ L.map (+1) is
-

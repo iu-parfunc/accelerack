@@ -19,6 +19,8 @@
 
 (ark_init)
 
+#|
+
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
   
@@ -281,3 +283,5 @@
 (if (run-tests user-ifc-invalid-test_cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))
 (display "\n<----------- Valid test-cases Run ----------->\n")
 (if (run-tests user-ifc-valid-test_cases) (display "\n!!! Test Run Successfull !!!\n\n") (display "\n!!! Test Run Failed !!!\n\n"))
+
+|#

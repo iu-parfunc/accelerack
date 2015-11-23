@@ -4,5 +4,6 @@ set -xe
 
 stack --version
 stack test --no-terminal
-mkdir -p ../build
+cd ..
+mkdir -p ./build
 stack install --no-terminal

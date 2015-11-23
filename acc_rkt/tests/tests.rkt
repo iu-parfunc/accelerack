@@ -11,9 +11,6 @@
 
 (require accelerack)
 (require "test-utils.rkt")
-;(define-runtime-path libacc_hs "../../build/libacc-hs.so")
-;; Disabling for now, gets a link error on stg_forkOnzh
-;(define libacchslib (ffi-lib libacc_hs))
 
 ; (define-ffi-definer define-libintegrator libacclib)
 ; (define-libintegrator modify_vector (_fun _c-vector-pointer _int -> _void))
@@ -111,7 +108,7 @@
                       [rktptr (cadr ls)]
                       [data (readData* cptr)])
                      (begin
-                       (acc (map 'add1 cptr))
+                       (cmap 'add1 cptr)
                        (check-equal? (readData* cptr) (add1* data))))
              (display "Test 6 Success !!!") (newline))
 
@@ -127,7 +124,7 @@
                       [rktptr (cadr ls)]
                       [data (readData* cptr)])
                      (begin
-                       (acc (map 'add1 cptr))
+                       (cmap 'add1 cptr)
                        (check-equal? (readData* cptr) (add1* data))))
              (display "Test 7 Success !!!") (newline))
 
@@ -143,7 +140,7 @@
                       [rktptr (cadr ls)]
                       [data (readData* cptr)])
                      (begin
-                       (acc (map 'add1 cptr))
+                       (cmap 'add1 cptr)
                        (check-equal? (readData* cptr) (add1* data))))
              (display "Test 8 Success !!!") (newline))
 
@@ -154,7 +151,7 @@
                       [rktptr (cadr ls)]
                       [data (readData* cptr)])
                      (begin
-                       (acc (map 'sub1 cptr))
+                       (cmap 'sub1 cptr)
                        (check-equal? (readData* cptr) (sub1* data))))
              (display "Test 9 Success !!!") (newline))
   (test-case "test-case 10"
@@ -164,7 +161,7 @@
                       [rktptr (cadr ls)])
                      (check-equal? (readData* cptr) (readData*-rkt rktptr)))
              (display "Test 10 Success !!!") (newline))
-  #|(test-case "test-case 11"
+  (test-case "test-case 11"
              "test-case 11"
              (letrec ([ls (array (2 3 4 5) (_tuple _int (_tuple _bool) _double)
                                            ((((#(2 #(#t) 1.1) #(1 #(#t) 3.3) #(4 #(#t) 2.4) #(5 #(#t) 3.4) #(6 #(#t) 2.4))
@@ -199,7 +196,7 @@
                       [cptr (car ls)]
                       [rktptr (cadr ls)])
                      (check-equal? (readData* cptr) (readData*-rkt rktptr)))
-             (display "Test 11 Success !!!") (newline))|#
+             (display "Test 11 Success !!!") (newline))
   (test-case "test-case 12"
              "test-case 12"
              (letrec ([ls (array () _int 99)]
@@ -239,7 +236,7 @@
                       [rktptr (cadr ls)]
                       [temp (acc-map add1 cptr)])
                      (begin
-                       (acc (map 'add1 cptr))
+                       (cmap 'add1 cptr)
                        (check-equal? (readData* temp) (readData* cptr))))
              (display "Test 16 Success !!!") (newline))
   (test-case "test-case 17"
@@ -253,7 +250,7 @@
                       [rktptr (cadr ls)]
                       [temp (acc-map sub1 cptr)])
                      (begin
-                       (acc (map 'sub1 cptr))
+                       (cmap 'sub1 cptr)
                        (check-equal? (readData* temp) (readData* cptr))))
              (display "Test 17 Success !!!") (newline))))
 

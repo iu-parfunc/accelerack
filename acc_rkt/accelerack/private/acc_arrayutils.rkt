@@ -25,7 +25,8 @@
     [ptr-ref* (-> cpointer? ctype? integer? integer? any/c)]
     [list->md-array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
     [md-array-length (-> (or/c null? pair?) integer?)]
-    [get-ctype (-> any/c symbol?)]))
+    [get-ctype (-> any/c symbol?)]
+    [find-shape (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]))
   
 
 (define (get-tuple-type-helper data type)
@@ -48,6 +49,17 @@
            [type '(_tuple)]
            [tuple-type (get-tuple-type-helper data* type)])
           tuple-type))
+
+;; Find the shape of the result array
+;; Arguments -> reference to array 1,reference to array 2, empty list  
+;; Return value -> shape list
+
+(define (find-shape a1 a2 ls)
+  (cond
+    ((null? a1) ls)
+    (else (if (< (car a1) (car a2))
+              (find-shape (cdr a1) (cdr a2) (append ls (list (car a1))))
+              (find-shape (cdr a1) (cdr a2) (append ls (list (car a2))))))))
 
 
 ;; Convert given vector to list recursively

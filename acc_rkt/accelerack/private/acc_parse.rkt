@@ -111,12 +111,12 @@
          (let ((val (if (check-type type) 
                       (if (check-shape shape)
                           (let ((ret (check-exp (car exp) shape type)))
-                               (if (car ret)
+                               (if (equal? #t (car ret))
                                   '(#t)
                                    ret))
                          '(#f "failed ! Invalid Shape"))
                      '(#f "failed ! Invalid Type"))))
-             (if (car val)
-             (car exp)
-            `(#f ,(cadr val))))]
+             (if (equal? #t (car val))
+                 '(#t) ;(car exp)
+                `(#f ,(cadr val))))]
       [`,no-match '(#f "failed ! Invalid expression ~a" no-match)]))

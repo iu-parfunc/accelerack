@@ -15,7 +15,12 @@
     [readData (-> segment? (or/c null? pair?))]
     [readData* (-> acc-array? pair?)]
     [readData-rkt (-> rkt-segment? pair?)]
-    [readData*-rkt (-> rkt-acc-array? pair?)]))
+    [readData*-rkt (-> rkt-acc-array? pair?)]
+    [get-type (-> acc-array? integer?)]
+    [get-shape (-> acc-array? (or/c null? pair?))]
+    [get-result-array (-> acc-array? acc-array?)]
+    [type (-> (or/c acc-array? segment?) integer?)]
+    [shape (-> acc-array? (or/c null? pair?))]))
 
 
 ;; Helper to generatePayload function
@@ -222,4 +227,25 @@
        [data-ptr-rkt (cadr data)])
       (list (make-acc-array type shape-ptr-c data-ptr-c)
             (make-rkt-acc-array type shape-ptr-rkt data-ptr-rkt))))
-     
+
+(define (get-type arr)
+  (if (acc-array? arr) (segment-type (acc-array-data arr)) (segment-type arr)))
+
+(define (get-shape arr) 
+  (readData (acc-array-shape arr)))  
+
+(define (get-result-array input-arr)
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type input-arr))
+                      (get-tuple-type (unzip (readData* input-arr)) (get-shape input-arr))
+                      (mapType (get-type input-arr)))]
+           [temp (car (alloc-unit (get-shape input-arr) type*))])
+          temp))
+
+;; returns the type of the given acc array
+(define (type arr)
+  (if (acc-array? arr) (segment-type (acc-array-data arr)) (segment-type arr)))
+
+;; returns the shape of the given acc array
+(define (shape arr) 
+  (readData (acc-array-shape arr)))
+

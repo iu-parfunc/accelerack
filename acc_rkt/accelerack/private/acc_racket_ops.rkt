@@ -17,13 +17,12 @@
 (provide 
  (contract-out 
   [acc-map (-> procedure? acc-array? acc-array?)]
-  [type (-> (or/c acc-array? segment?) integer?)]
-  [shape (-> acc-array? pair?)]
   [acc-zipwith (-> (-> number? number? number?) acc-array? acc-array? acc-array?)]
   [add (-> number? number? number?)]
   [sub (-> number? number? number?)]
   [mult (-> number? number? number?)]
-  [div (-> number? number? number?)])
+  [div (-> number? number? number?)]
+  [acc-fold (-> (->* (number?) () #:rest (listof number?) number?) number? acc-array? acc-array?)])
  )
 
 ;; Eventually: must take acc-manifest-array? or acc-deferred-array?
@@ -31,14 +30,6 @@
 ;; "arraySize" in Accelerate.  Convert camel case to hyphens:
 (define (array-size arr) 
   (md-array-length (shape arr)))
-
-;; returns the type of the given acc array
-(define (type arr)
-  (if (acc-array? arr) (segment-type (acc-array-data arr)) (segment-type arr)))
-
-;; returns the shape of the given acc array
-(define (shape arr) 
-  (readData (acc-array-shape arr)))
 
 ;; returns the length of the given acc array
 (define (acc-length arr) 
@@ -116,17 +107,6 @@
 (define (div x y)
   (/ x y))
 
-;; Find the shape of the result array
-;; Arguments -> reference to array 1,reference to array 2, empty list  
-;; Return value -> shape list
-
-(define (find-shape a1 a2 ls)
-  (cond
-    ((null? a1) ls)
-    (else (if (< (car a1) (car a2))
-              (find-shape (cdr a1) (cdr a2) (append ls (list (car a1))))
-              (find-shape (cdr a1) (cdr a2) (append ls (list (car a2))))))))
-
 
 ;; Find the length of the row in a payload
 ;; Arguments -> shape
@@ -152,8 +132,13 @@
            [rlen2 (if (null? (shape arr2)) 1 (row-length (shape arr2)))]
            [tlen  (if (null? (shape temp*)) 1 (row-length (shape temp*)))])
           (begin
-            (zipwith-helper temp* arr1 arr2 0 0 0 tlen rlen1 rlen2 1 1 len fn)
+            (zipwith-helper temp* arr1 arr2 0 0 0 0 1 1 1 1 tlen rlen1 rlen2 0 0 len fn (cdr (reverse (shape temp*))) (reverse (shape arr1)) (reverse (shape arr2)))
             temp*)))
+
+(define (skip-by ls i itr itr*)
+  (cond
+    ((equal? i itr) itr*)
+    (else (* (list-ref ls itr) (skip-by ls i (add1 itr) itr*)))))
 
 ;; Helper function for acc-zipwithh
 ;; Arguments -> reference to result array , reference to array 1, reference to array 2, index for result array, index for array 1,
@@ -161,13 +146,56 @@
 ;;              helper to increment array 2 index, length of result array, binary function
 ;; Return value -> empty list / [side effect - sets the temp array]
 
-(define (zipwith-helper temp arr1 arr2 i j k tlen rlen1 rlen2 t1 t2 len fn)
+(define (zipwith-helper temp arr1 arr2 i j k itr1 itr2 itr3 itr2* itr3* tlen rlen1 rlen2 t1 t2 len fn shp1 shp2 shp3)
   (cond
     ((equal? i len) '())
-    ((zero? (remainder (+ i 1) tlen)) (begin
-                                        (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-                                        (zipwith-helper temp arr1 arr2 (add1 i) (* t1 rlen1) (* t2 rlen2) tlen rlen1 rlen2 (add1 t1) (add1 t2) len fn)))
+    ((zero? (remainder (+ i 1) tlen))
+       (if (and (not (null? shp1)) (equal? (car shp1) (add1 itr1)))
+           (begin
+             (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
+             (printf "shp1 ~s shp2 ~s shp3 ~s skip1 ~s skip2 ~s && i ~s j ~s k ~s = sum ~s\n" shp1 shp2 shp3 (skip-by shp2 (add1 itr2) 0 itr2*) (skip-by shp3 (add1 itr3) 0 itr3*) i j k (array-get temp i))
+             (zipwith-helper temp arr1 arr2 (add1 i) (skip-by shp2 (add1 itr2) 0 itr2*) (skip-by shp3 (add1 itr3) 0 itr3*) 0 (add1 itr2) (add1 itr3) (add1 itr2*) (add1 itr3*)
+                             tlen rlen1 rlen2 (skip-by shp2 itr2 0 itr2*) (skip-by shp3 itr3 0 itr3*) len fn (cdr shp1) shp2 shp3))
+           
+           (begin
+             (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
+             (printf "comes here case 1 && i ~s j ~s k ~s = sum ~s\n" i j k (array-get temp i))
+             (printf "index change t2 ~s rlen2 ~s i ~s j ~s k ~s\n" t2 rlen2 (add1 i) (+ t1 rlen1) (+ t2 rlen2))
+             (zipwith-helper temp arr1 arr2 (add1 i) (+ t1 rlen1) (+ t2 rlen2) (add1 itr1) itr2 itr3 itr2* itr3* tlen rlen1 rlen2 (+ t1 rlen1) (+ t2 rlen2) len fn shp1 shp2 shp3))))
     (else (begin
             (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-            (zipwith-helper temp arr1 arr2 (add1 i) (add1 j) (add1 k) tlen rlen1 rlen2 t1 t2 len fn)))))
+            (printf "index i ~s j ~s k ~s = sum ~s\n" i j k (array-get temp i))
+            (zipwith-helper temp arr1 arr2 (add1 i) (add1 j) (add1 k) itr1 itr2 itr3 itr2* itr3* tlen rlen1 rlen2 t1 t2 len fn shp1 shp2 shp3)))))
 
+(define (add-ls ls)
+  (cond
+    ((null? ls) 0)
+    (else (+ (car ls) (add-ls (cdr ls))))))
+
+(define (mult-ls ls)
+  (cond
+    ((null? ls) 0)
+    (else (+ (car ls) (mult-ls (cdr ls))))))
+
+
+(define (acc-fold func def arr)
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr)) (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
+           [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))] 
+           [temp (car (alloc-unit shape* type*))]
+           [len (array-size temp)]
+           [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])
+          (begin
+            (acc-fold-helper func def arr temp len rlen 0 0)
+            temp)))
+
+(define (acc-fold-helper func def arr res len rlen i j)
+  (cond
+    ((equal? i len) '())
+    (else (begin
+            (array-set!! res i (apply-func func def arr j (+ j rlen)))
+            (acc-fold-helper func def arr res len rlen (add1 i) (+ j rlen))))))
+
+(define (apply-func func def arr i j)
+  (cond
+    ((equal? i j) def)
+    (else (func (array-get arr i) (apply-func func def arr (add1 i) j)))))

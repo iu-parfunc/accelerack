@@ -48,12 +48,18 @@
      #:with l (add1 (length (syntax->list #'(more ...))))
      #'(l . rest)]))
 
+
+(begin-for-syntax
+  (define-syntax-class acc-data
+    #:attributes (shape type)
+    [pattern v
+             #:with shape (infer-shape #'v)
+             #:with type (infer-type #'v)]))
+
 (define-syntax (acc-array stx)
   (syntax-parse stx
-    [(_ data)
-     #:with type (infer-type #'data)
-     #:with shape (infer-shape #'data)
-     #'(make-acc-array (car (array shape type data)))]))
+    [(_ data:acc-data)
+     #'(make-acc-array (car (array data.shape data.type data)))]))
 
 (define-struct acc-array (val)
   #:guard (lambda (v _)
@@ -64,7 +70,7 @@
   [(define (write-proc v prt mode)
      ((if mode write print) 
       (if (acc-delayed-array? (acc-array-val v))
-          (list 'acc-array "DELAYED ARRAY")
+          (list 'acc-array "<DELAYED ARRAY>")
           (list 'acc-array (readData* (acc-array-val v))))
       prt))]
   #:transparent
@@ -75,6 +81,6 @@
 (define (acc-array->list x)
   (readData* (acc-array-val x)))
 
-;(define x (acc-array (#(3 4) #(5 6))))x
-;(acc-array? x)
-;(acc-array->list x)
+(define x (acc-array (#(3 4) #(5 6))))x
+(acc-array? x)
+(acc-array->list x)

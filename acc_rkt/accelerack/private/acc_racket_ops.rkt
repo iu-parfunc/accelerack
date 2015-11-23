@@ -153,18 +153,14 @@
        (if (and (not (null? shp1)) (equal? (car shp1) (add1 itr1)))
            (begin
              (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-             (printf "shp1 ~s shp2 ~s shp3 ~s skip1 ~s skip2 ~s && i ~s j ~s k ~s = sum ~s\n" shp1 shp2 shp3 (skip-by shp2 (add1 itr2) 0 itr2*) (skip-by shp3 (add1 itr3) 0 itr3*) i j k (array-get temp i))
              (zipwith-helper temp arr1 arr2 (add1 i) (skip-by shp2 (add1 itr2) 0 itr2*) (skip-by shp3 (add1 itr3) 0 itr3*) 0 (add1 itr2) (add1 itr3) (add1 itr2*) (add1 itr3*)
                              tlen rlen1 rlen2 (skip-by shp2 itr2 0 itr2*) (skip-by shp3 itr3 0 itr3*) len fn (cdr shp1) shp2 shp3))
            
            (begin
              (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-             (printf "comes here case 1 && i ~s j ~s k ~s = sum ~s\n" i j k (array-get temp i))
-             (printf "index change t2 ~s rlen2 ~s i ~s j ~s k ~s\n" t2 rlen2 (add1 i) (+ t1 rlen1) (+ t2 rlen2))
              (zipwith-helper temp arr1 arr2 (add1 i) (+ t1 rlen1) (+ t2 rlen2) (add1 itr1) itr2 itr3 itr2* itr3* tlen rlen1 rlen2 (+ t1 rlen1) (+ t2 rlen2) len fn shp1 shp2 shp3))))
     (else (begin
             (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-            (printf "index i ~s j ~s k ~s = sum ~s\n" i j k (array-get temp i))
             (zipwith-helper temp arr1 arr2 (add1 i) (add1 j) (add1 k) itr1 itr2 itr3 itr2* itr3* tlen rlen1 rlen2 t1 t2 len fn shp1 shp2 shp3)))))
 
 (define (add-ls ls)

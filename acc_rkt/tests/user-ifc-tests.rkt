@@ -9,6 +9,16 @@
 
 (require accelerack)
 
+(define-runtime-path librts "../../acc_c/librts.so")
+(define lib-rts (ffi-lib librts))
+(define-ffi-definer define-rts lib-rts)
+
+
+(define-rts ark_init (_fun -> _int))
+(define-rts ark_exit (_fun -> _int))
+
+(ark_init)
+
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
   

@@ -26,8 +26,29 @@
     [list->md-array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
     [md-array-length (-> (or/c null? pair?) integer?)]
     [get-ctype (-> any/c symbol?)]
-    [find-shape (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]))
+    [find-shape (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
+    [add (-> number? number? number?)]
+    [sub (-> number? number? number?)]
+    [mult (-> number? number? number?)]
+    [div (-> number? number? number?)]))
   
+
+;; add two numbers
+(define (add x y)
+  (+ x y))
+
+;; subtract two numbers
+(define (sub x y)
+  (- x y))
+
+;; multiply two numbers
+(define (mult x y)
+  (* x y))
+
+;; divide two numbers
+(define (div x y)
+  (/ x y))
+
 
 (define (get-tuple-type-helper data type)
   (cond

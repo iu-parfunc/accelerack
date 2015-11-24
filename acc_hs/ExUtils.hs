@@ -439,7 +439,6 @@ modifySegmentFold p sh1 res ts def val =
        pokeSegmentPtrs p' ia3
        Segment lseg tseg dseg <- peek p'
        poke res $ Segment lseg tseg dseg
-       print lseg
   1 -> do
        da0 <- peekSegmentPtrs p
        da3 <- processDimDblFold da0 sh1 def val

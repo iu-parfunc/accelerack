@@ -18,10 +18,6 @@
  (contract-out 
   [acc-map (-> procedure? acc-array? acc-array?)]
   [acc-zipwith (-> (-> number? number? number?) acc-array? acc-array? acc-array?)]
-  [add (-> number? number? number?)]
-  [sub (-> number? number? number?)]
-  [mult (-> number? number? number?)]
-  [div (-> number? number? number?)]
   [acc-fold (-> (->* (number?) () #:rest (listof number?) number?) number? acc-array? acc-array?)])
  )
 
@@ -90,22 +86,6 @@
               (equal? (type input-arr) acc-double)) (let ([len (acc-length input-arr)])
                                                          (for ([i (in-range 0 len)])
                                                               (array-set!! arr-ref i (fn (array-get input-arr i)))))])))
-
-;; add two numbers
-(define (add x y)
-  (+ x y))
-
-;; subtract two numbers
-(define (sub x y)
-  (- x y))
-
-;; multiply two numbers
-(define (mult x y)
-  (* x y))
-
-;; divide two numbers
-(define (div x y)
-  (/ x y))
 
 
 ;; Find the length of the row in a payload

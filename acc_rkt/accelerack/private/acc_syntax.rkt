@@ -123,8 +123,8 @@
     [(--) #''(--)]))
 
 (define-syntax (acc stx)
-  (syntax-case stx (define map zipwith fold)
-    [(acc (map exp data))  #'(cpointer? data)
+  (syntax-case stx (define acc:map acc:zipwith acc:fold)
+    [(acc (acc:map exp data))  #'(cpointer? data)
                            #'(letrec ([result-arr (get-result-array data)]
                                       [value-ls (if (equal? exp add1) (list 0 1)
                                                     (if (equal? exp sub1) (list 0 -1)
@@ -135,7 +135,7 @@
                                        (accelerateMap data result-arr value opr)
                                        result-arr))]
 
-    [(acc (zipwith exp data1 data2))  #'(and (cpointer? data1) (cpointer? data2))
+    [(acc (acc:zipwith exp data1 data2))  #'(and (cpointer? data1) (cpointer? data2))
                            #'(letrec ([type (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type data1))
                                                  (error "TODO : Currently not supporting tuple types for zipwith")
                                                  (mapType (get-type data1)))]
@@ -146,7 +146,7 @@
                                        (accelerateZipWith data1 data2 result-arr opr)
                                        result-arr))]
 
-    [(acc (fold exp value data))  #'(cpointer? data)
+    [(acc (acc:fold exp value data))  #'(cpointer? data)
                            #'(letrec ([type (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type data))
                                                  (error "TODO : Currently not supporting tuple types for zipwith")
                                                  (mapType (get-type data)))]

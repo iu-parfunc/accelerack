@@ -52,7 +52,7 @@
                       [cptr (car ls)]
                       [value (segment-type (acc-array-data cptr))]
                       [rktptr (cadr ls)]
-                      [temp (acc-map add1 cptr)]
+                      [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "---------------------------------------- ~s\n" value)
@@ -70,7 +70,7 @@
              (letrec ([ls (array (8) _int (1 2 3 4 5 6 7 8))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda (x) (+ x 5)) cptr)]
+                      [temp (rkt:acc-map (lambda (x) (+ x 5)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -88,7 +88,7 @@
              (letrec ([ls (array (2 3) _int ((2 3 11) (50 2 41)))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map add1 cptr)]
+                      [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -106,7 +106,7 @@
              (letrec ([ls (array (2 3 2) _int (((10 20) (30 40) (50 60)) ((50 60) (70 80) (90 100))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map add1 cptr)]
+                      [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -127,7 +127,7 @@
                                                ((210 220 230) (240 250 260) (260 270 300))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda (x) (+ x 100)) cptr)]
+                      [temp (rkt:acc-map (lambda (x) (+ x 100)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -145,7 +145,7 @@
              (letrec ([ls (array () _int 100)]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map sub1 cptr)]
+                      [temp (rkt:acc-map sub1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -163,7 +163,7 @@
              (letrec ([ls (array (8) _int (10 20 30 40 50 60 70 80))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda (x) (- x 10)) cptr)]
+                      [temp (rkt:acc-map (lambda (x) (- x 10)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -181,7 +181,7 @@
              (letrec ([ls (array (2 3) _int ((100 1000 10000) (200 3000 40000)))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map sub1 cptr)]
+                      [temp (rkt:acc-map sub1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -199,7 +199,7 @@
              (letrec ([ls (array (2 3 2) _int (((9 99) (999 9999) (8 88)) ((888 8888) (7 77) (777 7777))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda (x) (- x 5)) cptr)]
+                      [temp (rkt:acc-map (lambda (x) (- x 5)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -219,7 +219,7 @@
                                                ((19 20 21) (22 23 24) (25 26 27))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda (x) (- x 1)) cptr)]
+                      [temp (rkt:acc-map (lambda (x) (- x 1)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -237,7 +237,7 @@
              (letrec ([ls (array (8) _double (1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map add1 cptr)]
+                      [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -255,7 +255,7 @@
              (letrec ([ls (array (2 3) _double ((2.1 3.4 11.0) (50.0 2.5 41.6)))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda(x) (+ x 5)) cptr)]
+                      [temp (rkt:acc-map (lambda(x) (+ x 5)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -273,7 +273,7 @@
              (letrec ([ls (array (2 3 2) _double (((10.1 20.2) (30.1 40.2) (50.1 60.2)) ((50.2 60.1) (70.2 80.1) (90.2 100.1))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map add1 cptr)]
+                      [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -291,7 +291,7 @@
              (letrec ([ls (array (8) _double (10.00 20.20 30.30 40.40 50.50 60.60 70.70 80.80))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda (x) (- x 9)) cptr)]
+                      [temp (rkt:acc-map (lambda (x) (- x 9)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -309,7 +309,7 @@
              (letrec ([ls (array (2 3) _double ((100.01 1000.01 10000.01) (200.002 3000.003 40000.004)))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map sub1 cptr)]
+                      [temp (rkt:acc-map sub1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -327,7 +327,7 @@
              (letrec ([ls (array (3) (_tuple _int (_tuple _int _int)) (#(2 #(2 3)) #(1 #(3 6)) #(4 #(16 17))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map add1 cptr)]
+                      [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -348,7 +348,7 @@
                                   (#(4 #(5 #(3 7))) #(1 #(6 #(15 6))) #(14 #(26 #(7 5))))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map add1 cptr)]
+                      [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -371,7 +371,7 @@
                                    (#(0 4.4 #(0.0)) #(0 6.6 #(0.0)) #(0 1.1 #(0.0))))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map (lambda(x) (+ x 5)) cptr)]
+                      [temp (rkt:acc-map (lambda(x) (+ x 5)) cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -389,7 +389,7 @@
              (letrec ([ls (array (3) (_tuple _int (_tuple _int (_tuple _int _int))) (#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 13)))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map sub1 cptr)]
+                      [temp (rkt:acc-map sub1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -412,7 +412,7 @@
                                    (#(14 #(25 #(13 7.5))) #(11 #(16 #(25 8.5))) #(24 #(26 #(17 2.6)))))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-map sub1 cptr)]
+                      [temp (rkt:acc-map sub1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -433,7 +433,7 @@
                       [cptr2 (car ls2)]
                       [rktptr1 (cadr ls1)]
                       [rktptr2 (cadr ls2)]
-                      [temp (acc-zipwith add cptr1 cptr2)]
+                      [temp (rkt:acc-zipwith add cptr1 cptr2)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -455,7 +455,7 @@
                       [cptr2 (car ls2)]
                       [rktptr1 (cadr ls1)]
                       [rktptr2 (cadr ls2)]
-                      [temp (acc-zipwith sub cptr1 cptr2)]
+                      [temp (rkt:acc-zipwith sub cptr1 cptr2)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -477,7 +477,7 @@
                       [cptr2 (car ls2)]
                       [rktptr1 (cadr ls1)]
                       [rktptr2 (cadr ls2)]
-                      [temp (acc-zipwith add cptr1 cptr2)]
+                      [temp (rkt:acc-zipwith add cptr1 cptr2)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -499,7 +499,7 @@
                       [cptr2 (car ls2)]
                       [rktptr1 (cadr ls1)]
                       [rktptr2 (cadr ls2)]
-                      [temp (acc-zipwith sub cptr1 cptr2)]
+                      [temp (rkt:acc-zipwith sub cptr1 cptr2)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -521,7 +521,7 @@
                       [cptr2 (car ls2)]
                       [rktptr1 (cadr ls1)]
                       [rktptr2 (cadr ls2)]
-                      [temp (acc-zipwith mult cptr1 cptr2)]
+                      [temp (rkt:acc-zipwith mult cptr1 cptr2)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -543,7 +543,7 @@
                       [cptr2 (car ls2)]
                       [rktptr1 (cadr ls1)]
                       [rktptr2 (cadr ls2)]
-                      [temp (acc-zipwith mult cptr1 cptr2)]
+                      [temp (rkt:acc-zipwith mult cptr1 cptr2)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -565,7 +565,7 @@
                       [cptr2 (car ls2)]
                       [rktptr1 (cadr ls1)]
                       [rktptr2 (cadr ls2)]
-                      [temp (acc-zipwith add cptr1 cptr2)]
+                      [temp (rkt:acc-zipwith add cptr1 cptr2)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -584,7 +584,7 @@
              (letrec ([ls (array (8) _int (11 22 33 44 55 66 77 88))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-fold + 0 cptr)]
+                      [temp (rkt:acc-fold + 0 cptr)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -602,7 +602,7 @@
              (letrec ([ls (array (2 3) _int ((1 2 3) (10 20 30)))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-fold * 1 cptr)]
+                      [temp (rkt:acc-fold * 1 cptr)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -620,7 +620,7 @@
              (letrec ([ls (array (2 3 3) _double (((1.5 2.5 3.5) (3.3 4.4 5.5) (5.5 6.5 7.5)) ((5.5 6.5 7.5) (7.7 8.8 9.9) (9.9 10.10 11.11))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-fold + 10 cptr)]
+                      [temp (rkt:acc-fold + 10 cptr)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")
@@ -641,7 +641,7 @@
                                                ((210 220 230) (240 250 260) (260 270 300))))]
                       [cptr (car ls)]
                       [rktptr (cadr ls)]
-                      [temp (acc-fold + 100 cptr)]
+                      [temp (rkt:acc-fold + 100 cptr)]
                       [result-arr (get-result-array temp)])
                      (begin
                        (printf "----------------------------------------\n")

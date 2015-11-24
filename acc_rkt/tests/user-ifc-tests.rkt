@@ -63,32 +63,32 @@
   
   (test-case "test-case 1"
              "test-case 1"
-             (acc (define x (array () _int 15)))
-             (check-equal? '(15) (readData* x))
+             (define x (acc-array 15))
+             (check-equal? '(15) (acc-array->list x))
              (display "Test 1 Success !!!") (newline))
 
   (test-case "test-case 2"
              "test-case 2"
-             (acc (define x (array (2) _double (15.15 25.25))))
-             (check-equal? '(15.15 25.25) (readData* x))
+             (define x (acc-array (15.15 25.25)))
+             (check-equal? '(15.15 25.25) (acc-array->list x))
              (display "Test 2 Success !!!") (newline))
 
   (test-case "test-case 3"
              "test-case 3"
-             (acc (define x (array (2 3) _bool ((#f #f #f) (#t #t #t)))))
-             (check-equal? '((#f #f #f) (#t #t #t)) (readData* x))
+             (define x (acc-array ((#f #f #f) (#t #t #t))))
+             (check-equal? '((#f #f #f) (#t #t #t)) (acc-array->list x))
              (display "Test 3 Success !!!") (newline))
   
   (test-case "test-case 4"
              "test-case 4"
-             (acc (define x (array (3) (_tuple _int (_tuple _int _double _bool)) (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f))))))
-             (check-equal? '((2 (2 1.1 #f)) (1 (3 2.2 #f)) (4 (16 3.3 #f))) (readData* x))
+             (define x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
+             (check-equal? '((2 (2 1.1 #f)) (1 (3 2.2 #f)) (4 (16 3.3 #f))) (acc-array->list x))
              (display "Test 4 Success !!!") (newline))
 
   (test-case "test-case 5"
              "test-case 5"
-             (acc (define x (array (3 2) (_tuple _int _double) ((#(1 1.0) #(2 2.0)) (#(3 3.0) #(4 4.0)) (#(5 5.0) #(6 6.0))))))
-             (check-equal? '(((1 1.0) (2 2.0)) ((3 3.0) (4 4.0)) ((5 5.0) (6 6.0))) (readData* x))
+             (define x (acc-array ((#(1 1.0) #(2 2.0)) (#(3 3.0) #(4 4.0)) (#(5 5.0) #(6 6.0)))))
+             (check-equal? '(((1 1.0) (2 2.0)) ((3 3.0) (4 4.0)) ((5 5.0) (6 6.0))) (acc-array->list x))
              (display "Test 5 Success !!!") (newline))
   
   (test-case "test-case 6"

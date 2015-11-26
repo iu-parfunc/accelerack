@@ -108,11 +108,11 @@
            [shape* (find-shape (shape arr1) (shape arr2) '())]
            [temp* (car (alloc-unit shape* type*))]
            [len (array-size temp*)]
-           [rlen1 (if (null? (shape arr1)) 1 (row-length (shape arr1)))]
-           [rlen2 (if (null? (shape arr2)) 1 (row-length (shape arr2)))]
-           [tlen  (if (null? (shape temp*)) 1 (row-length (shape temp*)))])
+           [new-arr1 (car (acc-alloc type* shape* (reshape shape* (readData* arr1))))]
+           [new-arr2 (car (acc-alloc type* shape* (reshape shape* (readData* arr2))))])
           (begin
-            (zipwith-helper temp* arr1 arr2 0 0 0 0 1 1 1 1 tlen rlen1 rlen2 0 0 len fn (cdr (reverse (shape temp*))) (reverse (shape arr1)) (reverse (shape arr2)))
+            (for ([i (in-range 0 len)])
+              (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))
             temp*)))
 
 (define (skip-by ls i itr itr*)
@@ -120,28 +120,12 @@
     ((equal? i itr) itr*)
     (else (* (list-ref ls itr) (skip-by ls i (add1 itr) itr*)))))
 
-;; Helper function for acc-zipwithh
-;; Arguments -> reference to result array , reference to array 1, reference to array 2, index for result array, index for array 1,
-;;              index for array 3, row length of result array, row length of array 1, row length of array 2, helper to increment array 1 index,
-;;              helper to increment array 2 index, length of result array, binary function
-;; Return value -> empty list / [side effect - sets the temp array]
-
-(define (zipwith-helper temp arr1 arr2 i j k itr1 itr2 itr3 itr2* itr3* tlen rlen1 rlen2 t1 t2 len fn shp1 shp2 shp3)
+(define (reshape shp ls)
   (cond
-    ((equal? i len) '())
-    ((zero? (remainder (+ i 1) tlen))
-       (if (and (not (null? shp1)) (equal? (car shp1) (add1 itr1)))
-           (begin
-             (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-             (zipwith-helper temp arr1 arr2 (add1 i) (skip-by shp2 (add1 itr2) 0 itr2*) (skip-by shp3 (add1 itr3) 0 itr3*) 0 (add1 itr2) (add1 itr3) (add1 itr2*) (add1 itr3*)
-                             tlen rlen1 rlen2 (skip-by shp2 itr2 0 itr2*) (skip-by shp3 itr3 0 itr3*) len fn (cdr shp1) shp2 shp3))
-           
-           (begin
-             (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-             (zipwith-helper temp arr1 arr2 (add1 i) (+ t1 rlen1) (+ t2 rlen2) (add1 itr1) itr2 itr3 itr2* itr3* tlen rlen1 rlen2 (+ t1 rlen1) (+ t2 rlen2) len fn shp1 shp2 shp3))))
-    (else (begin
-            (array-set!! temp i (fn (array-get arr1 j) (array-get arr2 k)))
-            (zipwith-helper temp arr1 arr2 (add1 i) (add1 j) (add1 k) itr1 itr2 itr3 itr2* itr3* tlen rlen1 rlen2 t1 t2 len fn shp1 shp2 shp3)))))
+    ((null? shp) ls)
+    ((equal? (length ls) (car shp)) (map (lambda (x) (reshape (cdr shp) x)) ls))
+    (else (map (lambda (x) (reshape (cdr shp) x)) (take ls (car shp))))))
+
 
 (define (add-ls ls)
   (cond

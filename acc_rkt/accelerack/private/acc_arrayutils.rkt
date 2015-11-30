@@ -9,7 +9,6 @@
 (provide
   (contract-out
     [get-tuple-type (-> pair? pair? pair?)]
-    [vector->list* (-> (or/c pair? vector?) pair?)]
     [unzip (-> (or/c null? pair?) (or/c null? pair?))]
     [zip (-> (or/c null? pair?) (or/c null? pair?) )]
     [zip-first (-> (or/c pair? null?) (or/c null? pair?) (or/c null? pair?))]
@@ -25,9 +24,9 @@
     [ptr-ref* (-> cpointer? ctype? integer? integer? any/c)]
     [list->md-array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
     [md-array-length (-> (or/c null? pair?) integer?)]
-    [get-ctype (-> any/c symbol?)]))
+    [get-ctype (-> any/c symbol?)]
+    [find-shape (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]))
   
-
 (define (get-tuple-type-helper data type)
   (cond
     ((null? data) type)
@@ -49,17 +48,16 @@
            [tuple-type (get-tuple-type-helper data* type)])
           tuple-type))
 
+;; Find the shape of the result array
+;; Arguments -> reference to array 1,reference to array 2, empty list  
+;; Return value -> shape list
 
-;; Convert given vector to list recursively
-;; Arguments -> vector or list with nested vectors
-;; Return value -> list with all nested vectors converted to list
-
-(define (vector->list* vec/ls)
+(define (find-shape a1 a2 ls)
   (cond
-    ((vector? vec/ls) (vector->list* (vector->list vec/ls)))
-    ((null? vec/ls) '())
-    ((vector? (car vec/ls)) (cons (vector->list* (car vec/ls)) (vector->list* (cdr vec/ls))))
-    (else (cons (car vec/ls) (vector->list* (cdr vec/ls))))))
+    ((null? a1) ls)
+    (else (if (< (car a1) (car a2))
+              (find-shape (cdr a1) (cdr a2) (append ls (list (car a1))))
+              (find-shape (cdr a1) (cdr a2) (append ls (list (car a2))))))))
 
 
 ;; Create empty list preserving structure of the data list 
@@ -168,6 +166,7 @@
     ((equal? _int type) 'c-int)
     ((equal? _bool type) 'c-bool)
     ((equal? _segment type) 'tuple-payload)
+    ((equal? _acc-array-pointer type) 'acc-array-ptr)
     ((symbol? type) type)))
 
 
@@ -181,6 +180,7 @@
     ((equal? 'c-int type) _int)
     ((equal? 'c-bool type) _bool)
     ((equal? 'c-ptr type) _gcpointer)
+    ((equal? 'acc-array-ptr) _acc-array-pointer)
     ((ctype? type) type)))
 
 
@@ -196,8 +196,9 @@
     ((equal? type 3) _segment-pointer)
     ((equal? type 4) 'scalar-payload)
     ((equal? type 5) 'tuple-payload)
-    ((equal? type 6) _gcpointer)
-    ((equal? type 7) 'rkt-payload-ptr )
+    ((equal? type 6) _acc-array-pointer)
+    ((equal? type 7) _gcpointer)
+    ((equal? type 8) 'rkt-payload-ptr )
     (else 'empty_type)))
 
 

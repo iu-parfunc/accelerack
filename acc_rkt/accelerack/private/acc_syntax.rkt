@@ -6,11 +6,17 @@
          accelerack/private/acc_parse
          accelerack/private/acc_allocate
          accelerack/private/acc_arrayutils
-         accelerack/private/acc_header)
+         accelerack/private/acc_global_utils
+         accelerack/private/acc_header
+         (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
-(provide acc
+(provide ++
+         --
+         **
+         acc
          array
          _tuple
+         cmap
          generate)
 
 (define generate build-list)
@@ -29,6 +35,24 @@
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator rkt_handler (_fun _acc-array-pointer _string -> _void))
 
+(define-runtime-path librachs "../../../acc_hs/librachs.so")
+(define lib-hs (ffi-lib librachs))
+(define-ffi-definer define-hs lib-hs)
+
+(define-runtime-path librts "../../../acc_c/librts.so")
+(define lib-rts (ffi-lib librts))
+(define-ffi-definer define-rts lib-rts)
+
+(define-rts ark_init (_fun -> _void))
+(define-rts ark_exit (_fun -> _int))
+
+(ark_init)
+
+(define-hs accelerateMap (_fun _acc-array-pointer _acc-array-pointer _int _int -> _void))
+(define-hs accelerateZipWith (_fun _acc-array-pointer _acc-array-pointer _acc-array-pointer _int -> _void))
+(define-hs accelerateFold (_fun _acc-array-pointer _acc-array-pointer _int _int -> _void))
+
+
 ;; TODO - Need to rework the macros
 
 (define (process-data data)
@@ -42,15 +66,25 @@
 
     [(array (shape ...) type (data ...))
                            #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
-                                                                 (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
-                                                (if (car ret)
-                                                      (acc-alloc type (syntax->datum (syntax (shape ...))) data*)
-                                                      (error 'verify-accelerack (cadr ret))))]
+                                      (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
+                                     (if (car ret)
+                                         (acc-alloc type (syntax->datum (syntax (shape ...))) data*)
+                                         (error 'verify-accelerack (cadr ret))))]
     [(array (shape ...) type data)
                            #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
-                                                (if (car ret)
-                                                     (acc-alloc type (syntax->datum (syntax (shape ...))) data)
-                                                     (error 'verify-accelerack (cadr ret))))]))
+                                  (if (car ret)
+                                      (acc-alloc type (syntax->datum (syntax (shape ...))) data)
+                                      (error 'verify-accelerack (cadr ret))))]))
+
+(define-syntax (cmap stx)
+  (syntax-case stx ()
+    [(cmap exp data) #'(cpointer? data)
+                           #'(if (equal? exp 'add1)
+                                 (rkt_handler data "add1")
+                                 (if (equal? exp 'sub1) 
+                                     (rkt_handler data "sub1")
+                                     (error "function not defined")))]))
+
 
 (define map-type
   (lambda (x)
@@ -64,53 +98,70 @@
   (syntax-case stx ()
     [(_ type ...) #'(cons '_tuple (map map-type (list type ...)))]))
 
+(define (process-function exp)
+  (match exp
+    (`(+ ,x) (list 0 x))
+    (`(++) 0)
+    (`(- ,x) (list 0 (* -1 x)))
+    (`(--) 1)
+    (`(* ,x) (list 1 x))
+    (`(**) 2)
+    (`(^ ,x) (list 2 x))))
+
+(define-syntax (** stx)
+  (syntax-case stx ()
+    [(** x) #''(* x)]
+    [(**) #''(**)]))
+
+(define-syntax (++ stx)
+  (syntax-case stx ()
+    [(++ x) #''(+ x)]
+    [(++) #''(++)]))
+
+(define-syntax (-- stx)
+  (syntax-case stx ()
+    [(-- x) #''(- x)]
+    [(--) #''(--)]))
+
 (define-syntax (acc stx)
-  (syntax-case stx (define view load run get)
-    
-    ;Redefinitions are ignored.  Should throw an error.
-    ; - but DrRacket's error-handling of redefinitions works well.  Comment out the guard and see.
-    ;[(acc (define y (vector type #(shape ...) data))) (identifier? #'x) #'(define y (list shape ...))]
-    [(acc (define x (vector type shape data))) (identifier? #'x)
-                                #'(define x (let ((ret (verify-accelerack (vector type shape (vector->list* data)))))
-                                                 (if (car ret)
-                                                     ;;(list->md-array (acc-alloc type shape data "use") shape)
-                                                     (acc-alloc type shape (vector->list* data) "use")
-                                                     (error 'verify-accelerack (cadr ret)))))]
-                                ;#'(verify-accelerack (vector type shape data))
-    [(acc (map exp data))  #'(cpointer? data)
-                           #'(if (equal? exp 'add1)
-                                 (rkt_handler data "add1")
-                                 (if (equal? exp 'sub1) 
-                                     (rkt_handler data "sub1")
-                                     (error "function not defined")))]
+  (syntax-case stx (define acc:map acc:zipwith acc:fold)
+    [(acc (acc:map exp data))  #'(cpointer? data)
+                           #'(letrec ([result-arr (get-result-array data)]
+                                      [value-ls (if (equal? exp add1) (list 0 1)
+                                                    (if (equal? exp sub1) (list 0 -1)
+                                                        (process-function exp)))]
+                                      [opr (car value-ls)]
+                                      [value (cadr value-ls)])
+                                     (begin
+                                       (accelerateMap data result-arr value opr)
+                                       result-arr))]
+
+    [(acc (acc:zipwith exp data1 data2))  #'(and (cpointer? data1) (cpointer? data2))
+                           #'(letrec ([type (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type data1))
+                                                 (error "TODO : Currently not supporting tuple types for zipwith")
+                                                 (mapType (get-type data1)))]
+                                      [shape (find-shape (get-shape data1) (get-shape data2) '())]
+                                      [result-arr (car (alloc-unit shape type))]
+                                      [opr (process-function exp)])
+                                     (begin
+                                       (accelerateZipWith data1 data2 result-arr opr)
+                                       result-arr))]
+
+    [(acc (acc:fold exp value data))  #'(cpointer? data)
+                           #'(letrec ([type (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type data))
+                                                 (error "TODO : Currently not supporting tuple types for zipwith")
+                                                 (mapType (get-type data)))]
+                                      [shape* (if (null? (shape data)) '(1) (reverse (cdr (reverse (shape data)))))]
+                                      [result-arr (car (alloc-unit shape* type))]
+                                      [opr (process-function exp)])
+                                     (begin
+                                       (accelerateFold data result-arr value opr)
+                                       result-arr))]
+
     ; Variable definition    
-    [(acc (define x exp)) (and (identifier? #'x)
-                               ; (undefined? (syntax->datum #'x))
-                               )
-                          (begin (hash-set! ht (syntax->datum (syntax x)) (syntax->datum (syntax exp)))
-                                 #'(define x exp))]
+    [(acc (define x exp)) (and (identifier? #'x)) #'(define x (car exp))]
     
-    ; Function definition
-    [(acc (define (fn x ...) body)) ;(undefined? (syntax->datum #'fn))
-     (begin
-       (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax (λ (x ...) body))))
-       #'(define (fn x ...) body))]
-    
-    ; Generic use of higher order function, not well-understood in here yet
-    ;[(acc (f (fn x) body)) (begin (hash-set! ht (syntax->datum (syntax fn)) (syntax->datum (syntax body)))
-    ;                                 #'(f (fn x) body))]  ;<--separate handling for fn defn...todo
-    
-    ; Designed to be called in Definitions Window to create a run-time binding to the AccRack hashtable
-    [(acc) (datum->syntax #'acc ht)]
-    [(acc view) (begin (printf "~a~n" ht) #'(void))]
-    [(acc get) #'ht]
-    
-    ; Designed to be called in Interactions Windows to reset the REPL compilation environment's hashtable
-    [(acc load ht3) (begin (set! ht (syntax->datum (syntax ht3))) #'(display ht3))]
-    
-    ; Placeholder for run command.  Just display the hashtable contents.
-    [(acc run) #'(begin (printf "Wish I could run: ~a~n" (acc)))]
-    
+                
     ; Catch unrecognized commands
     [(acc exp) (begin (printf "uncaught:~a~n" (syntax->datum stx)) #'(void))]
     

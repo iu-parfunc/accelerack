@@ -14,6 +14,7 @@ typedef enum
   acc_payload_ptr,
   scalar,
   tuple,
+  acc_array_ptr,
   gcpointer,
   rkt_payload_ptr
 }types;

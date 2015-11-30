@@ -9,17 +9,18 @@
          accelerack/private/acc_header
          accelerack/private/acc_allocate
          accelerack/private/acc_arrayutils
+         accelerack/private/acc_global_utils
          accelerack/private/acc_syntax
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          racket/contract
          )
 
 (provide 
- (contract-out 
+ (contract-out
+  [array-get (-> acc-array? exact-integer? any/c)]
   [acc-map (-> procedure? acc-array? acc-array?)]
   [acc-zipwith (-> (-> number? number? number?) acc-array? acc-array? acc-array?)]
-  [acc-fold (-> (->* (number?) () #:rest (listof number?) number?) number? acc-array? acc-array?)])
- )
+  [acc-fold (-> (->* (number?) () #:rest (listof number?) number?) number? acc-array? acc-array?)]))
 
 ;; Eventually: must take acc-manifest-array? or acc-deferred-array?
 
@@ -39,7 +40,9 @@
   ;; The acc-array is not mutable for end users, but for this library implementation 
   ;; we leverage a mutable representation internally.
   (letrec ([len (array-size arr)]
-           [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr)) (get-tuple-type (unzip (readData* arr)) (shape arr)) (mapType (type arr)))]
+           [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
+                        (get-tuple-type (unzip (vector->list* (read-data* arr))) (shape arr))
+                      (mapType (type arr)))]
            [temp (car (alloc-unit (shape arr) type*))])
     ;; (assert (acc-array? temp))
     (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
@@ -104,12 +107,12 @@
 ;; Return value -> result array
 
 (define (acc-zipwith fn arr1 arr2)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (readData* arr1)) (shape arr1)) (mapType (type arr1)))]
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (find-shape (shape arr1) (shape arr2) '())]
            [temp* (car (alloc-unit shape* type*))]
            [len (array-size temp*)]
-           [new-arr1 (car (acc-alloc type* shape* (reshape shape* (readData* arr1))))]
-           [new-arr2 (car (acc-alloc type* shape* (reshape shape* (readData* arr2))))])
+           [new-arr1 (car (acc-alloc type* shape* (reshape shape* (read-data* arr1))))]
+           [new-arr2 (car (acc-alloc type* shape* (reshape shape* (read-data* arr2))))])
           (begin
             (for ([i (in-range 0 len)])
               (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))

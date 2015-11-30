@@ -6,6 +6,7 @@
          accelerack/private/acc_parse
          accelerack/private/acc_allocate
          accelerack/private/acc_arrayutils
+         accelerack/private/acc_global_utils
          accelerack/private/acc_header
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 

@@ -9,6 +9,7 @@
 #define ACC_PAYLOAD_PTR 3
 #define SCALAR_PAYLOAD 4
 #define TUPLE_PAYLOAD 5
-#define C_PTR 6
-#define RKT_PAYLOAD_PTR 7
+#define ACC_ARRAY_PTR 6
+#define C_PTR 7
+#define RKT_PAYLOAD_PTR 8
 

@@ -57,12 +57,12 @@
                      (begin
                        (printf "---------------------------------------- ~s\n" value)
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 1 Success !!!\n") (newline))
 
   (test-case "test-case 2"
@@ -75,12 +75,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 5 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 2 Success !!!\n") (newline))
 
   (test-case "test-case 3"
@@ -93,12 +93,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 3 Success !!!\n") (newline))
 
   (test-case "test-case 4"
@@ -111,12 +111,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 4 Success !!!\n") (newline))
 
   (test-case "test-case 5"
@@ -132,12 +132,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 100 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 5 Success !!!\n") (newline))
 
   (test-case "test-case 6"
@@ -150,12 +150,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 6 Success !!!\n") (newline))
 
   (test-case "test-case 7"
@@ -168,12 +168,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -10 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 7 Success !!!\n") (newline))
 
   (test-case "test-case 8"
@@ -186,12 +186,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 8 Success !!!\n") (newline))
 
   (test-case "test-case 9"
@@ -204,12 +204,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -5 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 9 Success !!!\n") (newline))
 
   (test-case "test-case 10"
@@ -224,12 +224,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 10 Success !!!\n") (newline))
   
   (test-case "test-case 11"
@@ -242,12 +242,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 11 Success !!!\n") (newline))
 
   (test-case "test-case 12"
@@ -260,12 +260,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 5 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 12 Success !!!\n") (newline))
 
   (test-case "test-case 13"
@@ -278,12 +278,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 13 Success !!!\n") (newline))
 
   (test-case "test-case 14"
@@ -296,12 +296,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -9 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 14 Success !!!\n") (newline))
 
   (test-case "test-case 15"
@@ -314,12 +314,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 15 Success !!!\n") (newline))
   
   (test-case "test-case 16"
@@ -332,12 +332,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 16 Success !!!\n") (newline))
   
   (test-case "test-case 17"
@@ -353,12 +353,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 17 Success !!!\n") (newline))
     
   (test-case "test-case 18"
@@ -376,12 +376,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr 5 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 18 Success !!!\n") (newline))
 
   (test-case "test-case 19"
@@ -394,12 +394,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 19 Success !!!\n") (newline))
     
   (test-case "test-case 20"
@@ -417,12 +417,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateMap cptr result-arr -1 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 20 Success !!!\n") (newline))
     
   (test-case "test-case 21"
@@ -438,13 +438,13 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* cptr1))
-                       (printf "~s\n" (readData* cptr2))
+                       (printf "~s\n" (read-data* cptr1))
+                       (printf "~s\n" (read-data* cptr2))
                        (accelerateZipWith cptr1 cptr2 result-arr 0)
                        (printf "After accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 21 Success !!!\n") (newline))
     
   (test-case "test-case 22"
@@ -460,13 +460,13 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* cptr1))
-                       (printf "~s\n" (readData* cptr2))
+                       (printf "~s\n" (read-data* cptr1))
+                       (printf "~s\n" (read-data* cptr2))
                        (accelerateZipWith cptr1 cptr2 result-arr 1)
                        (printf "After accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 22 Success !!!\n") (newline))
     
   (test-case "test-case 23"
@@ -482,13 +482,13 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* cptr1))
-                       (printf "~s\n" (readData* cptr2))
+                       (printf "~s\n" (read-data* cptr1))
+                       (printf "~s\n" (read-data* cptr2))
                        (accelerateZipWith cptr1 cptr2 result-arr 0)
                        (printf "After accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 23 Success !!!\n") (newline))
      
   (test-case "test-case 24"
@@ -504,13 +504,13 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* cptr1))
-                       (printf "~s\n" (readData* cptr2))
+                       (printf "~s\n" (read-data* cptr1))
+                       (printf "~s\n" (read-data* cptr2))
                        (accelerateZipWith cptr1 cptr2 result-arr 1)
                        (printf "After accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 24 Success !!!\n") (newline))
      
   (test-case "test-case 25"
@@ -526,13 +526,13 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* cptr1))
-                       (printf "~s\n" (readData* cptr2))
+                       (printf "~s\n" (read-data* cptr1))
+                       (printf "~s\n" (read-data* cptr2))
                        (accelerateZipWith cptr1 cptr2 result-arr 2)
                        (printf "After accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 25 Success !!!\n") (newline))
      
   (test-case "test-case 26"
@@ -548,13 +548,13 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr1))
-                       (printf "~s\n" (readData* cptr2))
+                       (printf "~s\n" (read-data* cptr1))
+                       (printf "~s\n" (read-data* cptr2))
                        (accelerateZipWith cptr1 cptr2 result-arr 2)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 26 Success !!!\n") (newline))
 
   (test-case "test-case 27"
@@ -570,13 +570,13 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* cptr1))
-                       (printf "~s\n" (readData* cptr2))
+                       (printf "~s\n" (read-data* cptr1))
+                       (printf "~s\n" (read-data* cptr2))
                        (accelerateZipWith cptr1 cptr2 result-arr 0)
                        (printf "After accelerateZipWith Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 27 Success !!!\n") (newline))
 
   (test-case "test-case 28"
@@ -589,12 +589,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateFold cptr result-arr 0 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 28 Success !!!\n") (newline))
 
   (test-case "test-case 29"
@@ -607,12 +607,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateFold cptr result-arr 1 2)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 29 Success !!!\n") (newline))
 
   (test-case "test-case 30"
@@ -625,12 +625,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateFold cptr result-arr 10 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 30 Success !!!\n") (newline))
 
   (test-case "test-case 31"
@@ -646,12 +646,12 @@
                      (begin
                        (printf "----------------------------------------\n")
                        (printf "Before accelerateMap Call --\n")
-                       (printf "~s\n" (readData* cptr))
+                       (printf "~s\n" (read-data* cptr))
                        (accelerateFold cptr result-arr 100 0)
                        (printf "After accelerateMap Call --\n")
-                       (printf "~s\n" (readData* result-arr))
+                       (printf "~s\n" (read-data* result-arr))
                        (printf "----------------------------------------\n")
-                       (check-equal? (readData* temp) (readData* result-arr))))
+                       (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 31 Success !!!\n") (newline))))
 
 (display "\n<----------- Accelerate test-cases Run ----------->\n")

@@ -4,6 +4,7 @@
          ffi/unsafe/cvector
          accelerack/private/acc_header
          accelerack/private/acc_arrayutils
+         accelerack/private/acc_global_utils
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
@@ -12,10 +13,10 @@
     [acc-alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) pair?)]
     [generatePayload (-> pair? (or/c ctype? symbol?) pair?)] 
     [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) pair?)]
-    [readData (-> segment? (or/c null? pair?))]
-    [readData* (-> acc-array? pair?)]
-    [readData-rkt (-> rkt-segment? pair?)]
-    [readData*-rkt (-> rkt-acc-array? pair?)]
+    [read-data (-> segment? (or/c null? pair?))]
+    [read-data* (-> acc-array? pair?)]
+    [read-data-rkt (-> rkt-segment? pair?)]
+    [read-data*-rkt (-> rkt-acc-array? pair?)]
     [get-type (-> acc-array? integer?)]
     [get-shape (-> acc-array? (or/c null? pair?))]
     [get-result-array (-> acc-array? acc-array?)]
@@ -69,98 +70,114 @@
       (generatePayload-helper data '() '())))
 
 
-;; Helper to readData function
+;; Helper to read-data function
 ;; Arguments -> list containing segment pointers
 ;; Return value -> list with data read from memory pointed by segment pointers
 
-(define (readData-helper ls)
+(define (read-data-helper ls)
   (cond
     ((null? ls) '())
     ((let ([element (ptr-ref (segment-data (car ls)) (mapType (segment-type (car ls))))])
           (and (not (boolean? element)) 
                (cpointer? element))) 
-     (cons (readData-helper 
+     (cons (read-data-helper 
              (ptr-ref* 
                (segment-data (car ls)) 
                (mapType (segment-type (car ls))) 
                0 
                (segment-length (car ls))))
-           (readData-helper (cdr ls))))
+           (read-data-helper (cdr ls))))
      (else (cons (ptr-ref* 
                   (segment-data (car ls)) 
                   (mapType (segment-type (car ls))) 
                   0 
                   (segment-length (car ls)))
-                (readData-helper (cdr ls))))))
+                (read-data-helper (cdr ls))))))
 
 
 ;; Read data from given memory location
 ;; Arguments -> segment pointer
 ;; Return value -> list with data read from given memory location
 
-(define (readData cptr)
+(define (read-data cptr)
   (letrec ([len (segment-length cptr)]
            [cptr* (segment-data cptr)]
            [type (mapType (segment-type cptr))]
            [data (if (equal? type 'empty-type) '() (ptr-ref* cptr* type 0 len))])
           (if (and (ctype? type) (not (equal? _segment-pointer type))) 
               data
-              (readData-helper data))))
+              (read-data-helper data))))
+
+(define (list->vector** ls)
+  (cond
+    ((null? ls) '())
+    ((pair? (car ls)) (cons (list->vector (list->vector** (car ls))) (list->vector** (cdr ls))))
+    (else (cons (car ls) (list->vector** (cdr ls))))))
+
+(define (list->vector* ls shape)
+  (cond
+    ((null? shape) '())
+    ((null? (cdr shape)) (map list->vector (map list->vector** ls)))
+    ((equal? 1 (car shape)) (begin ;;(printf "ls ~s and shape ~s\n" (car ls) (cdr shape))
+                                   (list (list->vector* (car ls) (cdr shape)))))
+    ;;((pair? (car ls)) (cons (list->vector (list->vector* (car ls))) (list->vector* (cdr ls))))
+    (else (cons (list->vector* (car ls) (cdr shape)) (list->vector* (cdr ls) (cons (sub1 (car shape)) (cdr shape)))))))
+    
 
 ;; Read data from given memory location
 ;; Arguments -> acc-array pointer
 ;; Return value -> list with data read from given memory location
 
-(define (readData* cptr)
+(define (read-data* cptr)
   (letrec ([type (mapType (acc-array-type cptr))]
            [data-ptr (acc-array-data cptr)]
            [shape-ptr (acc-array-shape cptr)]
-           [data (readData data-ptr)]
-           [shape (readData shape-ptr)])
+           [data (read-data data-ptr)]
+           [shape (read-data shape-ptr)])
           (if (equal? type 'scalar-payload)
               (list->md-array data shape)
-              (zip data)))) ;; (readData-helper data)
+              (list->vector* (zip data) shape)))) ;; (read-data-helper data)
 
-;; Helper to readData function
+;; Helper to read-data function
 ;; Arguments -> list containing segment pointers
 ;; Return value -> list with data read from memory pointed by segment pointers
 
-(define (readData-helper-rkt ls)
+(define (read-data-helper-rkt ls)
   (cond
     ((null? ls) '())
     ((pair? (rkt-segment-data (car ls)))
-     (cons (readData-helper-rkt (rkt-segment-data (car ls)))
-           (readData-helper-rkt (cdr ls))))
+     (cons (read-data-helper-rkt (rkt-segment-data (car ls)))
+           (read-data-helper-rkt (cdr ls))))
      (else (cons (cvector->list (rkt-segment-data (car ls)))
-                (readData-helper-rkt (cdr ls))))))
+                (read-data-helper-rkt (cdr ls))))))
 
 
 ;; Read data from given memory location
 ;; Arguments -> segment pointer
 ;; Return value -> list with data read from given memory location
 
-(define (readData-rkt cptr)
+(define (read-data-rkt cptr)
   (letrec ([len (rkt-segment-length cptr)]
            [cptr* (rkt-segment-data cptr)]
            [type (mapType (rkt-segment-type cptr))])
           (if (ctype? type)
               (cvector->list cptr*)
-              (readData-helper-rkt cptr*))))
+              (read-data-helper-rkt cptr*))))
 
 
 ;; Read data from given memory location
 ;; Arguments -> acc-array pointer
 ;; Return value -> list with data read from given memory location
 
-(define (readData*-rkt cptr)
+(define (read-data*-rkt cptr)
   (letrec ([type (mapType (rkt-acc-array-type cptr))]
            [data-ptr (rkt-acc-array-data cptr)]
            [shape-ptr (rkt-acc-array-shape cptr)]
-           [data (readData-rkt data-ptr)]
-           [shape (readData-rkt shape-ptr)])
+           [data (read-data-rkt data-ptr)]
+           [shape (read-data-rkt shape-ptr)])
           (if (equal? type 'scalar-payload)
               (list->md-array data shape)
-              (zip data))))
+              (list->vector* (zip data) shape))))
 
 ;; Get a list corresponding to given type
 ;; Arguments -> type
@@ -232,11 +249,11 @@
   (if (acc-array? arr) (segment-type (acc-array-data arr)) (segment-type arr)))
 
 (define (get-shape arr) 
-  (readData (acc-array-shape arr)))  
+  (read-data (acc-array-shape arr)))  
 
 (define (get-result-array input-arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type input-arr))
-                      (get-tuple-type (unzip (readData* input-arr)) (get-shape input-arr))
+                      (get-tuple-type (unzip (vector->list* (read-data* input-arr))) (get-shape input-arr))
                       (mapType (get-type input-arr)))]
            [temp (car (alloc-unit (get-shape input-arr) type*))])
           temp))
@@ -247,5 +264,5 @@
 
 ;; returns the shape of the given acc array
 (define (shape arr) 
-  (readData (acc-array-shape arr)))
+  (read-data (acc-array-shape arr)))
 

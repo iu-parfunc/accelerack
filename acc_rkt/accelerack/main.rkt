@@ -1,7 +1,7 @@
 #lang racket/base
 
 (require accelerack/private/acc_allocate
-         accelerack/private/acc_arrayutils
+         accelerack/private/acc_global_utils
          (prefix-in acc: (only-in accelerack/private/acc_header acc-array?))
          (except-in accelerack/private/acc_header acc-array? make-acc-array)
          ;;accelerack/private/acc_header
@@ -13,7 +13,7 @@
          (for-syntax racket/base syntax/parse))
 
 (provide (all-from-out accelerack/private/acc_allocate) 
-         (all-from-out accelerack/private/acc_arrayutils)
+         (all-from-out accelerack/private/acc_global_utils)
          (all-from-out accelerack/private/acc_header)
          (all-from-out accelerack/private/acc_syntax)
          (all-from-out accelerack/private/acc_parse)
@@ -26,38 +26,48 @@
          acc-map
          acc-fold
          acc-array
+         make-acc-array
          acc-array-val
          acc-array->list)
 
 (define (map f x)
-  (if (acc-array? x)
-      (acc (acc:map f (acc-array-val x)))
-      (r:map f x)))
+  (if (acc-array? x) ;; (acc:acc-array? x))
+      (begin ;(printf "comes here 1\n")
+      (make-acc-array (acc (acc:map f (acc-array-val x)))))
+      (if (acc:acc-array? x)
+          (make-acc-array (acc (acc:map f x)))
+          (begin ;;(printf "comes here 2\n")
+             ;(printf "value ~s\n" (acc:acc-array? x))
+             (r:map f x)))))
 
 (define (acc-map f x)
   (if (acc-array? x)
-      (rkt:acc-map f (acc-array-val x))
+      (make-acc-array (rkt:acc-map f (acc-array-val x)))
       (error 'acc-map "acc-array expected")))
 
 (define (acc-zipwith f x y)
   (if (and (acc-array? x) (acc-array? y))
-      (rkt:acc-zipwith f (acc-array-val x) (acc-array-val y))
+      (make-acc-array (rkt:acc-zipwith f (acc-array-val x) (acc-array-val y)))
       (error 'acc-zipwith "acc-array expected")))
 
 (define (acc-fold f def x)
   (if (acc-array? x)
-      (rkt:acc-fold f def (acc-array-val x))
+      (make-acc-array (rkt:acc-fold f def (acc-array-val x)))
       (error 'acc-zipwith "acc-array expected")))
 
 (define (fold f def x)
   (if (acc-array? x)
-      (acc (acc:fold f def (acc-array-val x)))
-      (error 'fold "acc-array expected")))
+      (make-acc-array (acc (acc:fold f def (acc-array-val x))))
+      (if (acc:acc-array? x)
+          (make-acc-array (acc (acc:fold f def x)))
+          (error 'fold "acc-array expected"))))
 
 (define (zipwith f x y)
   (if (and (acc-array? x) (acc-array? y))
-      (acc (acc:zipwith f (acc-array-val x) (acc-array-val y)))
-      (error 'zipwith "acc-array expected")))
+      (make-acc-array (acc (acc:zipwith f (acc-array-val x) (acc-array-val y))))
+      (if (and (acc:acc-array? x) (acc:acc-array? y))
+          (make-acc-array (acc (acc:zipwith f x y)))
+          (error 'zipwith "acc-array expected"))))
 
 (define-for-syntax (infer-type d)
   (syntax-parse d
@@ -101,7 +111,7 @@
      ((if mode write print) 
       (if (acc-delayed-array? (acc-array-val v))
           (list 'acc-array "<DELAYED ARRAY>")
-          (list 'acc-array (readData* (acc-array-val v))))
+          (list 'acc-array (read-data* (acc-array-val v))))
       prt))]
   #:transparent
   #:omit-define-syntaxes)
@@ -110,8 +120,8 @@
 
 (define (acc-array->list x)
   (if (acc-array? x)
-      (readData* (acc-array-val x))
-      (readData* x)))
+      (read-data* (acc-array-val x))
+      (read-data* x)))
 
 #|(define x (acc-array (#(3 4) #(5 6))))
 x

@@ -16,6 +16,7 @@
                 ACC_PAYLOAD_PTR
                 SCALAR_PAYLOAD
                 TUPLE_PAYLOAD
+                ACC_ARRAY_PTR
                 C_PTR
                 RKT_PAYLOAD_PTR)
   (ACC_TYPES "%d" "C_INT"
@@ -24,6 +25,7 @@
                   "ACC_PAYLOAD_PTR"
                   "SCALAR_PAYLOAD"
                   "TUPLE_PAYLOAD"
+                  "ACC_ARRAY_PTR"
                   "C_PTR"
                   "RKT_PAYLOAD_PTR"))
 
@@ -94,9 +96,10 @@
   (_enum `(c-int = ,C_INT
            c-double = ,C_DOUBLE
            c-bool = ,C_BOOL
-           acc-payload-ptr = ,ACC_PAYLOAD_PTR
+           acc-payload-ptr = ,ACC_PAYLOAD_PTR ;; segment-ptr
            scalar-payload = ,SCALAR_PAYLOAD
            tuple-payload = ,TUPLE_PAYLOAD
+           acc-array-ptr = ,ACC_ARRAY_PTR
            c-ptr = ,C_PTR
            rkt-payload-ptr = ,RKT_PAYLOAD_PTR)))
 

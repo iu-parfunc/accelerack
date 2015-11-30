@@ -82,13 +82,13 @@
   (test-case "test-case 4"
              "test-case 4"
              (define x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
-             (check-equal? '((2 (2 1.1 #f)) (1 (3 2.2 #f)) (4 (16 3.3 #f))) (acc-array->list x))
+             (check-equal? '(#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f))) (acc-array->list x))
              (display "Test 4 Success !!!") (newline))
 
   (test-case "test-case 5"
              "test-case 5"
              (define x (acc-array ((#(1 1.0) #(2 2.0)) (#(3 3.0) #(4 4.0)) (#(5 5.0) #(6 6.0)))))
-             (check-equal? '(((1 1.0) (2 2.0)) ((3 3.0) (4 4.0)) ((5 5.0) (6 6.0))) (acc-array->list x))
+             (check-equal? '((#(1 1.0) #(2 2.0)) (#(3 3.0) #(4 4.0)) (#(5 5.0) #(6 6.0))) (acc-array->list x))
              (display "Test 5 Success !!!") (newline))
   
   (test-case "test-case 6"
@@ -268,7 +268,43 @@
                                      ((7.7 8.8) (9.9 10.10) (11.11 12.12)))))))
              
              (check-equal? (acc-array->list (acc-fold + 100 x)) (acc-array->list (fold (++) 100 x)))
-             (display "Test 25 Success !!!") (newline))))
+             (display "Test 25 Success !!!") (newline))
+
+    (test-case "test-case 26"
+               "test-case 26"
+               (define x (acc-array (0 1 2 3 4 5 6 7 8 9)))
+               (check-equal? (acc-array->list x) (acc-array->list (map sub1 (map add1 x))))
+               (display "Test 26 Success !!!") (newline))
+
+    (test-case "test-case 27"
+               "test-case 27"
+               (define x (acc-array ((10 20 30) (40 50 60))))
+               (define y (acc-array ((10 20 30 40) (50 60 70 80) (90 100 110 120))))
+               (check-equal? (acc-array->list (acc-zipwith add x (acc-zipwith mult x y))) (acc-array->list (zipwith (++) x (zipwith (**) x y))))
+               (display "Test 27 Success !!!") (newline))
+    
+    (test-case "test-case 28"
+               "test-case 28"
+               (define x (acc-array (((1.1 2.2 3.3) (1.1 2.2 3.3) (1.1 2.2 3.3))
+                                     ((4.4 5.5 6.6) (1.1 2.2 3.3) (7.7 8.8 9.9))
+                                     ((1.1 2.2 3.3) (10.10 11.11 12.12) (1.1 2.2 3.3)))))
+               
+               (check-equal? (acc-array->list (acc-fold + 100 (acc-fold + 10 x))) (acc-array->list (fold (++) 100 (fold (++) 10 x))))
+               (display "Test 28 Success !!!") (newline))
+
+    (test-case "test-case 29"
+               "test-case 29"
+               (define x (acc-array ((11.1 22.2 33.3) (1.11 2.22 3.33))))
+               (check-equal? (acc-array->list (acc-map add1 (acc-fold + 10 x))) (acc-array->list (map add1 (fold (++) 10 x))))
+               (display "Test 29 Success !!!") (newline))
+
+    (test-case "test-case 30"
+               "test-case 30"
+               (define x (acc-array ((2 22 222) (3 33 333) (4 44 444))))
+               (define y (acc-array ((10 20 30 40) (50 60 70 80) (90 100 110 120))))
+               (check-equal? (acc-array->list (acc-fold + 50 (acc-zipwith add y (acc-map (lambda (x) (+ x 5)) x))))
+                             (acc-array->list (fold (++) 50 (zipwith (++) y (map (++ 5) x)))))
+               (display "Test 30 Success !!!") (newline))))
 
 (display "\n<----------- Invalid test-cases Run ----------->\n")
 (if (run-tests user-ifc-invalid-test_cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))

@@ -28,47 +28,90 @@ import Data.Array.Accelerate.IO (fromPtr, toPtr,BlockPtrs)
 import Data.Array.Accelerate.Array.Data
 import Data.Typeable
 
-peekArrPtrs :: Ptr ArrPtrs -> IO ArrPtrs
-peekArrPtrs p = do
-  psh  <- peekByteOff p  intSize
-  pdat <- peekByteOff p (intSize + ptrSize)
-  ArrPtrs <$> peekShape psh <*> peekTypeData pdat
+-- Conversions {{{
 
-peekShape :: Ptr Segment -> IO [Int]
-peekShape = peek >=> \(Segment szsh tsh psh) -> do
-  unless (tsh == IntTag) $
-    fail $ "Bad Shape tag: " ++ show tsh
-  peekArray szsh $ castPtr psh
+toAccArray' :: (Shape sh,Elt e)
+  => AccShape sh
+  -> AccBlockPtrs e
+  -> IO (A.Array sh e)
+toAccArray' sh ps = fromPtr (getShape sh) (getBlockPtrs ps)
 
-peekTypeData :: Ptr Segment -> IO (Type (Ptr ()))
-peekTypeData = peek >=> \(Segment sztyp ttyp ptyp) -> do
-  case ttyp of
-    IntTag    -> return $ Int    ptyp
-    DoubleTag -> return $ Double ptyp
-    BoolTag   -> return $ Bool   ptyp
-    TupleTag  -> do
-      pts <- peekArray sztyp $ castPtr ptyp
-      Tuple <$> mapM peekTypeData pts
+{-
+fromAccArray :: forall sh e. (Shape sh, Elt e) => A.Array sh e -> IO (ArrPtrs,IO ())
+fromAccArray arr = do
+  fin <- newIORef $ return ()
+  (aps,bps)  <- allocPtrs fin tr
+  toPtr arr bps
+  (,) aps <$> readIORef fin
+  where
+  allocPtrFinal :: Storable a => IORef (IO ()) -> IO (Ptr a)
+  allocPtrFinal fin = do
+    p <- malloc
+    modifyIORef fin (free p >>)
+    return p
+  allocPtrs :: IORef (IO ()) -> ArrayEltR er -> IO (ArrPtrs,BlockPtrs er)
+  allocPtrs fin = \case
+    ArrayEltRunit     -> return (ArrPtrs _ $ Tuple [],())
+    ArrayEltRint      -> undefined -- allocRecord fin
+    ArrayEltRint8     -> undefined -- allocRecord fin
+    ArrayEltRint16    -> undefined -- allocRecord fin
+    ArrayEltRint32    -> undefined -- allocRecord fin
+    ArrayEltRint64    -> undefined -- allocRecord fin
+    ArrayEltRword     -> undefined -- allocRecord fin
+    ArrayEltRword8    -> undefined -- allocRecord fin
+    ArrayEltRword16   -> undefined -- allocRecord fin
+    ArrayEltRword32   -> undefined -- allocRecord fin
+    ArrayEltRword64   -> undefined -- allocRecord fin
+    ArrayEltRcshort   -> undefined -- allocRecord fin
+    ArrayEltRcushort  -> undefined -- allocRecord fin
+    ArrayEltRcint     -> undefined -- allocRecord fin
+    ArrayEltRcuint    -> undefined -- allocRecord fin
+    ArrayEltRclong    -> undefined -- allocRecord fin
+    ArrayEltRculong   -> undefined -- allocRecord fin
+    ArrayEltRcllong   -> undefined -- allocRecord fin
+    ArrayEltRcullong  -> undefined -- allocRecord fin
+    ArrayEltRfloat    -> undefined -- allocRecord fin
+    ArrayEltRdouble   -> undefined -- allocRecord fin
+    ArrayEltRcfloat   -> undefined -- allocRecord fin
+    ArrayEltRcdouble  -> undefined -- allocRecord fin
+    ArrayEltRbool     -> undefined -- allocRecord fin
+    ArrayEltRchar     -> undefined -- allocRecord fin
+    ArrayEltRcchar    -> undefined -- allocRecord fin
+    ArrayEltRcschar   -> undefined -- allocRecord fin
+    ArrayEltRcuchar   -> undefined -- allocRecord fin
+    ArrayEltRpair a b -> undefined -- (,) <$> allocPtrs fin a <*> allocPtrs fin b
+  ----
+  mkArrPtrs :: Type (Ptr ()) -> ArrPtrs
+  mkArrPtrs = undefined -- ArrPtrs $ dims $ A.arrayShape arr
+  dims :: ArrayEltR (EltRepr sh) -> sh -> [Int]
+  dims = \case
+    ArrayEltRunit                -> \_ -> []
+    ArrayEltRpair a ArrayEltRint -> _ -- (,) <$> allocPtrs fin a <*> allocPtrs fin b
+    _                            -> error $ "Bad shape repr"
+  sh :: ArrayEltR (EltRepr sh)
+  sh = arrayElt
+  tr :: ArrayEltR (EltRepr e)
+  tr = arrayElt
+-}
 
-data Some f where
-  Some :: f a -> Some f
+{-
+toAccArray :: ArrPtrs -> IO (A.Array DIM1 Int)
+toAccArray ArrPtrs {arrShape= [len], arrData = Int ptr } =
+  fromPtr (Z :. len) ((), castPtr ptr :: Ptr Int)
+-}
 
-data SomeC c f where
-  SomeC :: c a => f a -> SomeC c f
+{-
+fromAccArray :: A.Array DIM1 Int -> IO ArrPtrs
+fromAccArray arr =
+  do let (Z :. sz) = A.arrayShape arr
+     ptr <- mallocArray sz
+     toPtr arr ((), ptr)
+     return $ ArrPtrs [sz] (Int$ castPtr ptr)
+-}
 
-(>>-) :: Some f -> (forall a. f a -> r) -> r
-Some a >>- f = f a
-infixl 1 >>-
+-- }}}
 
-ret :: f a -> Some f
-ret = Some
-
-(>>~) :: SomeC c f -> (forall a. c a => f a -> r) -> r
-SomeC a >>~ f = f a
-infixl 1 >>~
-
-retC :: c a => f a -> SomeC c f
-retC = SomeC
+-- AccShape {{{
 
 data AccShape :: * -> * where
   ShZ :: AccShape Z
@@ -83,6 +126,24 @@ getShape :: AccShape sh -> sh
 getShape = \case
   ShZ      -> Z
   ShS n sh -> getShape sh :. n
+
+lowerShape :: forall sh e. Array sh e -> [Int]
+lowerShape arr = lowerShape' e sh
+  where
+  e :: ArrayEltR (EltRepr sh)
+  e = arrayElt
+  sh :: sh
+  sh = arrayShape arr
+
+lowerShape' :: ArrayEltR sh -> sh -> [Int]
+lowerShape' = \case
+  ArrayEltRpair e ArrayEltRint -> \(sh,n) -> n : lowerShape' e sh
+  ArrayEltRunit                -> \()     -> []
+  _                            -> error "Malformed shape"
+
+-- }}}
+
+-- AccBlockPtrs {{{
 
 data AccBlockPtrs :: * -> * where
   Nil     :: AccBlockPtrs ()
@@ -198,100 +259,43 @@ getBlockPtrs' = \case
   Tup7 a b c d e f g   -> (getBlockPtrs (Tup6 a b c d e f)   , getBlockPtrs' g)  
   Tup8 a b c d e f g h -> (getBlockPtrs (Tup7 a b c d e f g) , getBlockPtrs' h)  
 
-toAccArray :: (Shape sh,Elt e)
-  => AccShape sh
-  -> AccBlockPtrs e
-  -> IO (A.Array sh e)
-toAccArray sh ps = fromPtr (getShape sh) (getBlockPtrs ps)
+-- }}}
 
-{-
+-- ArrPtrs {{{
+
 data ArrPtrs = ArrPtrs
   { arrShape :: [Int]
   , arrData  :: Type (Ptr ())
   }
+
 data Type ann
   = Double ann
   | Int    ann
   | Bool   ann
   | Tuple [Type ann]
   deriving (Eq,Ord,Show)
--}
 
-fromAccArray :: forall sh e. (Shape sh, Elt e) => A.Array sh e -> IO (ArrPtrs,IO ())
-fromAccArray arr = do
-  fin <- newIORef $ return ()
-  (aps,bps)  <- allocPtrs fin tr
-  toPtr arr bps
-  (,) aps <$> readIORef fin
-  where
-  allocRecord :: Storable a => IORef (IO ()) -> IO (Ptr a)
-  allocRecord fin = do
-    p <- malloc
-    modifyIORef fin (free p >>)
-    return p
-  allocPtrs :: IORef (IO ()) -> ArrayEltR er -> IO (ArrPtrs,BlockPtrs er)
-  allocPtrs fin = \case
-    ArrayEltRunit     -> undefined
-    ArrayEltRint      -> undefined -- allocRecord fin
-    ArrayEltRint8     -> undefined -- allocRecord fin
-    ArrayEltRint16    -> undefined -- allocRecord fin
-    ArrayEltRint32    -> undefined -- allocRecord fin
-    ArrayEltRint64    -> undefined -- allocRecord fin
-    ArrayEltRword     -> undefined -- allocRecord fin
-    ArrayEltRword8    -> undefined -- allocRecord fin
-    ArrayEltRword16   -> undefined -- allocRecord fin
-    ArrayEltRword32   -> undefined -- allocRecord fin
-    ArrayEltRword64   -> undefined -- allocRecord fin
-    ArrayEltRcshort   -> undefined -- allocRecord fin
-    ArrayEltRcushort  -> undefined -- allocRecord fin
-    ArrayEltRcint     -> undefined -- allocRecord fin
-    ArrayEltRcuint    -> undefined -- allocRecord fin
-    ArrayEltRclong    -> undefined -- allocRecord fin
-    ArrayEltRculong   -> undefined -- allocRecord fin
-    ArrayEltRcllong   -> undefined -- allocRecord fin
-    ArrayEltRcullong  -> undefined -- allocRecord fin
-    ArrayEltRfloat    -> undefined -- allocRecord fin
-    ArrayEltRdouble   -> undefined -- allocRecord fin
-    ArrayEltRcfloat   -> undefined -- allocRecord fin
-    ArrayEltRcdouble  -> undefined -- allocRecord fin
-    ArrayEltRbool     -> undefined -- allocRecord fin
-    ArrayEltRchar     -> undefined -- allocRecord fin
-    ArrayEltRcchar    -> undefined -- allocRecord fin
-    ArrayEltRcschar   -> undefined -- allocRecord fin
-    ArrayEltRcuchar   -> undefined -- allocRecord fin
-    ArrayEltRpair a b -> undefined -- (,) <$> allocPtrs fin a <*> allocPtrs fin b
-  ----
-  mkArrPtrs :: Type (Ptr ()) -> ArrPtrs
-  mkArrPtrs = undefined -- ArrPtrs $ dims $ A.arrayShape arr
-  dims :: ArrayEltR (EltRepr sh) -> sh -> [Int]
-  dims = \case
-    ArrayEltRunit                -> \_ -> []
-    ArrayEltRpair a ArrayEltRint -> undefined -- (,) <$> allocPtrs fin a <*> allocPtrs fin b
-    _                            -> error $ "Bad shape repr"
-  sh :: ArrayEltR (EltRepr sh)
-  sh = arrayElt
-  tr :: ArrayEltR (EltRepr e)
-  tr = arrayElt
+peekArrPtrs :: Ptr ArrPtrs -> IO ArrPtrs
+peekArrPtrs p = do
+  psh  <- peekByteOff p  intSize
+  pdat <- peekByteOff p (intSize + ptrSize)
+  ArrPtrs <$> peekShape psh <*> peekTypeData pdat
 
-{-
-toAccArray :: ArrPtrs -> IO (A.Array DIM1 Int)
-toAccArray ArrPtrs {arrShape= [len], arrData = Int ptr } =
-  fromPtr (Z :. len) ((), castPtr ptr :: Ptr Int)
--}
+peekShape :: Ptr Segment -> IO [Int]
+peekShape = peek >=> \(Segment szsh tsh psh) -> do
+  unless (tsh == IntTag) $
+    fail $ "Bad Shape tag: " ++ show tsh
+  peekArray szsh $ castPtr psh
 
-{-
-fromAccArray :: A.Array DIM1 Int -> IO ArrPtrs
-fromAccArray arr =
-  do let (Z :. sz) = A.arrayShape arr
-     ptr <- mallocArray sz
-     toPtr arr ((), ptr)
-     return $ ArrPtrs [sz] (Int$ castPtr ptr)
--}
-
-data ArrPtrs = ArrPtrs
-  { arrShape :: [Int]
-  , arrData  :: Type (Ptr ())
-  }
+peekTypeData :: Ptr Segment -> IO (Type (Ptr ()))
+peekTypeData = peek >=> \(Segment sztyp ttyp ptyp) -> do
+  case ttyp of
+    IntTag    -> return $ Int    ptyp
+    DoubleTag -> return $ Double ptyp
+    BoolTag   -> return $ Bool   ptyp
+    TupleTag  -> do
+      pts <- peekArray sztyp $ castPtr ptyp
+      Tuple <$> mapM peekTypeData pts
 
 printArrPtrs :: ArrPtrs -> IO ()
 printArrPtrs a = do
@@ -338,12 +342,15 @@ renderData len = \case
     ss <- mapM (renderData len) ts
     return $ "{" ++ L.intercalate ";" ss ++ "}"
 
-data Type ann
-  = Double ann
-  | Int    ann
-  | Bool   ann
-  | Tuple [Type ann]
-  deriving (Eq,Ord,Show)
+-- }}}
+
+-- Segment {{{
+
+data Segment = Segment
+  { vSize :: Int
+  , vTag  :: TypeTag
+  , vData :: Ptr ()
+  }
 
 data TypeTag
   = IntTag      -- 0
@@ -367,12 +374,6 @@ instance Enum TypeTag where
     3 -> TupleTag
     n -> Other n
 
-data Segment = Segment
-  { vSize :: Int
-  , vTag  :: TypeTag
-  , vData :: Ptr ()
-  }
-
 newtype Payload = Payload
   { getPayload :: Ptr ()
   }
@@ -389,6 +390,20 @@ instance Storable Segment where
     pokeByteOff p intSize     $ toCInt t
     pokeByteOff p (2*intSize)   d
 
+-- }}}
+
+-- Util {{{
+
+data SomeC (c :: k -> Constraint) (f :: k -> *) :: * where
+  SomeC :: c a => f a -> SomeC c f
+
+(>>~) :: SomeC c f -> (forall a. c a => f a -> r) -> r
+SomeC a >>~ f = f a
+infixl 1 >>~
+
+retC :: c a => f a -> SomeC c f
+retC = SomeC
+
 toCInt :: Enum a => a -> CInt
 toCInt = toEnum . fromEnum
 
@@ -398,3 +413,6 @@ fromCInt = toEnum . fromEnum
 intSize, ptrSize :: Int
 intSize = sizeOf (undefined :: CInt)
 ptrSize = sizeOf nullPtr
+
+-- }}}
+

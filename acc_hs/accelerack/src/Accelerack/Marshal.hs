@@ -127,6 +127,7 @@ getShape = \case
   ShZ      -> Z
   ShS n sh -> getShape sh :. n
 
+{-
 lowerShape :: forall sh e. Array sh e -> [Int]
 lowerShape arr = lowerShape' e sh
   where
@@ -134,12 +135,15 @@ lowerShape arr = lowerShape' e sh
   e = arrayElt
   sh :: sh
   sh = arrayShape arr
+-}
 
+{-
 lowerShape' :: ArrayEltR sh -> sh -> [Int]
 lowerShape' = \case
   ArrayEltRpair e ArrayEltRint -> \(sh,n) -> n : lowerShape' e sh
   ArrayEltRunit                -> \()     -> []
   _                            -> error "Malformed shape"
+-}
 
 -- }}}
 

@@ -109,9 +109,10 @@
   #:methods gen:custom-write
   [(define (write-proc v prt mode)
      ((if mode write print) 
-      (if (acc-delayed-array? (acc-array-val v))
-          (list 'acc-array "<DELAYED ARRAY>")
-          (list 'acc-array (read-data* (acc-array-val v))))
+      (let ((arr (acc-array-val v)))
+        (if (acc-delayed-array? arr)
+            (list 'acc-array "<DELAYED ARRAY>")
+            (list 'acc-array (read-data* arr))))
       prt))]
   #:transparent
   #:omit-define-syntaxes)

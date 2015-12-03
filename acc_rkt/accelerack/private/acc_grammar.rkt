@@ -28,7 +28,7 @@
         #'(lambda (x)
             (and (vector? x)
                  (eqv? (vector-length x) l)
-                 (t.verify (vector-ref x) 
+                 (t.verify (vector-ref x)) ...)) 
       ]
     ))
 

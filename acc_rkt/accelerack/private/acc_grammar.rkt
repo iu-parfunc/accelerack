@@ -7,6 +7,48 @@
 ;; (define-for-syntax (infer-shape d)
 ;;   (syntax-parse d
 
+#|
+
+scalar-type st
+  = _int
+  | _bool
+  | _double
+  | (_tuple st ...)
+
+type t
+  = st
+  | (_tuple t ...)
+  | (_array n t)
+  | (-> t t)
+
+n = non-negative integer
+
+expression e
+  = (array sh st a)
+  | add1
+  | sub1
+  | (map e e)
+  | (zipwith e e)
+  | (fold e e e)
+  | (let ((x e) ...) e)
+  | x
+  | (lambda (x ...) e)
+  | (e e ...)
+  | #(e ...)
+
+value v
+  = <boolean>
+  | <integer>
+  | <double>
+
+array-data a
+  = e
+  | (a ...), all a have same length
+
+shape sh = (n ...)
+
+|#
+
 (begin-for-syntax
   (define-syntax-class type
     #:attributes (verify)

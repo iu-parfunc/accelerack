@@ -102,11 +102,11 @@
     (else (row-length (cdr shape)))))
 
 
-;; Perform zipwith accelerate function
+;; Accelerate zipwith (development) function
 ;; Arguments -> binary function, reference to array 1,reference to array 2
 ;; Return value -> result array
 
-(define (acc-zipwith fn arr1 arr2)
+(define (acc-zipwith-dev fn arr1 arr2)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (find-shape (shape arr1) (shape arr2) '())]
            [temp* (car (alloc-unit shape* type*))]
@@ -118,17 +118,21 @@
               (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))
             temp*)))
 
-(define (skip-by ls i itr itr*)
-  (cond
-    ((equal? i itr) itr*)
-    (else (* (list-ref ls itr) (skip-by ls i (add1 itr) itr*)))))
-
 (define (reshape shp ls)
   (cond
     ((null? shp) ls)
     ((equal? (length ls) (car shp)) (map (lambda (x) (reshape (cdr shp) x)) ls))
     (else (map (lambda (x) (reshape (cdr shp) x)) (take ls (car shp))))))
 
+(define (acc-zipwith fn arr1 arr2)
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
+           [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
+           [temp* (car (alloc-unit shape* type*))]
+           [len (array-size temp*)])
+          (begin
+            (for ([i (in-range 0 len)])
+              (array-set!! temp* i (fn (array-get arr1 i) (array-get arr2 i))))
+            temp*)))
 
 (define (add-ls ls)
   (cond

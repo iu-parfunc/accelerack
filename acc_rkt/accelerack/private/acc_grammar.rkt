@@ -7,8 +7,6 @@
 ;; (define-for-syntax (infer-shape d)
 ;;   (syntax-parse d
 
-
-
 (begin-for-syntax
   (define-syntax-class type
     #:attributes (verify)

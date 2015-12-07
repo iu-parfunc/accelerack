@@ -51,7 +51,7 @@ boundary conditions b
 
 array-data a
   = v                 ; zero-dimensional scalar
-  | (a ...)           ; all a have same length
+  | (a ...), all a have same length  ; (S n)-dimensional data
 
 shape sh = (n ...)
 

@@ -4,6 +4,7 @@
          syntax/parse
          syntax/to-string)
 
+#;
 (begin-for-syntax
 
   (define-literal-set scalar-type-lit
@@ -24,10 +25,10 @@
     (pattern _double)
     (pattern (_tuple t:acc-scalar-type ...)))
 
-  (define-syntax-class acc-scalar
-    #:attributes (type)
-    (pattern _:boolean #:with type #'_bool)
-    (pattern _:
+;  (define-syntax-class acc-scalar
+;    #:attributes (type)
+;    (pattern _:boolean #:with type #'_bool)
+;    (pattern _:
 
   (define-syntax-class acc-type
     #:literal-sets (type-lit)
@@ -38,7 +39,7 @@
 
   (define-syntax-class acc-primop
     (pattern p #:when #'(primop? p)))
-  
+
   (define (type-mismatch expected actual)
     (string-append
       "expected type "
@@ -47,8 +48,9 @@
       actual))
   )
 
-(define-syntax (typecheck-pass e env) e)
-  
+; (define-syntax (typecheck-pass e env) e)
+
+#;
 (define-syntax (check-type e env typ)
    (syntax-parse e
      (b:boolean
@@ -65,5 +67,4 @@
          #'n)
      ))
 
-(define-syntax (infer-type e env) e)
-
+; (define-syntax (infer-type e env) e)

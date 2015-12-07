@@ -9,7 +9,7 @@ OS=$(shell if [ `uname` == "Darwin" ]; then echo osx; else echo linux; fi)
 GCC=gcc
 
 rts:
-	$(GHC) --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc$(GHC_VERSION)
+	$(GHC) --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc-7.6.3 #$(GHC_VERSION)
 c:
 	$(GCC) -shared -fPIC -o libacc.so acc_cfile.c
 

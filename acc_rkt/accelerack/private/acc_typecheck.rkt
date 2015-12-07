@@ -24,6 +24,11 @@
     (pattern _double)
     (pattern (_tuple t:acc-scalar-type ...)))
 
+  (define-syntax-class acc-scalar
+    #:attributes (type)
+    (pattern _:boolean #:with type #'_bool)
+    (pattern _:
+
   (define-syntax-class acc-type
     #:literal-sets (type-lit)
     (pattern (-> _:acc-type _:acc-type))
@@ -57,7 +62,8 @@
          (type-mismatch
            "_double"
            (syntax->string typ))
-         #'n)))
+         #'n)
+     ))
 
 (define-syntax (infer-type e env) e)
 

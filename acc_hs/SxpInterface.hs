@@ -2,7 +2,7 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE CPP                      #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE LambdaCase #-} 
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeSynonymInstances #-}
@@ -49,6 +49,7 @@ entrypoint x = do
   return x
 
 -- parseEither :: (Shape sh) => Either InterpreterError String -> A.Array sh Int
+parseEither :: (Monad m, Show a) => Either a String -> m String
 parseEither x1 =
   case x1 of
     Left msg -> return (show msg)
@@ -133,6 +134,7 @@ instance AccAray Double DIM6 where
     arr <- toAccArrayDbl (dim6 shp) segdata
     return arr
 
+getReferenceStr :: String -> Ptr AccArray -> IO String
 getReferenceStr ref arr = do
   let ptrSize = 8 :: Int
   let value = (read ref) :: Int
@@ -148,99 +150,99 @@ getReferenceStr ref arr = do
   sh1 <- peekArray (Prelude.fromIntegral s1ls) (castPtr s1da :: Ptr CInt)
   a1 <- do
         case [(Prelude.fromIntegral s1ts'), (Prelude.length sh1)] of
-          [0,0] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM0 Int32) 
+          [0,0] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM0 Int32)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM0 Int))"
              return nstr1
-          [0,1] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM1 Int32) 
+          [0,1] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM1 Int32)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM1 Int))"
              return nstr1
-          [0,2] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM2 Int32) 
+          [0,2] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM2 Int32)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM2 Int))"
              return nstr1
-          [0,3] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM3 Int32) 
+          [0,3] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM3 Int32)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM3 Int))"
              return nstr1
-          [0,4] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM4 Int32) 
+          [0,4] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM4 Int32)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM4 Int))"
              return nstr1
-          [0,5] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM5 Int32) 
+          [0,5] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM5 Int32)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM5 Int))"
              return nstr1
-          [0,6] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM6 Int32) 
+          [0,6] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM6 Int32)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM6 Int))"
              return nstr1
-          [1,0] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM0 Double) 
+          [1,0] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM0 Double)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM0 Double))"
              return nstr1
-          [1,1] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM1 Double) 
+          [1,1] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM1 Double)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM1 Double))"
              return nstr1
-          [1,2] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM2 Double) 
+          [1,2] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM2 Double)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM2 Double))"
              return nstr1
-          [1,3] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM3 Double) 
+          [1,3] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM3 Double)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM3 Double))"
              return nstr1
-          [1,4] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM4 Double) 
+          [1,4] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM4 Double)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM4 Double))"
              return nstr1
-          [1,5] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM5 Double) 
+          [1,5] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM5 Double)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
                  nstr1 = "(use (" ++ nstr0 ++ ":: Array DIM5 Double))"
              return nstr1
-          [1,6] -> do 
-             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM6 Double) 
+          [1,6] -> do
+             a1 <- getAccArray sh1 segdata :: IO (A.Array DIM6 Double)
              str <- newCString (show a1)
              hstr <- peekCString str
              let nstr0 = replace "Array" "fromList" hstr
@@ -248,39 +250,43 @@ getReferenceStr ref arr = do
              return nstr1
   return a1
 
-
+appendNull :: Monad m => String -> m String
 appendNull ref = do
   return $ ref ++ ""
 
 checkNotNull :: [Char] -> Bool
 checkNotNull str = if (str == "") then False else True
 
--- processReference :: String -> Ptr AccArray -> String
+processReference :: String -> Ptr AccArray -> IO String
 processReference ref arr = do
   let newRef = splitOneOf "() " ref -- :: [String]
       newRef2 = Prelude.filter (\x -> x /= "") newRef
-  x <- (if ((head newRef2) == "id") 
-           then (getReferenceStr (last newRef2) arr) 
-           else if ((head newRef2) == "map") 
+  x <- (if ((head newRef2) == "id")
+           then (getReferenceStr (last newRef2) arr)
+           else if ((head newRef2) == "map")
                 then (appendNull "Data.Array.Accelerate.map")
-                else if ((head newRef2) == "zipwith") 
+                else if ((head newRef2) == "zipwith")
                      then (appendNull "Data.Array.Accelerate.zipWith")
-                     else if ((head newRef2) == "fold") 
+                     else if ((head newRef2) == "fold")
                           then (appendNull "Data.Array.Accelerate.fold")
                           else (appendNull ref))
   return x
 
+appendReference :: [String] -> [String]
 appendReference [] = []
 appendReference (x1:x2:xs) = if (x1 == "(id") then (x1 ++ " " ++ x2) : (appendReference xs) else x1 : (appendReference (x2:xs))
+appendReference _ = error "appendReference"
 
+appendList :: [String] -> String
 appendList [] = ""
 appendList (x:xs) = x ++ " " ++ (appendList xs)
 
+-- | Takes an SExpression in a string, takes payloads, and takes pre-allocated result space.
 runAcc :: CString -> Ptr AccArray -> Ptr AccArray -> IO ()
 runAcc x arr res = do
   str <- peekCString x
   let exp = splitWs str
-  -- putStrLn (show exp)
+  putStrLn $ "SExp-containing string received by Haskell: " ++ str
   let exp1 = appendReference exp
   -- putStrLn (show exp1)
   let exp2 = (L.map (\x1 -> let x2 = unsafePerformIO $ (processReference x1 arr) :: [Char]
@@ -293,7 +299,7 @@ runAcc x arr res = do
   let arr = (last (Ds.split " " values))
   AccArray atyp ashp adata <- peek res
   Segment s1ls s1ts s1da <- peek adata
-  a1 <- do 
+  a1 <- do
         case (Prelude.fromIntegral s1ts) of
           0 -> do
                let arr' = (read arr) :: [Int]
@@ -308,4 +314,3 @@ runAcc x arr res = do
           _ -> putStrLn "Dont Care Case !!!\n"
   new_str <- newCString values
   putStrLn (exp3 ++ "\n")
-

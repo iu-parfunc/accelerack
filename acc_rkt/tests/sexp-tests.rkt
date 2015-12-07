@@ -199,7 +199,7 @@
   (test-case "case 18"
              (display "test-case 18 running") (newline)
              (test-not-exn "test-case 18" (lambda () (fold (--) 100 (map (++ 100) (zipwith (++) j j))))))
-  
+
   (test-case "case 19"
              (display "test-case 19 running") (newline)
              (test-not-exn "test-case 19" (lambda () (map (** 20)
@@ -232,7 +232,8 @@
              (display "test-case 25 running") (newline)
              (test-not-exn "test-case 25" (lambda () (map (-- 10) (map (++ 5) (zipwith (++)
                                                                                        (map (++ 50) x)
-                                                                                       (map (++ 10) (fold (--) 10 z))))))))))
+                                                                                       (map (++ 10) (fold (--) 10 z))))))))
+))
 
 (display "\n<----------- S-Exp test-cases Run Start ----------->\n")
 (if (run-tests sexp-test-cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))

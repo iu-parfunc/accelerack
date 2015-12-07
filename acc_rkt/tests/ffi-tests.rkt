@@ -471,7 +471,7 @@
     
   (test-case "test-case 23"
              "test-case 23"
-             (letrec ([ls1 (array (4) _double (1.1 2.2 3.3 4.4))]
+             (letrec ([ls1 (array (8) _double (1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8))]
                       [ls2 (array (8) _double (10.50 20.50 30.50 40.50 50.50 60.50 70.50 80.50))]
                       [cptr1 (car ls1)]
                       [cptr2 (car ls2)]
@@ -493,7 +493,7 @@
      
   (test-case "test-case 24"
              "test-case 24"
-             (letrec ([ls1 (array (4) _int (10 20 30 40))]
+             (letrec ([ls1 (array (6) _int (10 20 30 40 50 60))]
                       [ls2 (array (6) _int (5 10 20 25 30 35))]
                       [cptr1 (car ls1)]
                       [cptr2 (car ls2)]
@@ -515,7 +515,7 @@
      
   (test-case "test-case 25"
              "test-case 25"
-             (letrec ([ls1 (array (3) _int (1 2 3))]
+             (letrec ([ls1 (array (4) _int (1 2 3 4))]
                       [ls2 (array (4) _int (10 20 30 40))]
                       [cptr1 (car ls1)]
                       [cptr2 (car ls2)]
@@ -559,7 +559,7 @@
 
   (test-case "test-case 27"
              "test-case 27"
-             (letrec ([ls1 (array (2 3) _int ((1 2 3) (4 5 6)))]
+             (letrec ([ls1 (array (3 4) _int ((1 2 3 4) (4 5 6 7) (7 8 9 10)))]
                       [ls2 (array (3 4) _int ((10 20 30 40) (50 60 70 80) (90 100 110 120)))]
                       [cptr1 (car ls1)]
                       [cptr2 (car ls2)]
@@ -656,10 +656,5 @@
 
 (display "\n<----------- Accelerate test-cases Run ----------->\n")
 (if (run-tests accelerate-test-cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))
-
-;;(define-hs gpu (_fun _string -> _string))
-
-;;(printf "\nSample GPU computation function:\n")
-;;(gpu "show (run $ (use (fromList (Z :.3 :.5) [1..] :: Array DIM2 Int)))")
 
 (printf "########## Exiting racket safely ############\n")

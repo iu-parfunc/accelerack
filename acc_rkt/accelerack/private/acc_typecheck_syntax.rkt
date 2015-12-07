@@ -15,41 +15,8 @@
   )
   ;;(_int _bool _double _tuple))
 
-
-(begin-for-syntax
-  (define (helper stx)
-    (printf "Calling walk helper on a syntax object: ~a\n" stx)
-    (syntax-parse stx
-      #:literals (map acc-array)
-      [(_ (map exp data)) (printf "Helper: map case\n")]
-      [(_ (acc-array data)) (printf "Helper: acc-array case\n")]
-      )
-    (printf "Helper succeeded.\n")
-    ))
-
-(define-syntax (walk stx)
-  (helper stx)
-  (syntax-parse stx
-    #:literals (map acc-array)
-    [(_ (map exp data))
-     (printf "Got map: \n")
-     #'(map exp (walk data))
-     ]
-
-    [(_ (acc-array dat))
-     (printf "Got acc-array: ")
-     #'(acc-array dat)]
-
-#;    (b:boolean
-       #:fail-unless #`(eq? ,typ _bool)
-         (type-mismatch
-           "_bool"
-           (syntax->string typ))
-       #'b)
-    ))
-
 ; (define-syntax (define-acc stx))
-(walk (map add1 (acc-array (1 2 3 4))))
+; (walk (map add1 (acc-array (1 2 3 4))))
 
 #|
 (define-literal-set type-lit

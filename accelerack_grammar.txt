@@ -40,7 +40,7 @@ expression e
   = (acc-array a)
   | add1
   | sub1
-  | (map e e)
+  | (map e e)             ; map is not first class
   | (zipwith e e e)
   | (fold e e e)
   | (stencil3x3 e b e)    ; Take a function, (lambda (x1 .. x9) e)

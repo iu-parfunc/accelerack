@@ -8,12 +8,13 @@
 ;; ---------------------------------------------------------------
 
 (provide (contract-out
-          [typecheck-pass (-> syntax? syntax?)]
+          [typecheck-expr (-> syntax? syntax?)]
           ))
 
 (require (for-syntax racket/base)
-         syntax/parse
-         syntax/to-string)
+         ; syntax/parse
+         syntax/to-string
+         )
 ; (require accelerack/private/acc_syntax)
 (require (for-syntax syntax/parse))
 
@@ -23,7 +24,7 @@
 
 
 ;; The full type-checking pass.
-(define (typecheck-pass e) e)
+(define (typecheck-expr e) e)
 
 ;; Everything below this point is just a playground for small tests:
 ;; -----------------------------------------------------------------

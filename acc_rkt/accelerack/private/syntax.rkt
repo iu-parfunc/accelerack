@@ -63,12 +63,14 @@
 
 (define-syntax-class accelerack-primitive-function
   ;; How to get this style to work?:
-  (pattern p #:when (acc-primop-identifier? #'p))
+  (pattern p #:when (acc-primop-identifier? #'p)))
 
-  ; #:literal-sets (acc-primop-lits)
-  ; (pattern add1) (pattern sub1)
-  ; (pattern +) (pattern *) (pattern /) (pattern -)
-  )
+
+(define-syntax (Bool stx)
+  (raise-syntax-error 'error "Bool type used outside of Accelerate block" stx))
+(define-syntax (Int stx)
+  (raise-syntax-error 'error "Int type used outside of Accelerate block" stx))
+
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

@@ -14,13 +14,12 @@
 
 (define-acc id1 (lambda (x) x))
 
-
 ;; TODO: unit tests for syntax failures:
 ;; ----------------------------------------
 (define y 999)
 ; (define-acc id2 (lambda (x) y))
 
-; (define-acc id3 (lambda (x) completely-unbound))
+(define-acc id3 (lambda (x) completely-unbound))
 ;; ----------------------------------------
 
 

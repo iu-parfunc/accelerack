@@ -286,7 +286,7 @@ runAcc :: CString -> Ptr AccArray -> Ptr AccArray -> IO ()
 runAcc x arr res = do
   str <- peekCString x
   let exp = splitWs str
-  putStrLn $ "SExp-containing string received by Haskell: " ++ str
+  -- putStrLn $ "SExp-containing string received by Haskell: " ++ str
   let exp1 = appendReference exp
   -- putStrLn (show exp1)
   let exp2 = (L.map (\x1 -> let x2 = unsafePerformIO $ (processReference x1 arr) :: [Char]
@@ -313,4 +313,4 @@ runAcc x arr res = do
                pokeArray (castPtr s1da :: Ptr CDouble) a3
           _ -> putStrLn "Dont Care Case !!!\n"
   new_str <- newCString values
-  putStrLn (exp3 ++ "\n")
+  putStr "-"-- (exp3 ++ "\n")

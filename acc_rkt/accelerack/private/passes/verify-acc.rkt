@@ -15,6 +15,7 @@
          syntax/parse
          syntax/to-string
          scribble/srcdoc
+         racket/trace
          )
 (require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
          (for-meta -1 accelerack/private/wrappers)
@@ -34,19 +35,31 @@
 (define (verify-acc-helper stx env)
   (let loop ((stx stx))
    (syntax-parse stx
-     #:literals (map zipwith fold lambda + *)
+     #:literals (map zipwith fold lambda)
      ; (acc-array map zipwith fold lambda + *)
-    ; [(acc-array dat) #'(acc-array dat)]
-    [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
+     ; [(acc-array dat) #'(acc-array dat)]
+     [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
 
-    [(lambda (x:identifier ...) e)
-     #`(lambda (x ...) #,(verify-acc-helper #'e (cons #'e env)))]
+     [(lambda (x:identifier ...) e)
+      #`(lambda (x ...) #,(verify-acc-helper
+                           #'e (append (syntax->list #'(x ...)) env)))]
 
-    ;; TODO: syntax class for primitive functions:
-    [(* e1 e2) #`(* #,(loop #'e1) #,(loop #'e2))]
+     [(p:accelerack-primitive-function e ...)
+      #`(p #,@(map loop (syntax->list #'(e ...))))]
 
-    [(p:acc-primop e ...) #`(p #,@(map loop (syntax->list #'(e ...))))]
+     [x:identifier
+      ; (printf "Handling identifier: ~a ~a\n" #'x (identifier-binding #'x))
+      (cond
+        [(ormap (lambda (id) (free-identifier=? id #'x)) env) #'x]
+        [(not (identifier-binding #'x))
+         (raise-syntax-error 'error
+                             "undefined variable used in Accelerack expression."
+                             #'x)]
+        [else
+         (raise-syntax-error 'error
+                             (format "\n Regular Racket variable used Accelerack expression without (use ~a)"
+                                     (syntax->datum #'x))
+                             #'x)])]
 
-    [x:identifier #'x] ;; TODO: check that it's bound...
     [n:integer #'n]
     )))

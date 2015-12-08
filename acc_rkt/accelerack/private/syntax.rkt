@@ -1,6 +1,7 @@
 #lang racket
 
 ;; Macros for working with Accelerack data.
+;; Syntax helpers for defining core Accelerate macros and compiler passes.
 
 (require ffi/unsafe
          ffi/unsafe/define
@@ -25,7 +26,7 @@
          array
          _tuple
 
-         acc-primop
+         accelerack-primitive-function
          acc-primop-lits
          acc-primop-identifier?
          )
@@ -62,9 +63,14 @@
 
 (define acc-primop-identifier? (literal-set->predicate acc-primop-lits))
 
-(define-syntax-class acc-primop
-  (pattern p #:when #'(primop? p)))
+(define-syntax-class accelerack-primitive-function
+  ;; How to get this style to work?:
+  (pattern p #:when (acc-primop-identifier? #'p))
 
+  ; #:literal-sets (acc-primop-lits)
+  ; (pattern add1) (pattern sub1)
+  ; (pattern +) (pattern *) (pattern /) (pattern -)
+  )
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

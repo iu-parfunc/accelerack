@@ -6,7 +6,7 @@ GCC=gcc
 all: rts c
 
 rts:
-	$(GHC) --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc$(GHC_VERSION)
+	$(RAWGHC) --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc$(GHC_VERSION)
 c:
 	$(GCC) -shared -fPIC -o libacc.so acc_cfile.c
 

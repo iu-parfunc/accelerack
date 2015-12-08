@@ -13,6 +13,7 @@ before_install:
 - mv ~/.local/bin/stack-0.1.6.0-linux-x86_64/stack ~/.local/bin/stack
 - chmod a+x ~/.local/bin/stack
 - cat /proc/cpuinfo | grep name
+- stack setup
 
 install:
   - pwd
@@ -21,7 +22,6 @@ install:
   - cd acc_rkt && ./.prevalidate.sh && cd ..
 
 script:
-  - pwd 
+  - pwd
   - cd acc_hs  && ./.mainvalidate.sh && cd ..
   - cd acc_rkt && ./.mainvalidate.sh && cd ..
-

@@ -12,7 +12,7 @@
 (require accelerack)
 
 (require accelerack/private/header ;; C data reps.
-         (only-in accelerack/private/syntax   array _tuple)
+         (only-in accelerack/private/syntax   array)
          (only-in accelerack/private/allocate get-result-array read-data*)
          (prefix-in rkt: accelerack/private/racket_ops)
          (only-in accelerack/private/global_utils add sub mult)
@@ -302,7 +302,7 @@
 
   (test-case "test-case 16"
              "test-case 16"
-             (letrec ([cptr (array (3) (_tuple _int (_tuple _int _int)) (#(2 #(2 3)) #(1 #(3 6)) #(4 #(16 17))))]
+             (letrec ([cptr (array (3) #(_int #(_int _int)) (#(2 #(2 3)) #(1 #(3 6)) #(4 #(16 17))))]
                       [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
@@ -319,7 +319,7 @@
   (test-case "test-case 17"
              "test-case 17"
              (letrec ([cptr (array (2 3)
-                                 (_tuple _int (_tuple _int (_tuple _int _int)))
+                                 #(_int #(_int #(_int _int)))
                                  ((#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 7))))
                                   (#(4 #(5 #(3 7))) #(1 #(6 #(15 6))) #(14 #(26 #(7 5))))))]
                       [temp (rkt:acc-map add1 cptr)]
@@ -338,7 +338,7 @@
   (test-case "test-case 18"
              "test-case 18"
              (letrec ([cptr (array (2 2 3)
-                                 (_tuple _int _double (_tuple _double))
+                                 #(_int _double #(_double))
                                  (((#(0 1.1 #(0.0)) #(0 2.2 #(0.0)) #(0 3.3 #(0.0)))
                                    (#(0 3.3 #(0.0)) #(0 5.5 #(0.0)) #(0 7.7 #(0.0))))
                                   ((#(0 2.2 #(0.0)) #(0 3.3 #(0.0)) #(0 4.4 #(0.0)))
@@ -358,7 +358,7 @@
 
   (test-case "test-case 19"
              "test-case 19"
-             (letrec ([cptr (array (3) (_tuple _int (_tuple _int (_tuple _int _int))) (#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 13)))))]
+             (letrec ([cptr (array (3) #(_int #(_int #(_int _int))) (#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 13)))))]
                       [temp (rkt:acc-map sub1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin
@@ -375,7 +375,7 @@
   (test-case "test-case 20"
              "test-case 20"
              (letrec ([cptr (array (2 2 3)
-                                 (_tuple _int (_tuple _int (_tuple _int _double)))
+                                 #(_int #(_int #(_int _double)))
                                  (((#(2 #(2 #(3 4.3))) #(1 #(3 #(5 6.4))) #(4 #(16 #(7 4.3))))
                                    (#(4 #(5 #(3 2.5))) #(1 #(6 #(15 5.4))) #(14 #(26 #(7 23.3)))))
                                   ((#(12 #(12 #(13 4.3))) #(11 #(13 #(15 12.1))) #(14 #(26 #(17 21.6))))

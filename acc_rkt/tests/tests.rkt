@@ -11,7 +11,7 @@
 
 (require accelerack)
 (require (only-in accelerack/private/prototype cmap)
-         (only-in accelerack/private/syntax array _tuple)
+         (only-in accelerack/private/syntax array)
          (only-in accelerack/private/allocate read-data* read-data)
          (only-in accelerack/private/global_utils vector->list*)
          (only-in accelerack/private/header acc-manifest-array-data)
@@ -60,7 +60,7 @@
              "test-case 5"
              (check-exn exn:fail?
                         (lambda ()
-                          (array (4) (_tuple _int (_tuple _int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))))
+                          (array (4) #(_int #(_int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))))
              (display "Test 5 Success !!!") (newline))))
 
 (define acc-valid-test_cases (test-suite
@@ -92,14 +92,14 @@
 
   (test-case "test-case 5"
              "test-case 5"
-             (letrec ([cptr (array (3) (_tuple _int (_tuple _int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))])
+             (letrec ([cptr (array (3) #(_int #(_int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))])
                      (check-equal? (read-data* cptr) '(#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f)))))
              (display "Test 5 Success !!!") (newline))
 
   (test-case "test-case 6"
              "test-case 6"
              (letrec ([cptr (array (2 3)
-                                 (_tuple _int (_tuple _int (_tuple _int _int)))
+                                 #(_int #(_int #(_int _int)))
                                  ((#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 7))))
                                   (#(4 #(5 #(3 7))) #(1 #(6 #(15 6))) #(14 #(26 #(7 5))))))]
                       [data (vector->list* (read-data* cptr))])
@@ -111,7 +111,7 @@
   (test-case "test-case 7"
              "test-case 7"
              (letrec ([cptr (array (2 2 3)
-                                 (_tuple _int _double (_tuple _double))
+                                 #(_int _double #(_double))
                                  (((#(0 1.1 #(0.0)) #(0 2.2 #(0.0)) #(0 3.3 #(0.0)))
                                    (#(0 3.3 #(0.0)) #(0 5.5 #(0.0)) #(0 7.7 #(0.0))))
                                   ((#(0 2.2 #(0.0)) #(0 3.3 #(0.0)) #(0 4.4 #(0.0)))
@@ -125,7 +125,7 @@
   (test-case "test-case 8"
              "test-case 8"
              (letrec ([cptr (array (2 2 3)
-                                 (_tuple _int (_tuple _int (_tuple _int _double)))
+                                 #(_int #(_int #(_int _double)))
                                  (((#(2 #(2 #(3 1.1))) #(1 #(3 #(5 2.2))) #(4 #(16 #(7 4.3))))
                                    (#(4 #(5 #(3 2.1))) #(1 #(6 #(15 5.4))) #(14 #(26 #(7 23.3)))))
                                   ((#(12 #(12 #(13 4.3))) #(11 #(13 #(15 12.1))) #(14 #(26 #(17 21.6))))
@@ -138,7 +138,7 @@
 
   (test-case "test-case 9"
              "test-case 9"
-             (letrec ([cptr (array (3) (_tuple _int (_tuple _int (_tuple _int _int))) (#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 13)))))]
+             (letrec ([cptr (array (3) #(_int #(_int #(_int _int))) (#(2 #(2 #(3 5))) #(1 #(3 #(5 6))) #(4 #(16 #(7 13)))))]
                       [data (vector->list* (read-data* cptr))])
                      (begin
                        (cmap 'sub1 cptr)
@@ -147,13 +147,13 @@
 
   (test-case "test-case 10"
              "test-case 10"
-             (letrec ([cptr (array (3) (_tuple _int (_tuple _int _bool _bool) _double) (#(2 #(2 #t #f) 1.1) #(1 #(3 #f #f) 3.3) #(4 #(16 #t #f) 2.4)))])
+             (letrec ([cptr (array (3) #(_int #(_int _bool _bool) _double) (#(2 #(2 #t #f) 1.1) #(1 #(3 #f #f) 3.3) #(4 #(16 #t #f) 2.4)))])
                      (check-equal? (read-data* cptr) '(#(2 #(2 #t #f) 1.1) #(1 #(3 #f #f) 3.3) #(4 #(16 #t #f) 2.4))))
              (display "Test 10 Success !!!") (newline))
 
   (test-case "test-case 11"
              "test-case 11"
-             (letrec ([cptr (array (2 3 4 5) (_tuple _int (_tuple _bool) _double)
+             (letrec ([cptr (array (2 3 4 5) #(_int #(_bool) _double)
                                            ((((#(2 #(#t) 1.1) #(1 #(#t) 3.3) #(4 #(#t) 2.4) #(5 #(#t) 3.4) #(6 #(#t) 2.4))
                                               (#(3 #(#t) 1.1) #(6 #(#t) 3.3) #(9 #(#t) 2.4) #(15 #(#f) 13.4) #(16 #(#t) 21.4))
                                               (#(4 #(#t) 1.1) #(7 #(#t) 3.3) #(10 #(#t) 2.4) #(25 #(#f) 23.4) #(26 #(#f) 22.4))
@@ -216,7 +216,7 @@
 
   (test-case "test-case 16"
              "test-case 16"
-             (letrec ([cptr (array (3) (_tuple _int (_tuple _int _int _double)) (#(2 #(2 2 2.2)) #(1 #(3 4 4.4)) #(4 #(6 5 5.5))))]
+             (letrec ([cptr (array (3) #(_int #(_int _int _double)) (#(2 #(2 2 2.2)) #(1 #(3 4 4.4)) #(4 #(6 5 5.5))))]
                       [temp (rkt:acc-map add1 cptr)])
                      (begin
                        (cmap 'add1 cptr)
@@ -225,7 +225,7 @@
 
   (test-case "test-case 17"
              "test-case 17"
-             (letrec ([cptr (array (2 2 3) (_tuple _int _double (_tuple _double))
+             (letrec ([cptr (array (2 2 3) #(_int _double #(_double))
                                  (((#(1 1.1 #(0.1)) #(2 2.2 #(1.0)) #(3 3.3 #(1.1)))
                                    (#(2 3.3 #(0.2)) #(3 5.5 #(2.0)) #(6 7.7 #(2.2))))
                                   ((#(3 2.2 #(0.3)) #(4 3.3 #(3.0)) #(7 4.4 #(3.3)))

@@ -18,7 +18,7 @@
     [append-end (-> any/c (or/c pair? null?) pair?)]
     [scalar? (-> symbol? boolean?)]
     [string->ctype (-> string? ctype?)]
-    [ctype->symbol (-> ctype? symbol?)]
+    [ctype->symbol (-> (or/c symbol? ctype?) symbol?)]
     [symbol->ctype (-> symbol? ctype?)]
     [mapType (-> integer? (or/c ctype? symbol?))]
     [ptr-ref* (-> cpointer? ctype? integer? integer? any/c)]
@@ -31,7 +31,7 @@
   (cond
     ((null? data) type)
     ((pair? (caar data)) (letrec ([type* (get-tuple-type-helper (car data) '())]
-                                  [type** (cons '_tuple type*)])
+				  [type** type*])
                                  (get-tuple-type-helper (cdr data) (append-end type** type))))
     (else (letrec ([type* (get-ctype* (caar data))]
                    [type** (append-end type* type)])
@@ -44,7 +44,7 @@
 
 (define (get-tuple-type data shape)
   (letrec ([data* (get-tuple-type-helper* data shape)]
-           [type '(_tuple)]
+	   [type '()]
            [tuple-type (get-tuple-type-helper data* type)])
           tuple-type))
 
@@ -165,6 +165,9 @@
     ((equal? _double type) 'c-double)
     ((equal? _int type) 'c-int)
     ((equal? _bool type) 'c-bool)
+    ((equal? '_double type) 'c-double)
+    ((equal? '_int type) 'c-int)
+    ((equal? '_bool type) 'c-bool)
     ((equal? _segment type) 'tuple-payload)
     ((equal? _acc-manifest-array-pointer type) 'acc-manifest-array-ptr)
     ((symbol? type) type)))

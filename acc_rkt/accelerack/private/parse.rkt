@@ -12,7 +12,8 @@
   (define check-tuple
       (lambda (type)
         (match type
-          (`(_tuple ,x ...) (if (memv #f (map (lambda (y) (check-tuple y)) x)) #f #t))
+          (`(,x ...) (if (memv #f (map (lambda (y) (check-tuple y)) x)) #f #t))
+          (`#(,x ...) (if (memv #f (map (lambda (y) (check-tuple y)) x)) #f #t))
           (`,x #:when (scalar? x) #t)
           (`,y #f))))
 
@@ -67,7 +68,6 @@
       (cond
         ((null? type) (if (null? data) #t #f))
         ((null? data) (if (null? type) #t #f))
-        ((equal? (car type) '_tuple) (check-tuple-expr-length (cdr type) data))
         ((pair? (car type)) (and (check-tuple-expr-length (car type) (car data)) (check-tuple-expr-length (cdr type) (cdr data))))
         (else (and #t (check-tuple-expr-length (cdr type) (cdr data))))))
   
@@ -85,7 +85,6 @@
     (define (check-tuple-expr type data)
       (cond
         ((null? type) #t)
-        ((equal? (car type) '_tuple) (check-tuple-expr (cdr type) data))
         ((pair? (car type)) (and (check-tuple-expr (car type) (car data)) (check-tuple-expr (cdr type) (cdr data))))
         (else (and (verify-type (car type) (car data)) (check-tuple-expr (cdr type) (cdr data))))))
 

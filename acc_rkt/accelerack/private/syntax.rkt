@@ -22,9 +22,6 @@
 
 (provide acc-array
          array
-         _tuple
-
-         ; acc-data ; syntax-class
 
          accelerack-primitive-function
          acc-primop-lits
@@ -37,7 +34,7 @@
   (syntax-parse d
     [_:boolean #'_bool]
     [_:number (if (flonum? (syntax-e d)) #'_double #'_int)]
-    [#(v ...) #`(_tuple #,@(map infer-type (syntax->list #'(v ...))))]
+    [#(v ...) #`(#,@(list->vector (map infer-type (syntax->list #'(v ...)))))]
     [(v more ...) (infer-type #'v)]
     ))
 
@@ -98,13 +95,26 @@
 (define-syntax (array stx)
   (syntax-case stx ()
 
-    [(array (shape ...) type (data ...))
+    [(array (shape ...) #(type ...) (data ...))
+                           #'(letrec ([data* (process-data (syntax->datum (syntax (data ...))))]
+                                      [type* (r:map map-type  (list type ...))]
+                                      [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) data*))])
+                                     (if (car ret)
+                                         (acc-alloc type* (syntax->datum (syntax (shape ...))) data*)
+                                         (error 'verify-accelerack (cadr ret))))]
+    [(array (shape ...) #(type ...) data)
+                           #'(let ([type* (r:map map-type (list type ...))]
+                                   [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) (flatten data)))])
+                                  (if (car ret)
+                                      (acc-alloc type* (syntax->datum (syntax (shape ...))) data)
+                                      (error 'verify-accelerack (cadr ret))))]
+    [(array (shape ...) type (data ...))  #'(ctype? type)
                            #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
                                       (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
                                      (if (car ret)
                                          (acc-alloc type (syntax->datum (syntax (shape ...))) data*)
                                          (error 'verify-accelerack (cadr ret))))]
-    [(array (shape ...) type data)
+    [(array (shape ...) type data)  #'(ctype? type)
                            #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
                                   (if (car ret)
                                       (acc-alloc type (syntax->datum (syntax (shape ...))) data)
@@ -114,12 +124,9 @@
   (lambda (x)
     (cond
       ((ctype? x) (ctype->symbol x))
+      ((symbol? x) (ctype->symbol x))
       ((pair? x) (cons (map-type (car x)) (map-type (cdr x))))
+      ((vector? x) (cons (map-type (car (vector->list x))) (map-type (cdr (vector->list x)))))
       (else x))))
-
-;; TODO - Need to rework the definition of tuple syntax
-(define-syntax (_tuple stx)
-  (syntax-case stx ()
-    [(_ type ...) #'(cons '_tuple (r:map map-type (list type ...)))]))
 
 (define test (acc-array (1 2 3 4)))

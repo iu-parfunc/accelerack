@@ -128,7 +128,6 @@
 (define (getUnit-tuple type)
   (cond
     ((null? type) '())
-    ((equal? '_tuple (car type)) (getUnit-tuple (cdr type)))
     ((equal? '_int (car type)) (cons 0 (getUnit-tuple (cdr type))))
     ((equal? '_double (car type)) (cons 0.0 (getUnit-tuple (cdr type))))
     ((equal? '_bool (car type)) (cons #f (getUnit-tuple (cdr type))))

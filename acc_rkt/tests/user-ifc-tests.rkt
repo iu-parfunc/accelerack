@@ -8,7 +8,7 @@
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 ; (require (except-in accelerack map zipwith fold))
-(require (only-in accelerack/private/syntax array _tuple acc-array ))
+(require (only-in accelerack/private/syntax array acc-array))
 (require (only-in accelerack/private/types acc-array->list))
 (require accelerack/private/global_utils) ;; For the (++) macro and friends
 (require (only-in accelerack/private/prototype map zipwith fold acc-map acc-zipwith acc-fold))
@@ -59,12 +59,12 @@
              "test-case 5"
              (check-exn exn:fail?
                         (lambda ()
-                          (array (4) (_tuple _int (_tuple _int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))))
+                          (array (4) #(_int #(_int _bool _bool)) (#(2 #(2 #t #f)) #(1 #(3 #f #f)) #(4 #(16 #t #f))))))
              (display "Test 5 Success !!!") (newline))))
 
 (define user-ifc-valid-test_cases (test-suite
   "valid test cases"
-
+  
   (test-case "test-case 1"
              "test-case 1"
              (define x (acc-array 15))

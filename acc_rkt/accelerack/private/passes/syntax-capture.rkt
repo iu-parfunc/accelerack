@@ -4,7 +4,7 @@
 ;; The syntax-capture and verification step.
 ;; ---------------------------------------------------------------
 
-(provide define-acc acc run-acc )
+(provide define-acc acc run-acc persist-current-acc-syn-table)
 
 (require (for-syntax racket/base)
          syntax/parse
@@ -18,7 +18,8 @@
 (require (for-syntax syntax/parse)
          (for-syntax (only-in accelerack/private/syntax acc-array))
          (for-syntax accelerack/private/passes/verify-acc)
-         (for-syntax accelerack/private/passes/typecheck))
+         (for-syntax accelerack/private/passes/typecheck)
+         (for-syntax rackunit))
 
 (begin-for-syntax
   ;; The table in which Accelerack syntax is accumulated so as to
@@ -44,37 +45,30 @@
 (define-syntax (define-acc stx)
   (syntax-parse stx
     [(_ (f:identifier x:identifier ...) e)
-     (let ((bod (front-end-compiler #'(lambda (x ...) e))))
+     (with-syntax ((bod (front-end-compiler #'(lambda (x ...) e))))
+       ; (check-pred syntax? bod)
+       ; (printf "Capturing lambda syntax: ~a\n" #'bod)
        (set-box! acc-syn-table
-                 (hash-set (unbox acc-syn-table) #'f bod))
-       #`(define f #,bod))]
+                 (hash-set (unbox acc-syn-table) #'f #'bod))
+       #`(define f bod))]
     [(_ x:identifier e)
      (let ((e2 (front-end-compiler #'e)))
+       (check-pred syntax? e2)
        (set-box! acc-syn-table
                  (hash-set (unbox acc-syn-table) #'f e2))
      #`(define x #,e2))]
   ))
 
-(define-syntax (persist-table stx)
+;; Don't really need this currently:
+;;
+;; Surprisingly, this form of persistence changes the VALUES of the
+;; hash into normal lists, but not the keys.
+(define-syntax (persist-current-acc-syn-table stx)
   (syntax-parse stx
     [(_)
-     #`(quote #,acc-syn-table)
+     #`(quote #,(unbox acc-syn-table))
+     ; #`(quote #,(hash->list (unbox acc-syn-table)))
      ; (datum->syntax acc-syn-table)
      ]))
 
 ; --------------------------------------------------------------------------------
-
-
-; --------------------------------------------------------------------------------
-
-#;
-;; Verifies an accelerack expression's grammar:
-(define (verify-acc p)
-  (syntax-parse p
-    )
-  )
-
-(define-acc (sqr x) (* x x))
-(define-acc ac 3)
-
-(define table (persist-table))

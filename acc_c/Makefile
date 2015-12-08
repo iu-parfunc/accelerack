@@ -1,12 +1,9 @@
 
-all: rts c
+include ../makefile_top.inc
 
-GHC=stack exec ghc --
-GHC_VERSION=$(shell $(GHC) --numeric-version)
-OS=$(shell if [ `uname` == "Darwin" ]; then echo osx; else echo linux; fi)
-
-# GHC=~/.stack/programs/x86_64-$(OS)/ghc-7.10.2/bin/ghc
 GCC=gcc
+
+all: rts c
 
 rts:
 	$(GHC) --make rts.c -o librts.so -shared -dynamic -fPIC -lHSrts-ghc$(GHC_VERSION)

@@ -57,7 +57,7 @@
 (define-syntax (acc-array stx)
   (syntax-parse stx
     [(_ data:acc-data)
-     #'(make-acc-array (car (array data.shape data.type data)))]))
+     #'(make-acc-array (array data.shape data.type data))]))
 
 
 ;;------------------------------

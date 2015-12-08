@@ -44,7 +44,7 @@
            [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
                         (get-tuple-type (unzip (vector->list* (read-data* arr))) (shape arr))
                       (mapType (type arr)))]
-           [temp (car (alloc-unit (shape arr) type*))])
+           [temp (alloc-unit (shape arr) type*)])
     ;; (assert (acc-array? temp))
     (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
         (begin (tuple-array-set!! (acc-array-data temp) (acc-array-data arr) fn) temp)
@@ -110,10 +110,10 @@
 (define (acc-zipwith-dev fn arr1 arr2)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (find-shape (shape arr1) (shape arr2) '())]
-           [temp* (car (alloc-unit shape* type*))]
+           [temp* (alloc-unit shape* type*)]
            [len (array-size temp*)]
-           [new-arr1 (car (acc-alloc type* shape* (reshape shape* (read-data* arr1))))]
-           [new-arr2 (car (acc-alloc type* shape* (reshape shape* (read-data* arr2))))])
+           [new-arr1 (acc-alloc type* shape* (reshape shape* (read-data* arr1)))]
+           [new-arr2 (acc-alloc type* shape* (reshape shape* (read-data* arr2)))])
           (begin
             (for ([i (in-range 0 len)])
               (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))
@@ -128,7 +128,7 @@
 (define (acc-zipwith fn arr1 arr2)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
-           [temp* (car (alloc-unit shape* type*))]
+           [temp* (alloc-unit shape* type*)]
            [len (array-size temp*)])
           (begin
             (for ([i (in-range 0 len)])
@@ -149,7 +149,7 @@
 (define (acc-fold func def arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr)) (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
            [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))] 
-           [temp (car (alloc-unit shape* type*))]
+           [temp (alloc-unit shape* type*)]
            [len (array-size temp)]
            [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])
           (begin

@@ -49,20 +49,6 @@
    segment-data
    make-segment
 
-   ;; Racket-side versions of the C struct data (not currently used)
-   rkt-segment
-   rkt-segment-length
-   rkt-segment-type
-   rkt-segment-data
-   rkt-segment?
-   make-rkt-segment
-
-   rkt-acc-array?
-   rkt-acc-array
-   rkt-acc-array-type
-   rkt-acc-array-shape
-   rkt-acc-array-data
-   make-rkt-acc-array
    scalar
    scalar-length)
 
@@ -78,19 +64,6 @@
   ([type _int]
    [shape _segment-pointer]
    [data _segment-pointer]))
-
-;; Racket structure to store tuple/scalar information
-(define-struct rkt-segment
-   (length
-    type
-    data))
-
-;; Racket structure to store accelerate arrays information
-(define-struct rkt-acc-array
-  (type
-   shape
-   data))
-
 
 ;; Enum for storing the type of scalar
 (define scalar

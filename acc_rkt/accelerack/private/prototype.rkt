@@ -223,7 +223,7 @@
                                                   data))]
                   [(inc id-list) (build-id-list data data-ls* 0)]
                   [(dummy** data**) (values '() (filter (lambda (x) (or (acc-array? x) (cpointer? x))) data*))]
-                  [(dummy*** acc-payload) (values '() (car (acc-alloc _acc-array-pointer (list (length data**)) (r:map (lambda (x) (if (acc-array? x) (acc-array-val x) x)) data**))))])
+                  [(dummy*** acc-payload) (values '() (acc-alloc _acc-array-pointer (list (length data**)) (r:map (lambda (x) (if (acc-array? x) (acc-array-val x) x)) data**)))])
                  (values (append (list (if (procedure? func) (procedure->symbol func) func) (if (procedure? opr) (procedure->symbol opr) opr)) id-list) acc-payload)))
 
 (define (convert-ptr x)
@@ -294,10 +294,10 @@
                            #'(letrec-values ([(dummy type*) (values '() (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type data))
                                                                             (error 'acc-fold "fold cannot be used on tuples") (mapType (type data))))]
                                              [(dummy* shape*) (values '() (if (null? (shape data)) '(1) (reverse (cdr (reverse (shape data))))))]
-                                             [(dummy** res-ptr) (values '() (car (alloc-unit shape* type*)))]
+                                             [(dummy** res-ptr) (values '() (alloc-unit shape* type*))]
                                              [(dummy*** data*) (values '() (if (acc-array? data) (acc-array-val data) data))]
                                              [(dummy**** shape**) (values '() (reverse (read-data (acc-array-shape data*))))]
-                                             [(dummy***** shape***) (values '() (car (generatePayload shape** _int)))]
+                                             [(dummy***** shape***) (values '() (generatePayload shape** _int))]
                                              [(dummy****** data**) (values '() (make-acc-array (acc:make-acc-array (acc-array-type data*) shape*** (acc-array-data data*))))]
                                              [(dummy******* opr) (values '() (process-function exp))]
                                              [(sexp payld) (build-sexp fold opr value data**)])

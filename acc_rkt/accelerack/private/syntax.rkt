@@ -24,9 +24,13 @@
          array
          _tuple
 
+         ; acc-data ; syntax-class
+
          accelerack-primitive-function
          acc-primop-lits
          acc-primop-identifier?
+
+         Bool Int Double
          )
 
 (define-for-syntax (infer-type d)
@@ -70,7 +74,8 @@
   (raise-syntax-error 'error "Bool type used outside of Accelerate block" stx))
 (define-syntax (Int stx)
   (raise-syntax-error 'error "Int type used outside of Accelerate block" stx))
-
+(define-syntax (Double stx)
+  (raise-syntax-error 'error "Double type used outside of Accelerate block" stx))
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

@@ -23,8 +23,7 @@
          accelerack/private/types
          )
 
-(provide map fold zipwith
-         )
+(provide map fold zipwith stencil3x3 array-ref)
 
 (define (map f x)
   (cond
@@ -49,3 +48,9 @@
      (rkt:acc-zipwith f (acc-array-val x) (acc-array-val y))]
     [else (error 'fold "FINISHME: zipwith: handle non-manifest case")]
     ))
+
+(define (stencil3x3 f x y)
+  (error 'stencil3x3 "FINISHME: stencil3x3 unimplemented"))
+
+(define (array-ref arr . inds)
+  (error 'stencil3x3 "FINISHME: array-ref unimplemented"))

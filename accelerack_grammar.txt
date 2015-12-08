@@ -48,9 +48,12 @@ expression e
   | x                     ; Variable
   | (lambda (x ...) e)    ; Lambda abs
   | (e e ...)             ; Application
-  | #(e ...)              ; Tuple expression
   | (if e e e)            ; scalar or array conditionals
+  | #(e ...)              ; Tuple expression
   | (array-ref e e ...)   ; N-dimensional dereference.
+
+;; TODO: need either tuple-ref or pattern matching against tuples, or both.
+;; TODO: need application
 
 ;; Extra sugar to add later: or/and, let*, ...
 

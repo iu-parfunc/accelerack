@@ -23,7 +23,8 @@
 ;; accelerack_grammar.txt:
 (provide acc-array acc-array? acc-array->list
 
-         map fold zipwith
+         map fold zipwith stencil3x3
+         array-ref
 
          acc run-acc define-acc
          ; stencil3x3

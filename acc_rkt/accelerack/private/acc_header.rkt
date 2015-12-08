@@ -72,6 +72,7 @@
     [type _int]
     [data _gcpointer]))
 
+;; This is the Racket-side notion of a manifest array.
 ;; C structure to store accelerate arrays information (one logical array)
 (define-cstruct _acc-array
   ([type _int]

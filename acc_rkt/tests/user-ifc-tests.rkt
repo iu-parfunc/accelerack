@@ -8,6 +8,9 @@
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 (require accelerack)
+; (require (only-in accelerack/private/acc_syntax array))
+(require accelerack/private/acc_global_utils) ;; For the (++) macro and friends
+(require (only-in accelerack/private/prototype map zipwith fold acc-map acc-zipwith acc-fold))
 
 (define-runtime-path librts "../../acc_c/librts.so")
 (define lib-rts (ffi-lib librts))
@@ -22,7 +25,7 @@
 
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
-  
+
   (test-case "test-case 1"
              "test-case 1"
              (check-exn exn:fail?
@@ -36,7 +39,7 @@
                         (lambda ()
                           (array () _double #f)))
              (display "Test 2 Success !!!") (newline))
-  
+
   (test-case "test-case 3"
              "test-case 3"
              (check-exn exn:fail?
@@ -50,7 +53,7 @@
                         (lambda ()
                           (array (9) _int (1 2 3 4 5 6 7 8))))
              (display "Test 4 Success !!!") (newline))
-  
+
   (test-case "test-case 5"
              "test-case 5"
              (check-exn exn:fail?
@@ -60,7 +63,7 @@
 
 (define user-ifc-valid-test_cases (test-suite
   "valid test cases"
-  
+
   (test-case "test-case 1"
              "test-case 1"
              (define x (acc-array 15))
@@ -78,7 +81,7 @@
              (define x (acc-array ((#f #f #f) (#t #t #t))))
              (check-equal? '((#f #f #f) (#t #t #t)) (acc-array->list x))
              (display "Test 3 Success !!!") (newline))
-  
+
   (test-case "test-case 4"
              "test-case 4"
              (define x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
@@ -91,7 +94,7 @@
              (define x (acc-array ((#(1 1.0) #(2 2.0)) (#(3 3.0) #(4 4.0)) (#(5 5.0) #(6 6.0)))))
              (check-equal? '((#(1 1.0) #(2 2.0)) (#(3 3.0) #(4 4.0)) (#(5 5.0) #(6 6.0))) (acc-array->list x))
              (display "Test 5 Success !!!") (newline))|#
-  
+
   (test-case "test-case 6"
              "test-case 6"
              (define x (acc-array (0 1 2 3 4 5 6 7 8 9)))
@@ -103,7 +106,7 @@
              (define x (acc-array ((1.1 2.2 3.3) (4.4 5.5 6.6))))
              (check-equal? (acc-array->list (acc-map add1 x)) (acc-array->list (map add1 x)))
              (display "Test 7 Success !!!") (newline))
-  
+
   (test-case "test-case 8"
              "test-case 8"
              (define x (acc-array (((10 20 30) (30 40 50) (50 60 70))
@@ -112,7 +115,7 @@
                                    ((190 200 210) (210 220 230) (230 240 250)))))
              (check-equal? (acc-array->list (acc-map sub1 x)) (acc-array->list (map sub1 x)))
              (display "Test 8 Success !!!") (newline))
-  
+
   (test-case "test-case 9"
              "test-case 9"
              (define x (acc-array (((2 22 222) (3 33 333) (4 44 444)) ((7 77 777) (8 88 888) (9 99 999)))))
@@ -185,13 +188,13 @@
                                    (((10 20) (20 30) (30 40)) ((11 22) (22 33) (33 44)) ((13 23) (23 33) (33 43)) ((15 25) (25 35) (35 45)))
                                    (((10 20) (20 30) (30 40)) ((11 22) (22 33) (33 44)) ((13 23) (23 33) (33 43)) ((15 25) (25 35) (35 45)))
                                    (((10 20) (20 30) (30 40)) ((11 22) (22 33) (33 44)) ((13 23) (23 33) (33 43)) ((15 25) (25 35) (35 45))))))
-             
+
              (define y (acc-array ((((1 2) (2 3) (3 4)) ((111 222) (222 333) (333 444)) ((113 223) (123 333) (433 443)) ((215 125) (225 335) (235 145)))
                                    (((1 2) (2 3) (3 4)) ((111 222) (222 333) (333 444)) ((113 223) (123 333) (433 443)) ((215 125) (225 335) (235 145)))
                                    (((1 2) (2 3) (3 4)) ((111 222) (222 333) (333 444)) ((113 223) (123 333) (433 443)) ((215 125) (225 335) (235 145)))
                                    (((1 2) (2 3) (3 4)) ((111 222) (222 333) (333 444)) ((113 223) (123 333) (433 443)) ((215 125) (225 335) (235 145)))
                                    (((1 2) (2 3) (3 4)) ((111 222) (222 333) (333 444)) ((113 223) (123 333) (433 443)) ((215 125) (225 335) (235 145))))))
-             
+
              (check-equal? (acc-array->list (acc-zipwith add x y)) (acc-array->list (zipwith (++) x y)))
              (display "Test 19 Success !!!") (newline))
 
@@ -223,16 +226,16 @@
                                    (((1 2 3 4 5) (5 6 7 8 9) (9 10 11 12 13) (14 15 16 17 18))
                                     ((1 2 3 4 5) (5 6 7 8 9) (9 10 11 12 13) (14 15 16 17 18))
                                     ((1 2 3 4 5) (5 6 7 8 9) (9 10 11 12 13) (14 15 16 17 18))))))
-             
+
              (check-equal? (acc-array->list (acc-fold + 0 x)) (acc-array->list (fold (++) 0 x)))
              (display "Test 23 Success !!!") (newline))
-  
+
   (test-case "test-case 24"
              "test-case 24"
              (define x (acc-array (((1.1 2.2 3.3) (1.1 2.2 3.3) (1.1 2.2 3.3))
                                    ((4.4 5.5 6.6) (1.1 2.2 3.3) (7.7 8.8 9.9))
                                    ((1.1 2.2 3.3) (10.10 11.11 12.12) (1.1 2.2 3.3)))))
-             
+
              (check-equal? (acc-array->list (acc-fold + 100 x)) (acc-array->list (fold (++) 100 x)))
              (display "Test 24 Success !!!") (newline))
 
@@ -267,7 +270,7 @@
                                      ((7.7 8.8) (9.9 10.10) (11.11 12.12))
                                      ((4.4 5.5) (6.6 7.7) (2.2 3.3))
                                      ((7.7 8.8) (9.9 10.10) (11.11 12.12)))))))
-             
+
              (check-equal? (acc-array->list (acc-fold + 100 x)) (acc-array->list (fold (++) 100 x)))
              (display "Test 25 Success !!!") (newline))
 
@@ -283,13 +286,13 @@
                (define y (acc-array ((11.1 22.2 33.3) (44.4 55.5 66.6))))
                (check-equal? (acc-array->list (acc-zipwith add x (acc-zipwith mult x y))) (acc-array->list (zipwith (++) x (zipwith (**) x y))))
                (display "Test 27 Success !!!") (newline))
-    
+
     (test-case "test-case 28"
                "test-case 28"
                (define x (acc-array (((1.1 2.2 3.3) (1.1 2.2 3.3) (1.1 2.2 3.3))
                                      ((4.4 5.5 6.6) (1.1 2.2 3.3) (7.7 8.8 9.9))
                                      ((1.1 2.2 3.3) (10.10 11.11 12.12) (1.1 2.2 3.3)))))
-               
+
                (check-equal? (acc-array->list (acc-fold + 100 (acc-fold + 10 x))) (acc-array->list (fold (++) 100 (fold (++) 10 x))))
                (display "Test 28 Success !!!") (newline))
 

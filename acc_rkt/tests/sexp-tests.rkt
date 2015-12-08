@@ -1,5 +1,7 @@
 #lang racket
 
+;; Tests of Paventhan's prototype Racket/Haskell SExp-sending bridge.
+
 (require ffi/unsafe
          ffi/unsafe/define
          rackunit
@@ -7,7 +9,15 @@
          racket/runtime-path
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
-(require accelerack)
+(require (except-in accelerack/private/acc_header acc-array? make-acc-array)
+         ; (for-syntax accelerack/private/acc_syntax)
+         accelerack/private/acc_syntax
+         accelerack/private/types
+
+         accelerack/private/acc_global_utils ;; For the (++) macro and friends
+         accelerack/private/prototype
+         ; (for-syntax accelerack/private/prototype)
+         )
 
 (printf "<-------------- Setting up the Haskell environment --------------->")
 (define-runtime-path librachs "../../acc_hs/librachs.so")

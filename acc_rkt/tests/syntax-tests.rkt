@@ -6,11 +6,11 @@
 (define-acc (sqr x) (* x x))
 (define-acc ac 3)
 
-(define table (persist-current-acc-syn-table))
-
 (check-eq? ac 3)
 
 (check-eq? 9 (sqr 3))
+
+(define-acc num (* 3 (+ 4 (- 5 (add1 2)))))
 
 ; (symbol? (caar table))
 ; (syntax? (caar table))
@@ -24,3 +24,6 @@
 ;; (define v (hash-ref table k))
 ;; (printf "Got value: ~a, list? ~a, syntax? ~a\n"
 ;;         v (list? v) (syntax? v))
+
+
+(define table (persist-current-acc-syn-table))

@@ -17,12 +17,17 @@
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
 
+         syntax/parse
          (only-in accelerack/private/types make-acc-array)
          )
 
 (provide acc-array
          array
          _tuple
+
+         acc-primop
+         acc-primop-lits
+         acc-primop-identifier?
          )
 
 (define-for-syntax (infer-type d)
@@ -49,7 +54,16 @@
     #:attributes (shape type)
     [pattern v
              #:with shape (infer-shape #'v)
-             #:with type (infer-type #'v)]))
+             #:with type (infer-type #'v)])
+  )
+
+(define-literal-set acc-primop-lits
+  (add1 sub1 + * / -))
+
+(define acc-primop-identifier? (literal-set->predicate acc-primop-lits))
+
+(define-syntax-class acc-primop
+  (pattern p #:when #'(primop? p)))
 
 
 ;; A convenient syntax for literal arrays, which does not require the

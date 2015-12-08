@@ -24,7 +24,9 @@
 
 
 ;; The full type-checking pass.
-(define (typecheck-expr e) e)
+(define (typecheck-expr e)
+  ; (printf "Temp/dbg: type-checking expr: ~a\n" e)
+  e)
 
 ;; Everything below this point is just a playground for small tests:
 ;; -----------------------------------------------------------------

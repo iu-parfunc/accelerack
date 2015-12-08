@@ -15,7 +15,7 @@
          ; accelerack/private/racket_ops
          (only-in accelerack/private/syntax acc-array)
          )
-(require (for-syntax syntax/parse)
+(require (for-syntax syntax/parse syntax/id-table racket/dict)
          (for-syntax (only-in accelerack/private/syntax acc-array))
          (for-syntax accelerack/private/passes/verify-acc)
          (for-syntax accelerack/private/passes/typecheck)
@@ -26,12 +26,12 @@
 (begin-for-syntax
   ;; The table in which Accelerack syntax is accumulated so as to
   ;; communicate it between textually separate (acc ..) forms.
-  (define acc-syn-table (box (make-immutable-hash)))
+  (define acc-syn-table (box (make-immutable-free-id-table)))
 
   ;; Just the front-end part of the compiler.
   (define (front-end-compiler e)
     ; (printf "Woo compiler frontend! ~a\n" e)
-    (typecheck-expr (verify-acc e '())))
+    (typecheck-expr (verify-acc e)))
   )
 
 ;; TODO: need to defer execution:
@@ -52,13 +52,13 @@
        ; (check-pred syntax? bod)
        ; (printf "Capturing lambda syntax: ~a\n" #'bod)
        (set-box! acc-syn-table
-                 (hash-set (unbox acc-syn-table) #'f #'bod))
+                 (dict-set (unbox acc-syn-table) #'f #'bod))
        #`(define f bod))]
     [(_ x:identifier e)
      (let ((e2 (front-end-compiler #'e)))
        (check-pred syntax? e2)
        (set-box! acc-syn-table
-                 (hash-set (unbox acc-syn-table) #'f e2))
+                 (dict-set (unbox acc-syn-table) #'x e2))
      #`(define x #,e2))]
   ))
 
@@ -69,8 +69,12 @@
 (define-syntax (persist-current-acc-syn-table stx)
   (syntax-parse stx
     [(_)
-     #`(quote #,(unbox acc-syn-table))
+     (with-syntax ((((k . v) ...)
+                    (dict-map (unbox acc-syn-table) cons)))
+       #'(list (list (quote-syntax k) (quote-syntax v)) ...))
+
      ; #`(quote #,(hash->list (unbox acc-syn-table)))
+
      ; (datum->syntax acc-syn-table)
      ]))
 

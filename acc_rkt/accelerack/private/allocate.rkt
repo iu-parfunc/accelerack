@@ -2,9 +2,9 @@
 
 (require (except-in ffi/unsafe ->)
          ffi/unsafe/cvector
-         accelerack/private/acc_header
-         accelerack/private/acc_arrayutils
-         accelerack/private/acc_global_utils
+         accelerack/private/header
+         accelerack/private/arrayutils
+         accelerack/private/global_utils
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 

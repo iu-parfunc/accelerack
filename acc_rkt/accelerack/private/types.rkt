@@ -3,9 +3,9 @@
 ;; Struct definitions used throughout the code base.
 
 (require
- (only-in accelerack/private/acc_allocate read-data*)
- ; accelerack/private/acc_header
- (prefix-in cdata: (only-in accelerack/private/acc_header acc-array?))
+ (only-in accelerack/private/allocate read-data*)
+ ; accelerack/private/header
+ (prefix-in cdata: (only-in accelerack/private/header acc-array?))
  )
 
 (provide  acc-array?

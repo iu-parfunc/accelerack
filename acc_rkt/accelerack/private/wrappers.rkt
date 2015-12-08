@@ -7,19 +7,19 @@
          ffi/unsafe/define
 	 racket/runtime-path
 
-         accelerack/private/acc_parse
-         accelerack/private/acc_allocate
-         accelerack/private/acc_arrayutils
-         accelerack/private/acc_global_utils
+         accelerack/private/parse
+         accelerack/private/allocate
+         accelerack/private/arrayutils
+         accelerack/private/global_utils
 
-         (except-in accelerack/private/acc_header acc-array? make-acc-array)
+         (except-in accelerack/private/header acc-array? make-acc-array)
 
-         (prefix-in cdata: (only-in accelerack/private/acc_header acc-array? make-acc-array))
+         (prefix-in cdata: (only-in accelerack/private/header acc-array? make-acc-array))
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
 
-         (prefix-in rkt: accelerack/private/acc_racket_ops)
+         (prefix-in rkt: accelerack/private/racket_ops)
 
          accelerack/private/types
          )

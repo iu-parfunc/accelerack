@@ -8,8 +8,8 @@
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 (require accelerack)
-; (require (only-in accelerack/private/acc_syntax array))
-(require accelerack/private/acc_global_utils) ;; For the (++) macro and friends
+; (require (only-in accelerack/private/syntax array))
+(require accelerack/private/global_utils) ;; For the (++) macro and friends
 (require (only-in accelerack/private/prototype map zipwith fold acc-map acc-zipwith acc-fold))
 
 (define-runtime-path librts "../../acc_c/librts.so")

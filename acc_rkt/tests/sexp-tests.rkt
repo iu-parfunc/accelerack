@@ -9,12 +9,12 @@
          racket/runtime-path
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
-(require (except-in accelerack/private/acc_header acc-array? make-acc-array)
-         ; (for-syntax accelerack/private/acc_syntax)
-         accelerack/private/acc_syntax
+(require (except-in accelerack/private/header acc-array? make-acc-array)
+         ; (for-syntax accelerack/private/syntax)
+         accelerack/private/syntax
          accelerack/private/types
 
-         accelerack/private/acc_global_utils ;; For the (++) macro and friends
+         accelerack/private/global_utils ;; For the (++) macro and friends
          accelerack/private/prototype
          ; (for-syntax accelerack/private/prototype)
          )

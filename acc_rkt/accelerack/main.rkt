@@ -15,19 +15,20 @@
 
          accelerack/private/wrappers
          accelerack/private/types
+
+         accelerack/private/executor
+         accelerack/private/passes/syntax-capture
          )
 
-;; RRN: most of this should NOT be exported from the publically visible module:
-(provide (all-from-out accelerack/private/allocate)
-         (all-from-out accelerack/private/global_utils)
-         (all-from-out accelerack/private/header)
-         (all-from-out accelerack/private/syntax)
-         (all-from-out accelerack/private/parse)
-         (all-from-out accelerack/private/racket_ops)
+;; RRN: Here we provide an explicit export list as a final gate-keeper
+;; for what's in the language.  This should very closely match
+;; accelerack_grammar.txt:
+(provide acc-array acc-array? acc-array->list
 
-         ; (all-from-out accelerack/private/wrappers)
-         (all-from-out accelerack/private/types)
+         map fold zipwith
+
+         acc run-acc define-acc
+         ; stencil3x3
+         ; array-ref
+         ; Int Bool Double
          )
-
-;; RRN: Provide an explicit export list as a final gate-keeper for what's in the language.
-; (provide acc-array acc-array? ...)

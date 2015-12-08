@@ -11,6 +11,14 @@
 
 (require accelerack)
 
+(require (except-in accelerack/private/header acc-array?) ;; C data reps.
+         (only-in accelerack/private/syntax   array _tuple)
+         (only-in accelerack/private/allocate get-result-array read-data*)
+         (prefix-in rkt: accelerack/private/racket_ops)
+         (only-in accelerack/private/global_utils add sub mult)
+         )
+
+
 (printf "<-------------- Setting up the Haskell environment --------------->")
 (define-runtime-path librachs "../../acc_hs/librachs.so")
 (define lib-hs (ffi-lib librachs))
@@ -211,7 +219,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 10 Success !!!\n") (newline))
-  
+
   (test-case "test-case 11"
              "test-case 11"
              (letrec ([cptr (array (8) _double (1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8))]
@@ -291,7 +299,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 15 Success !!!\n") (newline))
-  
+
   (test-case "test-case 16"
              "test-case 16"
              (letrec ([cptr (array (3) (_tuple _int (_tuple _int _int)) (#(2 #(2 3)) #(1 #(3 6)) #(4 #(16 17))))]
@@ -326,7 +334,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 17 Success !!!\n") (newline))
-    
+
   (test-case "test-case 18"
              "test-case 18"
              (letrec ([cptr (array (2 2 3)
@@ -363,7 +371,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 19 Success !!!\n") (newline))
-    
+
   (test-case "test-case 20"
              "test-case 20"
              (letrec ([cptr (array (2 2 3)
@@ -384,7 +392,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 20 Success !!!\n") (newline))
-    
+
   (test-case "test-case 21"
              "test-case 21"
              (letrec ([cptr1 (array (8) _int (1 2 3 4 5 6 7 8))]
@@ -420,7 +428,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 22 Success !!!\n") (newline))
-    
+
   (test-case "test-case 23"
              "test-case 23"
              (letrec ([cptr1 (array (8) _double (1.1 2.2 3.3 4.4 5.5 6.6 7.7 8.8))]
@@ -438,7 +446,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 23 Success !!!\n") (newline))
-     
+
   (test-case "test-case 24"
              "test-case 24"
              (letrec ([cptr1 (array (6) _int (10 20 30 40 50 60))]
@@ -456,7 +464,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 24 Success !!!\n") (newline))
-     
+
   (test-case "test-case 25"
              "test-case 25"
              (letrec ([cptr1 (array (4) _int (1 2 3 4))]
@@ -474,7 +482,7 @@
                        (printf "----------------------------------------\n")
                        (check-equal? (read-data* temp) (read-data* result-arr))))
              (display "Test 25 Success !!!\n") (newline))
-     
+
   (test-case "test-case 26"
              "test-case 26"
              (letrec ([cptr1 (array (5) _double (10.0 20.0 30.0 40.0 50.0))]

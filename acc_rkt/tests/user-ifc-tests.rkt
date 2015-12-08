@@ -7,8 +7,9 @@
          racket/runtime-path
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
-(require accelerack)
-; (require (only-in accelerack/private/syntax array))
+; (require (except-in accelerack map zipwith fold))
+(require (only-in accelerack/private/syntax array _tuple acc-array ))
+(require (only-in accelerack/private/types acc-array->list))
 (require accelerack/private/global_utils) ;; For the (++) macro and friends
 (require (only-in accelerack/private/prototype map zipwith fold acc-map acc-zipwith acc-fold))
 

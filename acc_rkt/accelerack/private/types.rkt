@@ -12,7 +12,6 @@
           make-acc-array
           acc-array-val
           acc-array->list
-          ; acc-array-data
           )
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
@@ -41,4 +40,12 @@
 
 ;; The datatype for delayed arrays that are not yet computed by either
 ;; Racket/Accelerack or Haskell/Accelerate.
+;;
 (struct acc-delayed-array ())
+
+
+;; TODO:
+
+;; The type of self-contained, serializable, Accelerack computations.
+;; These can be sent across the FFI, or, in principle, even across the network.
+; (struct acc-portable-package )

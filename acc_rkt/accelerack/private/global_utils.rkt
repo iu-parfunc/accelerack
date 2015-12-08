@@ -1,7 +1,9 @@
 #lang racket
 
-(provide 
- (contract-out 
+;; Part of prototype.rkt...
+
+(provide
+ (contract-out
   [add (-> number? number? number?)]
   [sub (-> number? number? number?)]
   [mult (-> number? number? number?)]
@@ -54,4 +56,3 @@
     ((vector? (car vec/ls)) (cons (vector->list* (car vec/ls)) (vector->list* (cdr vec/ls))))
     ((pair? (car vec/ls)) (cons (vector->list* (car vec/ls)) (vector->list* (cdr vec/ls))))
     (else (cons (car vec/ls) (vector->list* (cdr vec/ls))))))
-

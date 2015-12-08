@@ -10,7 +10,13 @@
          rackunit/text-ui)
 
 (require accelerack)
-(require (only-in accelerack/private/prototype cmap))
+(require (only-in accelerack/private/prototype cmap)
+         (only-in accelerack/private/syntax array _tuple)
+         (only-in accelerack/private/allocate read-data* read-data)
+         (only-in accelerack/private/global_utils vector->list*)
+         (only-in accelerack/private/header acc-array-data)
+         (prefix-in rkt: accelerack/private/racket_ops)
+         )
 
 (require "test-utils.rkt")
 
@@ -138,13 +144,13 @@
                        (cmap 'sub1 cptr)
                        (check-equal? (vector->list* (read-data* cptr)) (sub1* data))))
              (display "Test 9 Success !!!") (newline))
-  
+
   (test-case "test-case 10"
              "test-case 10"
              (letrec ([cptr (array (3) (_tuple _int (_tuple _int _bool _bool) _double) (#(2 #(2 #t #f) 1.1) #(1 #(3 #f #f) 3.3) #(4 #(16 #t #f) 2.4)))])
                      (check-equal? (read-data* cptr) '(#(2 #(2 #t #f) 1.1) #(1 #(3 #f #f) 3.3) #(4 #(16 #t #f) 2.4))))
              (display "Test 10 Success !!!") (newline))
-  
+
   (test-case "test-case 11"
              "test-case 11"
              (letrec ([cptr (array (2 3 4 5) (_tuple _int (_tuple _bool) _double)
@@ -179,7 +185,7 @@
                                               (#(35 #(#t) 1.1) #(2 #(#t) 3.3) #(7 #(#t) 7.4) #(4 #(#f) 3.4) #(6 #(#t) 23.4))))))])
                      (test-not-exn "test-case 8" (lambda () (read-data* cptr)))
              (display "Test 11 Success !!!") (newline)))
-  
+
   (test-case "test-case 12"
              "test-case 12"
              (letrec ([cptr (array () _int 99)]
@@ -234,6 +240,3 @@
 (if (run-tests acc-invalid-test_cases) (display "\n!!! Test Run Successfull !!!\n") (display "\n!!! Test Run Failed !!!\n"))
 (display "\n<----------- Valid test-cases Run ----------->\n")
 (if (run-tests acc-valid-test_cases) (display "\n!!! Test Run Successfull !!!\n\n") (display "\n!!! Test Run Failed !!!\n\n"))
-
-
-

@@ -19,6 +19,8 @@
          (for-syntax (only-in accelerack/private/syntax acc-array))
          (for-syntax accelerack/private/passes/verify-acc)
          (for-syntax accelerack/private/passes/typecheck)
+
+         (for-syntax (only-in accelerack/private/executor launch-accelerack-ast))
          (for-syntax rackunit))
 
 (begin-for-syntax
@@ -37,9 +39,10 @@
   (syntax-parse stx
     [(_ e) (front-end-compiler #'e)]))
 
+;; Type-checking happens at expansion time.
 (define-syntax (run-acc stx)
   (syntax-parse stx
-    [(_ e) (front-end-compiler #'e)]))
+    [(_ e) #`(launch-accelerack-ast #,(front-end-compiler #'e))]))
 
 ;; TODO: Need to defer execution ...
 (define-syntax (define-acc stx)

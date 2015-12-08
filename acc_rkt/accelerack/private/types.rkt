@@ -5,7 +5,7 @@
 (require
  (only-in accelerack/private/allocate read-data*)
  ; accelerack/private/header
- (prefix-in cdata: (only-in accelerack/private/header acc-array?))
+ (only-in accelerack/private/header acc-manifest-array?)
  )
 
 (provide  acc-array?
@@ -24,7 +24,7 @@
 ;; manifest or delayed.
 (define-struct acc-array (val)
   #:guard (lambda (v _)
-            (unless (or (acc-delayed-array? v) (cdata:acc-array? v))
+            (unless (or (acc-delayed-array? v) (acc-manifest-array? v))
               (raise-argument-error 'acc-array "acc-array?" v))
             v)
   #:methods gen:custom-write

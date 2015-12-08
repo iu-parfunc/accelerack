@@ -18,10 +18,10 @@
 
 (provide 
  (contract-out
-  [array-get (-> acc-array? exact-integer? any/c)]
-  [acc-map (-> procedure? acc-array? acc-array?)]
-  [acc-zipwith (-> (-> number? number? number?) acc-array? acc-array? acc-array?)]
-  [acc-fold (-> (->* (number?) () #:rest (listof number?) number?) number? acc-array? acc-array?)]))
+  [array-get (-> acc-manifest-array? exact-integer? any/c)]
+  [acc-map (-> procedure? acc-manifest-array? acc-manifest-array?)]
+  [acc-zipwith (-> (-> number? number? number?) acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
+  [acc-fold (-> (->* (number?) () #:rest (listof number?) number?) number? acc-manifest-array? acc-manifest-array?)]))
 
 ;; Eventually: must take acc-manifest-array? or acc-deferred-array?
 
@@ -31,23 +31,23 @@
 
 ;; returns the length of the given acc array
 (define (acc-length arr) 
-  (if (acc-array? arr) (segment-length (acc-array-data arr)) (segment-length arr)))
+  (if (acc-manifest-array? arr) (segment-length (acc-manifest-array-data arr)) (segment-length arr)))
 
 ;; Execute the given function over the given acc array
 ;; Arguments -> input function, reference to the acc array
 ;; Return value -> reference to result array
 
 (define (acc-map fn arr)  
-  ;; The acc-array is not mutable for end users, but for this library implementation 
+  ;; The acc-manifest-array is not mutable for end users, but for this library implementation 
   ;; we leverage a mutable representation internally.
   (letrec ([len (array-size arr)]
            [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
                         (get-tuple-type (unzip (vector->list* (read-data* arr))) (shape arr))
                       (mapType (type arr)))]
            [temp (alloc-unit (shape arr) type*)])
-    ;; (assert (acc-array? temp))
+    ;; (assert (acc-manifest-array? temp))
     (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-        (begin (tuple-array-set!! (acc-array-data temp) (acc-array-data arr) fn) temp)
+        (begin (tuple-array-set!! (acc-manifest-array-data temp) (acc-manifest-array-data arr) fn) temp)
         (begin
           (for ([i (in-range 0 len)])
             (array-set!! temp i (fn (array-get arr i))))
@@ -59,7 +59,7 @@
 
 (define (array-set!! arr-ref offset value)
   (let ([type (mapType ((ctype-scheme->c scalar) (get-ctype value)))]
-        [data (if (acc-array? arr-ref) (segment-data (acc-array-data arr-ref)) (segment-data arr-ref))])
+        [data (if (acc-manifest-array? arr-ref) (segment-data (acc-manifest-array-data arr-ref)) (segment-data arr-ref))])
     (ptr-set! data type offset value)))
 
 ;; Get the value at given position in an acc array
@@ -68,7 +68,7 @@
 
 (define (array-get arr-ref offset)
   (let ([type (mapType (type arr-ref))]
-        [data (if (acc-array? arr-ref) (segment-data (acc-array-data arr-ref)) (segment-data arr-ref))])
+        [data (if (acc-manifest-array? arr-ref) (segment-data (acc-manifest-array-data arr-ref)) (segment-data arr-ref))])
     (ptr-ref data type offset)))
                          
 ;; Execute the given function over the given acc tuple data

@@ -12,9 +12,8 @@
          accelerack/private/arrayutils
          accelerack/private/global_utils
 
-         (except-in accelerack/private/header acc-array? make-acc-array)
+         accelerack/private/header
 
-         (prefix-in cdata: (only-in accelerack/private/header acc-array? make-acc-array))
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
@@ -29,14 +28,14 @@
 
 (define (map f x)
   (cond
-    [(and (acc-array? x) (cdata:acc-array? (acc-array-val x)))
+    [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
      (rkt:acc-map f (acc-array-val x))]
     [(acc-array? x) (error 'map "deferred array not handled yet!!")]
     [else (r:map f x)]))
 
 (define (fold f def x)
   (cond
-    [(and (acc-array? x) (cdata:acc-array? (acc-array-val x)))
+    [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
      (rkt:acc-fold f def (acc-array-val x))]
     [(acc-array? x) (error 'fold "deferred array not handled yet!!")]
     ; [else (r:fold f def x)]
@@ -45,8 +44,8 @@
 
 (define (zipwith f x y)
   (cond
-    [(and (acc-array? x) (cdata:acc-array? (acc-array-val x))
-          (acc-array? y) (cdata:acc-array? (acc-array-val y)))
+    [(and (acc-array? x) (acc-manifest-array? (acc-array-val x))
+          (acc-array? y) (acc-manifest-array? (acc-array-val y)))
      (rkt:acc-zipwith f (acc-array-val x) (acc-array-val y))]
     [else (error 'fold "FINISHME: zipwith: handle non-manifest case")]
     ))

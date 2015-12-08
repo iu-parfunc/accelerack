@@ -32,14 +32,14 @@
 (provide
 
    ;; The public type for Accelerate/Accelerack arrays:
-   acc-array?
-   acc-array-type
-   acc-array-shape
-   acc-array-data
-   make-acc-array
+   acc-manifest-array?
+   acc-manifest-array-type
+   acc-manifest-array-shape
+   acc-manifest-array-data
+   make-acc-manifest-array
 
-   _acc-array
-   _acc-array-pointer
+   _acc-manifest-array
+   _acc-manifest-array-pointer
 
    segment?
    _segment
@@ -60,7 +60,7 @@
 
 ;; This is the Racket-side notion of a manifest array.
 ;; C structure to store accelerate arrays information (one logical array)
-(define-cstruct _acc-array
+(define-cstruct _acc-manifest-array
   ([type _int]
    [shape _segment-pointer]
    [data _segment-pointer]))
@@ -73,7 +73,7 @@
            acc-payload-ptr = ,ACC_PAYLOAD_PTR ;; segment-ptr
            scalar-payload = ,SCALAR_PAYLOAD
            tuple-payload = ,TUPLE_PAYLOAD
-           acc-array-ptr = ,ACC_ARRAY_PTR
+           acc-manifest-array-ptr = ,ACC_ARRAY_PTR
            c-ptr = ,C_PTR
            rkt-payload-ptr = ,RKT_PAYLOAD_PTR)))
 

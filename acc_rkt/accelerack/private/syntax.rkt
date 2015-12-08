@@ -11,9 +11,7 @@
          accelerack/private/arrayutils
          accelerack/private/global_utils
          (prefix-in rkt: accelerack/private/racket_ops)
-         (except-in accelerack/private/header acc-array? make-acc-array)
-         (prefix-in acc: (only-in accelerack/private/header acc-array?))
-         (prefix-in acc: (only-in accelerack/private/header make-acc-array))
+         accelerack/private/header
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)

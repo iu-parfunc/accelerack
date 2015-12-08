@@ -11,7 +11,7 @@
 
 (require accelerack)
 
-(require (except-in accelerack/private/header acc-array?) ;; C data reps.
+(require accelerack/private/header ;; C data reps.
          (only-in accelerack/private/syntax   array _tuple)
          (only-in accelerack/private/allocate get-result-array read-data*)
          (prefix-in rkt: accelerack/private/racket_ops)
@@ -47,9 +47,9 @@
 
 (printf "########## Ready to call haskell functions ###########\n")
 
-(define-hs accelerateMap (_fun _acc-array-pointer _acc-array-pointer _int _int -> _void))
-(define-hs accelerateZipWith (_fun _acc-array-pointer _acc-array-pointer _acc-array-pointer _int -> _void))
-(define-hs accelerateFold (_fun _acc-array-pointer _acc-array-pointer _int _int -> _void))
+(define-hs accelerateMap (_fun _acc-manifest-array-pointer _acc-manifest-array-pointer _int _int -> _void))
+(define-hs accelerateZipWith (_fun _acc-manifest-array-pointer _acc-manifest-array-pointer _acc-manifest-array-pointer _int -> _void))
+(define-hs accelerateFold (_fun _acc-manifest-array-pointer _acc-manifest-array-pointer _int _int -> _void))
 
 (define accelerate-test-cases (test-suite
   "GPU Test Cases"
@@ -57,7 +57,7 @@
   (test-case "test-case 1"
              "test-case 1"
              (letrec ([cptr (array () _int 24)]
-                      [value (segment-type (acc-array-data cptr))]
+                      [value (segment-type (acc-manifest-array-data cptr))]
                       [temp (rkt:acc-map add1 cptr)]
                       [result-arr (get-result-array cptr)])
                      (begin

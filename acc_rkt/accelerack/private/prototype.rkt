@@ -11,9 +11,7 @@
          accelerack/private/arrayutils
          accelerack/private/global_utils
          (prefix-in rkt: accelerack/private/racket_ops)
-         (except-in accelerack/private/header acc-array? make-acc-array)
-         (prefix-in acc: (only-in accelerack/private/header acc-array?))
-         (prefix-in acc: (only-in accelerack/private/header make-acc-array))
+         accelerack/private/header
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
@@ -51,7 +49,7 @@
 (define-runtime-path libacc "../../../acc_c/libacc.so")
 (define libacclib (ffi-lib libacc))
 (define-ffi-definer define-libintegrator libacclib)
-(define-libintegrator rkt_handler (_fun _acc-array-pointer _string -> _void))
+(define-libintegrator rkt_handler (_fun _acc-manifest-array-pointer _string -> _void))
 
 (define-runtime-path librachs "../../../acc_hs/librachs.so")
 (define lib-hs (ffi-lib librachs))
@@ -70,10 +68,10 @@
 
 (ark_init)
 
-(define-hs accelerateMap (_fun _acc-array-pointer _acc-array-pointer _int _int -> _void))
-(define-hs accelerateZipWith (_fun _acc-array-pointer _acc-array-pointer _acc-array-pointer _int -> _void))
-(define-hs accelerateFold (_fun _acc-array-pointer _acc-array-pointer _int _int -> _void))
-(define-sxp runAcc (_fun _string _acc-array-pointer _acc-array-pointer -> _void))
+(define-hs accelerateMap (_fun _acc-manifest-array-pointer _acc-manifest-array-pointer _int _int -> _void))
+(define-hs accelerateZipWith (_fun _acc-manifest-array-pointer _acc-manifest-array-pointer _acc-manifest-array-pointer _int -> _void))
+(define-hs accelerateFold (_fun _acc-manifest-array-pointer _acc-manifest-array-pointer _int _int -> _void))
+(define-sxp runAcc (_fun _string _acc-manifest-array-pointer _acc-manifest-array-pointer -> _void))
 (define run-acc runAcc)
 
 ;; Merging acc_sexp.rkt and ../main.rkt to avoid cycles while loading modules
@@ -203,7 +201,7 @@
   (cond
     ((null? data-ls) '())
     ((acc-array? (car data-ls)) (cons (acc-array-val (car data-ls)) (get-data-ptrs (cdr data-ls))))
-    ((acc:acc-array? (car data-ls)) (letrec ([payload (read-data* (car data-ls))])
+    ((acc-manifest-array? (car data-ls)) (letrec ([payload (read-data* (car data-ls))])
                                       (append payload (get-data-ptrs (cdr data-ls)))))
     (else (get-data-ptrs (cdr data-ls)))))
 
@@ -211,8 +209,8 @@
   (cond
     ((null? data-ls) '())
     ((acc-array? (car data-ls)) (cons (read-data* (acc-array-val (car data-ls))) (get-data-list (cdr data-ls))))
-    ((acc:acc-array? (car data-ls)) (letrec ([payload (read-data* (car data-ls))]
-                                             [payload* (if (pair? payload) (if (acc:acc-array? (car payload)) (r:map read-data* payload) (list payload)) (list payload))])
+    ((acc-manifest-array? (car data-ls)) (letrec ([payload (read-data* (car data-ls))]
+                                             [payload* (if (pair? payload) (if (acc-manifest-array? (car payload)) (r:map read-data* payload) (list payload)) (list payload))])
                                       (append payload* (get-data-list (cdr data-ls)))))
     (else (get-data-list (cdr data-ls)))))
 
@@ -222,12 +220,12 @@
                                                   (remove-duplicates (get-data-ptrs data))
                                                   data))]
                   [(inc id-list) (build-id-list data data-ls* 0)]
-                  [(dummy** data**) (values '() (filter (lambda (x) (or (acc-array? x) (cpointer? x))) data*))]
-                  [(dummy*** acc-payload) (values '() (acc-alloc _acc-array-pointer (list (length data**)) (r:map (lambda (x) (if (acc-array? x) (acc-array-val x) x)) data**)))])
+                  [(dummy** data**) (values '() (filter (lambda (x) (or (acc-manifest-array? x) (cpointer? x))) data*))]
+                  [(dummy*** acc-payload) (values '() (acc-alloc _acc-manifest-array-pointer (list (length data**)) (r:map (lambda (x) (if (acc-array? x) (acc-array-val x) x)) data**)))])
                  (values (append (list (if (procedure? func) (procedure->symbol func) func) (if (procedure? opr) (procedure->symbol opr) opr)) id-list) acc-payload)))
 
 (define (convert-ptr x)
-  (if (acc:acc-array? x) (make-acc-array x) x))
+  (if (acc-manifest-array? x) (make-acc-array x) x))
 
 
 (define (sexp-interpreter sexp payload)
@@ -296,9 +294,9 @@
                                              [(dummy* shape*) (values '() (if (null? (shape data)) '(1) (reverse (cdr (reverse (shape data))))))]
                                              [(dummy** res-ptr) (values '() (alloc-unit shape* type*))]
                                              [(dummy*** data*) (values '() (if (acc-array? data) (acc-array-val data) data))]
-                                             [(dummy**** shape**) (values '() (reverse (read-data (acc-array-shape data*))))]
+                                             [(dummy**** shape**) (values '() (reverse (read-data (acc-manifest-array-shape data*))))]
                                              [(dummy***** shape***) (values '() (generatePayload shape** _int))]
-                                             [(dummy****** data**) (values '() (make-acc-array (acc:make-acc-array (acc-array-type data*) shape*** (acc-array-data data*))))]
+                                             [(dummy****** data**) (values '() (make-acc-array (make-acc-manifest-array (acc-manifest-array-type data*) shape*** (acc-manifest-array-data data*))))]
                                              [(dummy******* opr) (values '() (process-function exp))]
                                              [(sexp payld) (build-sexp fold opr value data**)])
                                             (begin
@@ -340,7 +338,7 @@
 (map add1 x)|#
 
 ;; (define x (acc-array ((1.11 2.22 3.33) (4.44 5.55 6.66))))
-;; (read-data (acc-array-shape (acc-array-val x)))
+;; (read-data (acc-manifest-array-shape (acc-array-val x)))
 
 
 
@@ -350,20 +348,20 @@
 (define (map f x)
   (if (acc-array? x)
       (make-acc-array (acc (acc:map f (acc-array-val x))))
-      (if (acc:acc-array? x)
+      (if (acc-manifest-array? x)
           (make-acc-array (acc (acc:map f x)))
              (r:map f x))))
 
 (define (fold f def x)
   (if (acc-array? x)
       (make-acc-array (acc (acc:fold f def (acc-array-val x))))
-      (if (acc:acc-array? x)
+      (if (acc-manifest-array? x)
           (make-acc-array (acc (acc:fold f def x)))
           (error 'fold "acc-array expected"))))
 
 (define (zipwith f x y)
   (if (and (acc-array? x) (acc-array? y))
       (make-acc-array (acc (acc:zipwith f (acc-array-val x) (acc-array-val y))))
-      (if (and (acc:acc-array? x) (acc:acc-array? y))
+      (if (and (acc-manifest-array? x) (acc-manifest-array? y))
           (make-acc-array (acc (acc:zipwith f x y)))
           (error 'zipwith "acc-array expected"))))

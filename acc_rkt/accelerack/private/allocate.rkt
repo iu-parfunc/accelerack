@@ -10,16 +10,16 @@
 
 (provide
   (contract-out
-    [acc-alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) acc-array?)]
+    [acc-alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) acc-manifest-array?)]
     [generatePayload (-> pair? (or/c ctype? symbol?) segment?)] 
-    [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) acc-array?)]
+    [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
     [read-data (-> segment? (or/c null? pair?))]
-    [read-data* (-> acc-array? pair?)]
-    [get-type (-> acc-array? integer?)]
-    [get-shape (-> acc-array? (or/c null? pair?))]
-    [get-result-array (-> acc-array? acc-array?)]
-    [type (-> (or/c acc-array? segment?) integer?)]
-    [shape (-> acc-array? (or/c null? pair?))]))
+    [read-data* (-> acc-manifest-array? pair?)]
+    [get-type (-> acc-manifest-array? integer?)]
+    [get-shape (-> acc-manifest-array? (or/c null? pair?))]
+    [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
+    [type (-> (or/c acc-manifest-array? segment?) integer?)]
+    [shape (-> acc-manifest-array? (or/c null? pair?))]))
 
 
 ;; Helper to generatePayload function
@@ -107,13 +107,13 @@
     
 
 ;; Read data from given memory location
-;; Arguments -> acc-array pointer
+;; Arguments -> acc-manifest-array pointer
 ;; Return value -> list with data read from given memory location
 
 (define (read-data* cptr)
-  (letrec ([type (mapType (acc-array-type cptr))]
-           [data-ptr (acc-array-data cptr)]
-           [shape-ptr (acc-array-shape cptr)]
+  (letrec ([type (mapType (acc-manifest-array-type cptr))]
+           [data-ptr (acc-manifest-array-data cptr)]
+           [shape-ptr (acc-manifest-array-shape cptr)]
            [data (read-data data-ptr)]
            [shape (read-data shape-ptr)])
           (if (equal? type 'scalar-payload)
@@ -168,7 +168,7 @@
            [shape** (generatePayload shape* _int)]
            [init-data (car (alloc-unit* (reverse shape*) type-data '()))]
            [data (if (ctype? type) (generatePayload (flatten init-data) type) (generatePayload (unzip init-data) type))])
-          (make-acc-array type* shape** data)))
+          (make-acc-manifest-array type* shape** data)))
 
 ;; Allocate memory for the payload
 ;; Arguments -> (type, shape,  payload, expression)
@@ -179,13 +179,13 @@
       ([type (if (ctype? _type) ((ctype-scheme->c scalar) 'scalar-payload) ((ctype-scheme->c scalar) 'tuple-payload))] 
        [shape (generatePayload _shape _int)]
        [data (if (ctype? _type) (generatePayload (flatten _data) _type) (generatePayload (unzip _data) _type))])
-      (make-acc-array type shape data)))
+      (make-acc-manifest-array type shape data)))
 
 (define (get-type arr)
-  (if (acc-array? arr) (segment-type (acc-array-data arr)) (segment-type arr)))
+  (if (acc-manifest-array? arr) (segment-type (acc-manifest-array-data arr)) (segment-type arr)))
 
 (define (get-shape arr) 
-  (read-data (acc-array-shape arr)))  
+  (read-data (acc-manifest-array-shape arr)))  
 
 (define (get-result-array input-arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type input-arr))
@@ -196,9 +196,9 @@
 
 ;; returns the type of the given acc array
 (define (type arr)
-  (if (acc-array? arr) (segment-type (acc-array-data arr)) (segment-type arr)))
+  (if (acc-manifest-array? arr) (segment-type (acc-manifest-array-data arr)) (segment-type arr)))
 
 ;; returns the shape of the given acc array
 (define (shape arr) 
-  (read-data (acc-array-shape arr)))
+  (read-data (acc-manifest-array-shape arr)))
 

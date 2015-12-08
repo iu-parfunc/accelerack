@@ -166,7 +166,7 @@
     ((equal? _int type) 'c-int)
     ((equal? _bool type) 'c-bool)
     ((equal? _segment type) 'tuple-payload)
-    ((equal? _acc-array-pointer type) 'acc-array-ptr)
+    ((equal? _acc-manifest-array-pointer type) 'acc-manifest-array-ptr)
     ((symbol? type) type)))
 
 
@@ -180,7 +180,7 @@
     ((equal? 'c-int type) _int)
     ((equal? 'c-bool type) _bool)
     ((equal? 'c-ptr type) _gcpointer)
-    ((equal? 'acc-array-ptr) _acc-array-pointer)
+    ((equal? 'acc-manifest-array-ptr) _acc-manifest-array-pointer)
     ((ctype? type) type)))
 
 
@@ -196,7 +196,7 @@
     ((equal? type 3) _segment-pointer)
     ((equal? type 4) 'scalar-payload)
     ((equal? type 5) 'tuple-payload)
-    ((equal? type 6) _acc-array-pointer)
+    ((equal? type 6) _acc-manifest-array-pointer)
     ((equal? type 7) _gcpointer)
     ((equal? type 8) 'rkt-payload-ptr )
     (else 'empty_type)))
@@ -262,24 +262,24 @@
 
 ;; Not used currently
 
-;; Return type of acc-array pointer reference
-;; Arguments -> pointer to acc-array
+;; Return type of acc-manifest-array pointer reference
+;; Arguments -> pointer to acc-manifest-array
 ;; Return value -> type
 
 ;;(define (get-type c-ref)
-  ;;(acc-array-type c-ref))
+  ;;(acc-manifest-array-type c-ref))
 
 
-;; Return shape of acc-array pointer reference
-;; Arguments -> pointer to acc-array
+;; Return shape of acc-manifest-array pointer reference
+;; Arguments -> pointer to acc-manifest-array
 ;; Return value -> shape
 
 ;;(define (get-dimension c-ref)
-  ;;(acc-array-shape c-ref))
+  ;;(acc-manifest-array-shape c-ref))
 
-;; Return payload of acc-array pointer reference
-;; Arguments -> pointer to acc-array
+;; Return payload of acc-manifest-array pointer reference
+;; Arguments -> pointer to acc-manifest-array
 ;; Return value -> data
 
 ;;(define (get-data c-ref)
-  ;;(acc-array-data c-ref))
+  ;;(acc-manifest-array-data c-ref))

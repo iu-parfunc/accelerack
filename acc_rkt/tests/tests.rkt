@@ -14,7 +14,7 @@
          (only-in accelerack/private/syntax array _tuple)
          (only-in accelerack/private/allocate read-data* read-data)
          (only-in accelerack/private/global_utils vector->list*)
-         (only-in accelerack/private/header acc-array-data)
+         (only-in accelerack/private/header acc-manifest-array-data)
          (prefix-in rkt: accelerack/private/racket_ops)
          )
 
@@ -204,14 +204,14 @@
              "test-case 14"
              (letrec ([cptr (array (2 3) _int ((198 199 200) (301 331 109)))]
                       [temp (rkt:acc-map (lambda (x) (+ x 10)) cptr)])
-                     (check-equal? (read-data (acc-array-data temp)) (map (lambda (x) (+ x 10)) (read-data (acc-array-data cptr)))))
+                     (check-equal? (read-data (acc-manifest-array-data temp)) (map (lambda (x) (+ x 10)) (read-data (acc-manifest-array-data cptr)))))
              (display "Test 14 Success !!!") (newline))
 
   (test-case "test-case 15"
              "test-case 15"
              (letrec ([cptr (array (2 3 4) _int (((1 2 3 4) (5 6 7 8) (9 10 11 12)) ((13 14 15 16) (17 18 19 20) (21 22 23 24))))]
                       [temp (rkt:acc-map (lambda (x) (+ x 100)) cptr)])
-                     (check-equal? (read-data (acc-array-data temp)) (map (lambda (x) (+ x 100)) (read-data (acc-array-data cptr)))))
+                     (check-equal? (read-data (acc-manifest-array-data temp)) (map (lambda (x) (+ x 100)) (read-data (acc-manifest-array-data cptr)))))
              (display "Test 15 Success !!!") (newline))
 
   (test-case "test-case 16"

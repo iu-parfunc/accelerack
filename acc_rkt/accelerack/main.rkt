@@ -2,9 +2,7 @@
 
 (require accelerack/private/allocate
          accelerack/private/global_utils
-         (prefix-in acc: (only-in accelerack/private/header acc-array?))
-         (prefix-in acc: (only-in accelerack/private/header make-acc-array))
-         (except-in accelerack/private/header acc-array? make-acc-array)
+         accelerack/private/header
          accelerack/private/syntax
          accelerack/private/parse
          (prefix-in rkt: accelerack/private/racket_ops)

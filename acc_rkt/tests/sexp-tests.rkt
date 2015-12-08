@@ -9,7 +9,7 @@
          racket/runtime-path
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
-(require (except-in accelerack/private/header acc-array? make-acc-array)
+(require accelerack/private/header
          ; (for-syntax accelerack/private/syntax)
          accelerack/private/syntax
          accelerack/private/types
@@ -32,7 +32,7 @@
 (define lib-rts (ffi-lib librts))
 (define-ffi-definer define-rts lib-rts)
 
-(define-sxp runAcc (_fun _string _acc-array-pointer _acc-array-pointer -> _void))
+(define-sxp runAcc (_fun _string _acc-manifest-array-pointer _acc-manifest-array-pointer -> _void))
 (define run-acc runAcc)
 
 (define-rts ark_init (_fun -> _int))
@@ -250,7 +250,7 @@
 (display "\n<----------- S-Exp test-cases Run End   ----------->\n")
 
 
-;;(acc:make-acc-array 6 shp arr)
+;;(make-acc-manifest-array 6 shp arr)
 ;; (map add1 x)
 ;;(zipwith (++) x y)
 ;; (fold (++) 100 y)

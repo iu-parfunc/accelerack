@@ -1,20 +1,20 @@
 #lang racket/base
 
-(require accelerack/private/acc_allocate
-         accelerack/private/acc_global_utils
-         (prefix-in acc: (only-in accelerack/private/acc_header acc-array?))
-         (prefix-in acc: (only-in accelerack/private/acc_header make-acc-array))
-         (except-in accelerack/private/acc_header acc-array? make-acc-array)
-         accelerack/private/acc_syntax
-         accelerack/private/acc_parse
-         (prefix-in rkt: accelerack/private/acc_racket_ops)
+(require accelerack/private/allocate
+         accelerack/private/global_utils
+         (prefix-in acc: (only-in accelerack/private/header acc-array?))
+         (prefix-in acc: (only-in accelerack/private/header make-acc-array))
+         (except-in accelerack/private/header acc-array? make-acc-array)
+         accelerack/private/syntax
+         accelerack/private/parse
+         (prefix-in rkt: accelerack/private/racket_ops)
          ffi/unsafe
          (prefix-in r: racket/base)
          (for-syntax racket/base syntax/parse))
 
-(provide (all-from-out accelerack/private/acc_allocate) 
-         (all-from-out accelerack/private/acc_global_utils)
-         (all-from-out accelerack/private/acc_header)
-         (all-from-out accelerack/private/acc_syntax)
-         (all-from-out accelerack/private/acc_parse)
-         (all-from-out accelerack/private/acc_racket_ops))
+(provide (all-from-out accelerack/private/allocate) 
+         (all-from-out accelerack/private/global_utils)
+         (all-from-out accelerack/private/header)
+         (all-from-out accelerack/private/syntax)
+         (all-from-out accelerack/private/parse)
+         (all-from-out accelerack/private/racket_ops))

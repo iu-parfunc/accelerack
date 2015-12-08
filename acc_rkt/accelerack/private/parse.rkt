@@ -2,7 +2,7 @@
 
 (require (except-in ffi/unsafe ->)
          racket/contract
-         accelerack/private/acc_arrayutils)
+         accelerack/private/arrayutils)
 
 (provide
   (contract-out

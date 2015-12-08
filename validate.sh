@@ -7,6 +7,9 @@ set -xe
 
 which -a stack
 
+# Make sure we have prereqs before going any further:
+stack setup
+
 TOP=`pwd`
 
 cd $TOP/acc_c/

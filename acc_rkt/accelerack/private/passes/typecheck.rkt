@@ -25,6 +25,9 @@
 ;; The full type-checking pass.
 (define (typecheck-pass e) e)
 
+;; Everything below this point is just a playground for small tests:
+;; -----------------------------------------------------------------
+
 (begin-for-syntax
   (define (helper stx)
     (printf "Calling walk helper on a syntax object: ~a\n" stx)
@@ -59,14 +62,6 @@
 
     ))
 
-; (printf "\nSome simple tests of a recursive macro:\n\n")
-(walk (map add1 #f))
-; (walk (map add1 (acc-array (1 2 3 4))))
-(walk (map add1 (acc-array #f)))
-
-(printf "Result of calling expand:\n  ~a\n"
-        (expand '(walk (map add1 (acc-array #f)))))
-
 (define-syntax (acc-temp stx)
   (syntax-parse stx
     [(_ bod)
@@ -75,9 +70,24 @@
      #'(quote blah)
      ]))
 
-; (printf "\nSome simple tests of regular recursive function over syntax objects:\n\n")
-(acc-temp #f)
-(acc-temp (map add1 (acc-array (1 2 3 4))))
+;; Uncomment to run some simple tests:
+#;
+(begin
+  ; (printf "\nSome simple tests of a recursive macro:\n\n")
+  (walk (map add1 #f))
+  ; (walk (map add1 (acc-array (1 2 3 4))))
+  (walk (map add1 (acc-array #f)))
+
+  ; (printf "Result of calling expand:\n  ~a\n"
+  ;         (expand '(walk (map add1 (acc-array #f)))))
+
+  ; (printf "\nSome simple tests of regular recursive function over syntax objects:\n\n")
+  (acc-temp #f)
+  (acc-temp (map add1 (acc-array (1 2 3 4))))
+  )
+
+;; Scratch work below here
+;; ================================================================================
 
 #;
 (begin-for-syntax

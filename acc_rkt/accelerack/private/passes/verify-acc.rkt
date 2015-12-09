@@ -38,16 +38,16 @@
   (let loop ((stx stx))
     (syntax-parse stx
       ;; TODO: use literal-sets:
-     #:literals (acc-array map zipwith fold stencil3x3 lambda let if array-ref)
+     #:literals (acc-array map zipwith fold stencil3x3 lambda let if acc-array-ref)
 
      [n:number  #'n]
      [b:boolean #'b]
 
      ;; FIXME: use the acc-data syntax class:
      [(acc-array dat) #'(acc-array dat)]
-     ;; Variable arity array-ref.  I.e. it's a special form:
-     [(array-ref e1 e2s ...)
-      #`(array-ref #,(loop #'e1) #,@(map loop (syntax->list #'(e2s ...))))]
+     ;; Variable arity array dereference.  I.e. it's a special form:
+     [(acc-array-ref e1 e2s ...)
+      #`(acc-array-ref #,(loop #'e1) #,@(map loop (syntax->list #'(e2s ...))))]
 
      ;; Here these array ops are treated as special forms, not functions.
      [(map f e) #`(map #,(loop #'f) #,(loop #'e))]

@@ -2,7 +2,7 @@
 
 (require rackunit
          ;; See NOTE below:
-         (only-in accelerack/private/wrappers array-ref fold map zipwith)
+         (only-in accelerack/private/wrappers acc-array-ref fold map zipwith)
          accelerack/private/passes/syntax-capture)
 
 (define-acc (sqr x) (* x x))
@@ -29,7 +29,7 @@
 ;;
 ;; We should tweak verify-acc to check the identifier status of the
 ;; supposed special-forms like array-ref/acc-array/etc.
-(define-acc test01 (lambda (x) (array-ref (if #t x x) 0 3)))
+(define-acc test01 (lambda (x) (acc-array-ref (if #t x x) 0 3)))
 
 ;; Not working yet, need to sort out first class primitive handling:
 #;

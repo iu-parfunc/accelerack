@@ -75,7 +75,7 @@
       #`(let ([x* #,(map loop els)] ...)
           #,(verify-acc-helper
              #'ebod (append xls env)))]
-     #;
+     
      [(p:accelerack-primitive-function e ...)
       #`(p #,@(map loop (syntax->list #'(e ...))))]
 
@@ -87,20 +87,18 @@
      ;; Having problems [2015.12.08]:
       [(rator e ...)
       #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
-
-     [x:identifier
+      
+      [(~and x:id (~fail #:unless (ormap (lambda (id) (free-identifier=? id #'x)) env)
+                         "identifier with an accelerack type"))
+       #'x]
+      
+       [x:identifier
+      #:fail-unless (identifier-binding #'x)
+      "undefined variable used in Accelerack expression."
       ; (printf "Handling identifier: ~a ~a\n" #'x (identifier-binding #'x))
       (cond
         [(ormap (lambda (id) (free-identifier=? id #'x)) env) #'x]
-        [(not (identifier-binding #'x))
-         (raise-syntax-error 'error
-                             "undefined variable used in Accelerack expression."
-                             #'x)]
-        [else
-         (raise-syntax-error 'error
-                             (format "\n Regular Racket variable used Accelerack expression without (use ~a)"
-                                     (syntax->datum #'x))
-                             #'x)])]
+        [else #'x])]
 
      )))
 

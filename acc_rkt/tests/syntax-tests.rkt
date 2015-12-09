@@ -7,13 +7,14 @@
          (only-in accelerack acc-array))
 
 (define-acc (sqr x) (* x x))
+(define-acc (sqr x) y)
 (define-acc ac 3)
 
 (check-eq? ac 3)
 
 (check-eq? 9 (sqr 3))
 
-(define-acc num (* 3 (+ 4 (- 5 (sub1 2)))))
+(define-acc num (* 3 (+ 4 (- 5 (sqrt 2)))))
 
 (define-acc id1 (lambda (x) x))
 

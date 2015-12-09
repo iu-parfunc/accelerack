@@ -10,8 +10,8 @@
 
 (provide
   (contract-out
-    [acc-alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? pair?) acc-manifest-array?)]
-    [generatePayload (-> pair? (or/c ctype? symbol?) segment?)] 
+    [acc-alloc (-> (or/c ctype? pair?) (or/c null? pair?) (or/c number? boolean? list?) acc-manifest-array?)]
+    [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
     [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
     [read-data (-> segment? (or/c null? pair?))]
     [read-data* (-> acc-manifest-array? pair?)]
@@ -24,17 +24,17 @@
 
 ;; Helper to generatePayload function
 ;; Arguments -> (list containing the payload, type, initial empty list)
-;; Return value -> pointer to segment containing the payload informations 
+;; Return value -> pointer to segment containing the payload informations
 
 (define (generatePayload-helper data payload-c)
   (cond
     ((null? data) (make-segment (length payload-c)
-                                 ((ctype-scheme->c scalar) 'acc-payload-ptr) 
+                                 ((ctype-scheme->c scalar) 'acc-payload-ptr)
                                  (cvector-ptr (list->cvector payload-c _segment-pointer))))
     ((pair? (caar data)) (letrec ([payload*-c (generatePayload-helper (car data) '())])
                                  (generatePayload-helper (cdr data) (append-end payload*-c payload-c))))
     (else (let ([payload* (list->cvector (car data) (symbol->ctype (get-ctype (caar data))))])
-               (generatePayload-helper (cdr data) 
+               (generatePayload-helper (cdr data)
                                        (append-end (make-segment (length (car data)) ((ctype-scheme->c scalar) (get-ctype (caar data)))
                                                                  (cvector-ptr payload*))
                                                     payload-c))))))
@@ -42,14 +42,14 @@
 
 ;; Stores the payload information into segment structure
 ;; Arguments -> (list containing the payload, type, initial empty list)
-;; Return value -> pointer to segment containing the payload informations 
+;; Return value -> pointer to segment containing the payload informations
 
 (define (generatePayload data type)
   (if (ctype? type)
       (let ([payload (list->cvector data type)])
            (make-segment
-             (length data) 
-             ((ctype-scheme->c scalar) (ctype->symbol type)) 
+             (length data)
+             ((ctype-scheme->c scalar) (ctype->symbol type))
              (cvector-ptr payload)))
       (generatePayload-helper data '())))
 
@@ -62,19 +62,19 @@
   (cond
     ((null? ls) '())
     ((let ([element (ptr-ref (segment-data (car ls)) (mapType (segment-type (car ls))))])
-          (and (not (boolean? element)) 
-               (cpointer? element))) 
-     (cons (read-data-helper 
-             (ptr-ref* 
-               (segment-data (car ls)) 
-               (mapType (segment-type (car ls))) 
-               0 
+          (and (not (boolean? element))
+               (cpointer? element)))
+     (cons (read-data-helper
+             (ptr-ref*
+               (segment-data (car ls))
+               (mapType (segment-type (car ls)))
+               0
                (segment-length (car ls))))
            (read-data-helper (cdr ls))))
-     (else (cons (ptr-ref* 
-                  (segment-data (car ls)) 
-                  (mapType (segment-type (car ls))) 
-                  0 
+     (else (cons (ptr-ref*
+                  (segment-data (car ls))
+                  (mapType (segment-type (car ls)))
+                  0
                   (segment-length (car ls)))
                 (read-data-helper (cdr ls))))))
 
@@ -88,7 +88,7 @@
            [cptr* (segment-data cptr)]
            [type (mapType (segment-type cptr))]
            [data (if (equal? type 'empty-type) '() (ptr-ref* cptr* type 0 len))])
-          (if (and (ctype? type) (not (equal? _segment-pointer type))) 
+          (if (and (ctype? type) (not (equal? _segment-pointer type)))
               data
               (read-data-helper data))))
 
@@ -104,7 +104,7 @@
     ((null? (cdr shape)) (map list->vector (map list->vector** ls)))
     ((equal? 1 (car shape)) (list (list->vector* (car ls) (cdr shape))))
     (else (cons (list->vector* (car ls) (cdr shape)) (list->vector* (cdr ls) (cons (sub1 (car shape)) (cdr shape)))))))
-    
+
 
 ;; Read data from given memory location
 ;; Arguments -> acc-manifest-array pointer
@@ -151,7 +151,7 @@
 (define (alloc-unit* shape type payload)
   (cond
     ((null? shape) payload)
-    ((zero? (car shape))  (let ([shape* (if (null? (cdr shape)) '() (cons (sub1 (car (cdr shape))) (cdr (cdr shape))))]) 
+    ((zero? (car shape))  (let ([shape* (if (null? (cdr shape)) '() (cons (sub1 (car (cdr shape))) (cdr (cdr shape))))])
                                (alloc-unit* shape* payload (list payload))))
     (else (alloc-unit* (cons (sub1 (car shape)) (cdr shape)) type (cons type payload)))))
 
@@ -173,9 +173,9 @@
 ;; Arguments -> (type, shape,  payload, expression)
 ;; Return value -> pointer to allocated memory location
 
-(define (acc-alloc _type _shape _data) 
+(define (acc-alloc _type _shape _data)
     (letrec
-      ([type (if (ctype? _type) ((ctype-scheme->c scalar) 'scalar-payload) ((ctype-scheme->c scalar) 'tuple-payload))] 
+      ([type (if (ctype? _type) ((ctype-scheme->c scalar) 'scalar-payload) ((ctype-scheme->c scalar) 'tuple-payload))]
        [shape (generatePayload _shape _int)]
        [data (if (ctype? _type) (generatePayload (flatten _data) _type) (generatePayload (unzip _data) _type))])
       (make-acc-manifest-array type shape data)))
@@ -183,8 +183,8 @@
 (define (get-type arr)
   (if (acc-manifest-array? arr) (segment-type (acc-manifest-array-data arr)) (segment-type arr)))
 
-(define (get-shape arr) 
-  (read-data (acc-manifest-array-shape arr)))  
+(define (get-shape arr)
+  (read-data (acc-manifest-array-shape arr)))
 
 (define (get-result-array input-arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type input-arr))
@@ -198,6 +198,5 @@
   (if (acc-manifest-array? arr) (segment-type (acc-manifest-array-data arr)) (segment-type arr)))
 
 ;; returns the shape of the given acc array
-(define (shape arr) 
+(define (shape arr)
   (read-data (acc-manifest-array-shape arr)))
-

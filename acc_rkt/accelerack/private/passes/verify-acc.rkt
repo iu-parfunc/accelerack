@@ -33,7 +33,8 @@
 ;;
 ;; This must precisely follow the spec in accelerate_grammar.txt
 (define (verify-acc syn-table stx)
-  (define res (verify-acc-helper stx '()))
+  (define initial-env (map car syn-table))
+  (define res (verify-acc-helper stx initial-env))
   (pass-output-chatter 'verify-acc res)
   res)
 
@@ -95,10 +96,10 @@
       ; "undefined variable used in Accelerack expression, should be bound"
       "expected bound variable in Accelerack expression"
       ; (printf "Handling identifier: ~a ~a\n" #'x (identifier-binding #'x))
-      (cond
-        [(ormap (lambda (id) (free-identifier=? id #'x)) env) #'x]
-        [else #'x])]
-
+      (raise-syntax-error 'error
+                          (format "\n Regular Racket bound variable used in Accelerack expression.\n If it is an array variable, maybe you meant (use ~a) ?"
+                                  (syntax->datum #'x))
+                          #'x)]
      )))
 
 

@@ -9,12 +9,13 @@
 (define-acc (sqr x) (* x x))
 
 (define-acc ac 3)
+(define-acc foo (+ ac 4)) ;; Use a previous binding.
 
 (check-eq? ac 3)
 
 (check-eq? 9 (sqr 3))
 
-(define-acc num (* 3 (+ 4 (- 5 (sqrt 2)))))
+(define-acc num (* 3 (+ 4 (- 5 (add1 2)))))
 
 (define-acc id1 (lambda (x) x))
 
@@ -22,6 +23,8 @@
 ;; ----------------------------------------
 (define y 999)
 ; (define-acc id2 (lambda (x) y))
+
+; (define-acc z (* y y)) ;; Good errors here now [2015.12.09]
 
 ; (define-acc id3 (lambda (x) completely-unbound-var))
 

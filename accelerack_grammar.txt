@@ -74,9 +74,19 @@ shape sh = (n ...)
 Language post-typecheck
 ------------------------------------------------------------
 
+All binders have explicit types:
 
+  | (let ((x : t e) ...) e)     ; Let binding
+  | (lambda (x : t ...) e)      ; Lambda abs
 
 Language post-normalization
 ------------------------------------------------------------
 
-TBD.  Basic idea is to remove lambda as a standalone form.
+All array operators are directly followed by lambdda:
+
+  | (map        (lambda (x  ) e) e)
+  | (zipwith    (lambda (x y) e) e e)
+  | (fold       (lambda (x y) e) e e)
+  | (stencil3x3 (lambda (x1 .. x9) e) b e)
+
+Applicatio and lambda are removed.

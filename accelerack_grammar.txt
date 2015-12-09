@@ -43,6 +43,7 @@ expression e
   | (map e e)             ; map is not first class
   | (zipwith e e e)
   | (fold e e e)
+  | (generate e e ....)
   | (stencil3x3 e b e)      ; Take a function, (lambda (x1 .. x9) e)
   | (let ((x e) ...) e)     ; Let binding
   | x                       ; Variable
@@ -52,6 +53,8 @@ expression e
   | (vector e ...)          ; Tuple expression
   | (vector-ref e e)        ; Tuple dereference
   | (acc-array-ref e e ...) ; N-dimensional array dereference.
+
+
 
 ;; Extra sugar to add later: or/and, let*, ...
 

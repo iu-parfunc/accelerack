@@ -42,7 +42,9 @@
   (let loop ((stx stx))
     (syntax-parse stx
       ;; TODO: use literal-sets:
-     #:literals (acc-array map zipwith fold stencil3x3 lambda let if acc-array-ref vector)
+      #:literals (acc-array acc-array-ref
+                  map zipwith fold stencil3x3 generate
+                  lambda let if vector vector-ref)
 
      [n:number  #'n]
      [b:boolean #'b]
@@ -54,6 +56,9 @@
       #`(acc-array-ref #,(loop #'e1) #,@(map loop (syntax->list #'(e2s ...))))]
 
      ;; Here these array ops are treated as special forms, not functions.
+     [(generate f es ...)
+      #`(generate #,(loop #'f) #,@(map loop (syntax->list #'(es ...))))]
+
      [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
      [(zipwith f e1 e2) #`(zipwith #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
      [(fold f e1 e2)    #`(fold    #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
@@ -89,19 +94,36 @@
 
      [p:accelerack-primitive-function #'p]
 
+     ;; --------------------------------------------------------------------------------
+     ;; [2015.12.09] RRN: I ended up feeling I don't like these error messages as much.
+     ;; In particular, I want a simple "undefined variable" error in the unbound case.
+#|
      [(~and x:id (~fail #:unless (ormap (lambda (id) (free-identifier=? id #'x)) env)
-                         "identifier with an accelerack type"))
+                         "identifier with an Accelerack type"))
        #'x]
-
      [x:identifier
       #:fail-unless (identifier-binding #'x)
       ; "undefined variable used in Accelerack expression, should be bound"
       "expected bound variable in Accelerack expression"
       ; (printf "Handling identifier: ~a ~a\n" #'x (identifier-binding #'x))
       (raise-syntax-error 'error
-                          (format "\n Regular Racket bound variable used in Accelerack expression.\n If it is an array variable, maybe you meant (use ~a) ?"
-                                  (syntax->datum #'x))
-                          #'x)]
+        (format "\n Regular Racket bound variable used in Accelerack expression.\n If it is an array variable, maybe you meant (use ~a) ?"
+                (syntax->datum #'x))
+        #'x)]
+|#
+     [x:identifier
+      (cond
+        [(ormap (lambda (id) (free-identifier=? id #'x)) env) #'x]
+        [(not (identifier-binding #'x))
+         (raise-syntax-error
+          'error  "undefined variable used in Accelerack expression" #'x)]
+        [else
+         (raise-syntax-error
+          'error
+          (format "\n Regular Racket bound variable used in Accelerack expression.\n If it is an array variable, maybe you meant (use ~a) ?"
+                  (syntax->datum #'x))
+          )])]
+      ;; --------------------------------------------------------------------------------
      )))
 
 

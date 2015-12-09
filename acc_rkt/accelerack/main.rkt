@@ -21,13 +21,14 @@
 ;; RRN: Here we provide an explicit export list as a final gate-keeper
 ;; for what's in the language.  This should very closely match
 ;; accelerack_grammar.txt:
-(provide acc-array acc-array? acc-array->list
+(provide acc-array acc-array? acc-array-ref acc-array->list
 
-         map fold zipwith stencil3x3
-         array-ref
+         map fold zipwith stencil3x3 generate
 
          acc run-acc define-acc
-         ; stencil3x3
-         ; array-ref
-         ; Int Bool Double
+         Int Bool Double
+
+         ;; Not reexporting from base:
+         ; vector vector-ref + * - ...
+         ; if let lambda
          )

@@ -2,7 +2,7 @@
 
 (require rackunit
          ;; See NOTE below:
-         (only-in accelerack/private/wrappers acc-array-ref fold map zipwith)
+         (only-in accelerack acc-array-ref fold map zipwith generate)
          accelerack/private/passes/syntax-capture
          (only-in accelerack acc-array))
 
@@ -47,5 +47,9 @@
                      ))
 
 (define-acc test03 (vector-ref (vector 1 2 3) 0))
+
+(define-acc (test04) (generate (lambda () (+ 3 4))))
+(define-acc (test05) (generate (lambda (x) (+ x 3)) 100))
+(define-acc (test06) (generate (lambda (x y) (+ x y)) 100 100))
 
 (define table (snapshot-current-acc-syn-table))

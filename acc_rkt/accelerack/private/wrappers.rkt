@@ -23,7 +23,8 @@
          accelerack/private/types
          )
 
-(provide map fold zipwith stencil3x3 acc-array-ref)
+(provide map fold zipwith stencil3x3 generate
+         acc-array-ref)
 
 (define (map f x)
   (cond
@@ -51,6 +52,9 @@
 
 (define (stencil3x3 f x y)
   (error 'stencil3x3 "FINISHME: stencil3x3 unimplemented"))
+
+(define (generate f . dims)
+  (error 'generate "FINISHME: generate unimplemented"))
 
 (define (acc-array-ref arr . inds)
   (error 'acc-array-ref "FINISHME: acc-array-ref unimplemented"))

@@ -8,7 +8,7 @@
 (provide
  ; (proc-doc verify-acc (-> (syntax? list?) syntax?) "test")
  (contract-out
-  [verify-acc (-> syntax? syntax?)]
+  [verify-acc (-> list? syntax? syntax?)]
   ))
 
 (require ; (for-syntax (except-in racket/base map))
@@ -32,7 +32,7 @@
 ;; The identity compiler pass that simply checks the grammar.
 ;;
 ;; This must precisely follow the spec in accelerate_grammar.txt
-(define (verify-acc stx)
+(define (verify-acc syn-table stx)
   (define res (verify-acc-helper stx '()))
   (pass-output-chatter 'verify-acc res)
   res)
@@ -75,26 +75,25 @@
       #`(let ([x* #,(map loop els)] ...)
           #,(verify-acc-helper
              #'ebod (append xls env)))]
-     
+
+     ;; We have to to be careful with how we influence the back-tracking search performed by
+     ;; syntax-parse.
      [(p:accelerack-primitive-function e ...)
       #`(p #,@(map loop (syntax->list #'(e ...))))]
 
-     ;; Problems with this causing bad cases to end up in the identifier case!!!
-     
-     [p:accelerack-primitive-function
-      #'p]
-
-     ;; Having problems [2015.12.08]:
-      [(rator e ...)
+     [(rator e ...)
       #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
-      
-      [(~and x:id (~fail #:unless (ormap (lambda (id) (free-identifier=? id #'x)) env)
+
+     [p:accelerack-primitive-function #'p]
+
+     [(~and x:id (~fail #:unless (ormap (lambda (id) (free-identifier=? id #'x)) env)
                          "identifier with an accelerack type"))
        #'x]
-      
-       [x:identifier
+
+     [x:identifier
       #:fail-unless (identifier-binding #'x)
-      "undefined variable used in Accelerack expression."
+      ; "undefined variable used in Accelerack expression, should be bound"
+      "expected bound variable in Accelerack expression"
       ; (printf "Handling identifier: ~a ~a\n" #'x (identifier-binding #'x))
       (cond
         [(ormap (lambda (id) (free-identifier=? id #'x)) env) #'x]

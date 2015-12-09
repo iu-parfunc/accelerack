@@ -7,7 +7,7 @@
          (only-in accelerack acc-array))
 
 (define-acc (sqr x) (* x x))
-(define-acc (sqr x) y)
+
 (define-acc ac 3)
 
 (check-eq? ac 3)
@@ -23,7 +23,8 @@
 (define y 999)
 ; (define-acc id2 (lambda (x) y))
 
-; (define-acc id3 (lambda (x) completely-unbound))
+; (define-acc id3 (lambda (x) completely-unbound-var))
+
 ;; ----------------------------------------
 
 ;; NOTE: This is a bit tricky because if, e.g., array-ref is ever
@@ -41,4 +42,4 @@
                               (acc-array (10 10 10 10)))
                      ))
 
-(define table (persist-current-acc-syn-table))
+(define table (snapshot-current-acc-syn-table))

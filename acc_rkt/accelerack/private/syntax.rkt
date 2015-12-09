@@ -61,10 +61,10 @@
   (list #'add1 #'sub1 #'+ #'* #'/ #'-))
 
 (define (acc-primop-identifier? id)
-  (member id acc-primop-lits free-identifier=?)) 
+  (member id acc-primop-lits free-identifier=?))
 
 (define-syntax-class accelerack-primitive-function
-  #:description "a primitive function defined by Accelerack (such as +, -, *, map, etc)"
+  #:description "a primitive function supported by Accelerack (such as +, -, *, map, etc)"
   ;; How to get this style to work?:
   (pattern p:id #:when (acc-primop-identifier? #'p)))
 

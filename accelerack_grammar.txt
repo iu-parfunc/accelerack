@@ -38,15 +38,14 @@ n = non-negative integer
 
 expression e
   = (acc-array a)
-  | add1
-  | sub1
   | (map e e)             ; map is not first class
   | (zipwith e e e)
   | (fold e e e)
-  | (generate e e ....)
+  | (generate e e ....)     ; N-dimensional generate
   | (stencil3x3 e b e)      ; Take a function, (lambda (x1 .. x9) e)
   | (let ((x e) ...) e)     ; Let binding
   | x                       ; Variable
+  | p                       ; Primitive function
   | (lambda (x ...) e)      ; Lambda abs
   | (e e ...)               ; Application
   | (if e e e)              ; scalar or array conditionals
@@ -55,8 +54,14 @@ expression e
   | (acc-array-ref e e ...) ; N-dimensional array dereference.
 
 
-
 ;; Extra sugar to add later: or/and, let*, ...
+
+primops p
+  = add1 sub1 + * - /
+    sqrt ...
+
+TODO: finish this list.
+
 
 value v
   = <boolean>

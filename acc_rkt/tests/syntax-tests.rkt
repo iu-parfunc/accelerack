@@ -19,6 +19,7 @@
 
 (define-acc id1 (lambda (x) x))
 
+
 ;; TODO: unit tests for syntax failures:
 ;; ----------------------------------------
 (define y 999)
@@ -44,5 +45,7 @@
                               (map add1 (fold + 0 (acc-array (1 2 3 4))))
                               (acc-array (10 10 10 10)))
                      ))
+
+(define-acc test03 (vector-ref (vector 1 2 3) 0))
 
 (define table (snapshot-current-acc-syn-table))

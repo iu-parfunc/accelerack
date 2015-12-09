@@ -22,7 +22,7 @@
 (require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
  (for-meta -1
            accelerack/private/wrappers
-           (only-in racket/base lambda let #%app if + * - / add1 sub1)
+           (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
            (only-in accelerack/private/syntax acc-array))
          )
 
@@ -42,7 +42,7 @@
   (let loop ((stx stx))
     (syntax-parse stx
       ;; TODO: use literal-sets:
-     #:literals (acc-array map zipwith fold stencil3x3 lambda let if acc-array-ref)
+     #:literals (acc-array map zipwith fold stencil3x3 lambda let if acc-array-ref vector)
 
      [n:number  #'n]
      [b:boolean #'b]
@@ -77,13 +77,15 @@
           #,(verify-acc-helper
              #'ebod (append xls env)))]
 
+     [(vector e ...)     #`(vector #,@(map loop (syntax->list #'(e ...))))]
+     [(vector-ref e1 e2) #`(vector-ref #,(loop #'e1) #,(loop #'e2))]
+
      ;; We have to to be careful with how we influence the back-tracking search performed by
      ;; syntax-parse.
      [(p:accelerack-primitive-function e ...)
       #`(p #,@(map loop (syntax->list #'(e ...))))]
 
-     [(rator e ...)
-      #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
+     [(rator e ...) #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
 
      [p:accelerack-primitive-function #'p]
 

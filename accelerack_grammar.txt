@@ -43,17 +43,15 @@ expression e
   | (map e e)             ; map is not first class
   | (zipwith e e e)
   | (fold e e e)
-  | (stencil3x3 e b e)    ; Take a function, (lambda (x1 .. x9) e)
-  | (let ((x e) ...) e)   ; Let binding
-  | x                     ; Variable
-  | (lambda (x ...) e)    ; Lambda abs
-  | (e e ...)             ; Application
-  | (if e e e)            ; scalar or array conditionals
-  | #(e ...)              ; Tuple expression
-  | (acc-array-ref e e ...) ; N-dimensional dereference.
-
-;; TODO: need either tuple-ref or pattern matching against tuples, or both.
-;; TODO: need application
+  | (stencil3x3 e b e)      ; Take a function, (lambda (x1 .. x9) e)
+  | (let ((x e) ...) e)     ; Let binding
+  | x                       ; Variable
+  | (lambda (x ...) e)      ; Lambda abs
+  | (e e ...)               ; Application
+  | (if e e e)              ; scalar or array conditionals
+  | (vector e ...)          ; Tuple expression
+  | (vector-ref e e)        ; Tuple dereference
+  | (acc-array-ref e e ...) ; N-dimensional array dereference.
 
 ;; Extra sugar to add later: or/and, let*, ...
 

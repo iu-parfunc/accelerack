@@ -75,17 +75,17 @@
       #`(let ([x* #,(map loop els)] ...)
           #,(verify-acc-helper
              #'ebod (append xls env)))]
-
+     #;
      [(p:accelerack-primitive-function e ...)
       #`(p #,@(map loop (syntax->list #'(e ...))))]
 
      ;; Problems with this causing bad cases to end up in the identifier case!!!
-     #;
+     
      [p:accelerack-primitive-function
       #'p]
 
      ;; Having problems [2015.12.08]:
-     #; [(rator e ...)
+      [(rator e ...)
       #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
 
      [x:identifier

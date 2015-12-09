@@ -3,7 +3,8 @@
 (require rackunit
          ;; See NOTE below:
          (only-in accelerack/private/wrappers acc-array-ref fold map zipwith)
-         accelerack/private/passes/syntax-capture)
+         accelerack/private/passes/syntax-capture
+         (only-in accelerack acc-array))
 
 (define-acc (sqr x) (* x x))
 (define-acc ac 3)
@@ -32,7 +33,7 @@
 (define-acc test01 (lambda (x) (acc-array-ref (if #t x x) 0 3)))
 
 ;; Not working yet, need to sort out first class primitive handling:
-#;
+
 (define-acc test02 (lambda (x)
                      (zipwith + ; * ;; FIXME: * does not work here... huh?
                               (map add1 (fold + 0 (acc-array (1 2 3 4))))

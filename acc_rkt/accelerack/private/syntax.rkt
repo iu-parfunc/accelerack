@@ -18,7 +18,7 @@
 
          syntax/parse
          (only-in accelerack/private/types make-acc-array)
-         )
+         (for-template racket/base))
 
 (provide acc-array
          array
@@ -57,14 +57,15 @@
              #:with type (infer-type #'v)])
   )
 
-(define-literal-set acc-primop-lits
-  (add1 sub1 + * / -))
+(define acc-primop-lits
+  (list #'add1 #'sub1 #'+ #'* #'/ #'-))
 
-(define acc-primop-identifier? (literal-set->predicate acc-primop-lits))
+(define (acc-primop-identifier? id)
+  (member id acc-primop-lits free-identifier=?)) 
 
 (define-syntax-class accelerack-primitive-function
   ;; How to get this style to work?:
-  (pattern p #:when (acc-primop-identifier? #'p)))
+  (pattern p:id #:when (acc-primop-identifier? #'p)))
 
 
 (define-syntax (Bool stx)

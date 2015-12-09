@@ -11,12 +11,12 @@
           [typecheck-expr (-> syntax? syntax?)]
           ))
 
-(require (for-syntax racket/base)
+(require (for-syntax racket/base
+                     syntax/parse)
          ; syntax/parse
          syntax/to-string
+         (only-in accelerack/private/global_utils pass-output-chatter)
          )
-; (require accelerack/private/acc_syntax)
-(require (for-syntax syntax/parse))
 
 ;; Temp Placeholders
 (define (acc-array d) #f)
@@ -25,7 +25,7 @@
 
 ;; The full type-checking pass.
 (define (typecheck-expr e)
-  ; (printf "Temp/dbg: type-checking expr: ~a\n" e)
+  (pass-output-chatter 'typecheck-expr e)
   e)
 
 ;; Everything below this point is just a playground for small tests:

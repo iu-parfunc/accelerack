@@ -16,7 +16,7 @@
          syntax/to-string
          scribble/srcdoc
          racket/trace
-
+         (only-in accelerack/private/global_utils pass-output-chatter)
          (only-in accelerack/private/syntax accelerack-primitive-function)
          )
 (require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
@@ -32,7 +32,10 @@
 ;; The identity compiler pass that simply checks the grammar.
 ;;
 ;; This must precisely follow the spec in accelerate_grammar.txt
-(define (verify-acc stx) (verify-acc-helper stx '()))
+(define (verify-acc stx)
+  (define res (verify-acc-helper stx '()))
+  (pass-output-chatter 'verify-acc res)
+  res)
 
 (define (verify-acc-helper stx env)
   (let loop ((stx stx))

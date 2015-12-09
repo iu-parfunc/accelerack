@@ -94,6 +94,14 @@
 
      [p:accelerack-primitive-function #'p]
 
+     ;; If we somehow mess up the imports we can end up with one of the keywords UNBOUND:
+     [keywd:id
+      #:when (and (not (identifier-binding #'x))
+                  (memq (syntax->datum #'keywd)
+                        '(generate map zipwith fold generate stencil3x3 acc-array-ref)))
+      (raise-syntax-error
+       'error  "Accelerack keyword used but not imported properly.  Try (require accelerack)" #'keywd)]
+
      ;; --------------------------------------------------------------------------------
      ;; [2015.12.09] RRN: I ended up feeling I don't like these error messages as much.
      ;; In particular, I want a simple "undefined variable" error in the unbound case.

@@ -68,15 +68,23 @@
   (pattern x:id
            #:with name #'x
            #:with type #f)
-  (pattern (x:id : t) ;; :acc-type is not working yet...
+  (pattern (x:id : t) ;; FIXME :acc-type is not working yet...
            #:with name #'x
            #:with type (syntax->datum #'t)))
 
 (define-syntax-class acc-let-bind
   #:description "an Accelerack let-binding with optional type"
   #:literals (:)
-  (pattern x:id)
-  (pattern (x:id : t:acc-type expr)) ;; FIXME: Need expr class.
+  #:attributes (name type rhs)
+  (pattern (x:id expr)
+           #:with name #'x
+           #:with type #f
+           #:with rhs #'expr)
+  (pattern (x:id : t expr) ;; FIXME acc-type
+           #:with name #'x
+           #:with type (syntax->datum #'t)
+           #:with rhs #'expr
+           ) ;; FIXME: Need expr class.
   )
 
 
@@ -153,38 +161,36 @@
                           'error  "\nBadly formed Accelerack lambda, probably fix the parameter list:" stx)]
       ;; ----------------------------------------
 
-      [(let ( ; lb:acc-let-bind ;; TODO: more work to do here first.
-             [x*:identifier e*]
-             ...) ebod)
-      (define xls (syntax->list #'(x* ...)))
-      (define els (syntax->list #'(e* ...)))
-      #`(let ([x* #,(r:map loop els)] ...)
-          #,(verify-acc-helper
-             #'ebod (extend-env xls env)))]
+      [(let ( lb:acc-let-bind ...) ebod)
+       (define xls (syntax->list #'(lb.name ...)))
+       (define els (syntax->list #'(lb.rhs ...)))
+       #`(let ([lb.name #,(r:map loop els)] ...)
+           #,(verify-acc-helper
+              #'ebod (extend-env xls env)))]
 
-     [(vector e ...)     #`(vector #,@(r:map loop (syntax->list #'(e ...))))]
-     [(vector-ref e1 e2) #`(vector-ref #,(loop #'e1) #,(loop #'e2))]
+      [(vector e ...)     #`(vector #,@(r:map loop (syntax->list #'(e ...))))]
+      [(vector-ref e1 e2) #`(vector-ref #,(loop #'e1) #,(loop #'e2))]
 
-     ;; We have to to be careful with how we influence the back-tracking search performed by
-     ;; syntax-parse.
-     [(p:acc-primop e ...)
-      #`(p #,@(r:map loop (syntax->list #'(e ...))))]
+      ;; We have to to be careful with how we influence the back-tracking search performed by
+      ;; syntax-parse.
+      [(p:acc-primop e ...)
+       #`(p #,@(r:map loop (syntax->list #'(e ...))))]
 
-     [(rator e ...)
+      [(rator e ...)
        ;; It's never a good error message when we treat a keyword like a rator:
-      #:when (not (memq (syntax->datum #'rator) acc-keywords-sexp-list))
-      ; (printf "RECURRING ON APP, rator ~a ~a \n" #'rator (syntax->datum #'rator))
+       #:when (not (memq (syntax->datum #'rator) acc-keywords-sexp-list))
+       ; (printf "RECURRING ON APP, rator ~a ~a \n" #'rator (syntax->datum #'rator))
        #`(#,(loop #'rator) #,@(r:map loop (syntax->list #'(e ...))))]
 
-     [p:acc-primop #'p]
+      [p:acc-primop #'p]
 
-     ;; If we somehow mess up the imports we can end up with one of the keywords UNBOUND:
-     [keywd:id
-      #:when (and (not (identifier-binding #'x))
-                  (memq (syntax->datum #'keywd)
-                        acc-keywords-sexp-list))
-      (raise-syntax-error
-       'error  "Accelerack keyword used but not imported properly.  Try (require accelerack)" #'keywd)]
+      ;; If we somehow mess up the imports we can end up with one of the keywords UNBOUND:
+      [keywd:id
+       #:when (and (not (identifier-binding #'x))
+                   (memq (syntax->datum #'keywd)
+                         acc-keywords-sexp-list))
+       (raise-syntax-error
+        'error  "Accelerack keyword used but not imported properly.  Try (require accelerack)" #'keywd)]
 
      ;; --------------------------------------------------------------------------------
      ;; [2015.12.09] RRN: I ended up feeling I don't like these error messages as much.

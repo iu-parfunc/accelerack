@@ -51,12 +51,25 @@
 
 (define-acc test03 (vector-ref (vector 1 2 3) 0))
 
-(define-acc (test04) (generate (lambda () (+ 3 4))))
-(define-acc (test05) (generate (lambda (x) (+ x 3)) 100))
-(define-acc (test06) (generate (lambda (x y) (+ x y)) 100 100))
+(define-acc test04 (generate (lambda () (+ 3 4))))
+(define-acc test05 (generate (lambda (x) (+ x 3)) 100))
+(define-acc test06 (generate (lambda (x y) (+ x y)) 100 100))
+
+(check-pred acc-delayed-array? test04)
+(check-pred acc-delayed-array? test05)
+(check-pred acc-delayed-array? test06)
 
 (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
 (define-acc test08 (lambda ((y : Int)) 3))
 (define-acc test09 (lambda ((y : Double) z) (+ y z)))
+
+(check-pred procedure? test07)
+(check-pred procedure? test08)
+(check-pred procedure? test09)
+
+(define-acc test10 (let ([x 3] [y : Int 4]) (+ x y )))
+
+;; TODO: the story for scalars is not established yet.
+; (check-pred acc-delayed-scalar? test10)
 
 (define table (snapshot-current-acc-syn-table))

@@ -6,12 +6,16 @@
  (only-in accelerack/private/allocate read-data*)
  ; accelerack/private/header
  (only-in accelerack/private/header acc-manifest-array?)
+ ; racket/trace
  )
 
 (provide  acc-array?
           make-acc-array
           acc-array-val
           acc-array->list
+
+          acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
+          acc-type?
           )
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
@@ -37,6 +41,21 @@
       prt))]
   #:transparent
   #:omit-define-syntaxes)
+
+;; An entry in the syntax table.  It provides everything Accelerack
+;; needs to know about a symbol bound with define-acc.
+(define-struct acc-syn-entry (type expr))
+
+;; The SExp representation for an Accelerack type.
+(define (acc-type? t)
+  (match t
+    ['Int #t]
+    ['Bool #t]
+    ['Double #t]
+    [`(Array ,n ,elt) (and (fixnum? n) (acc-type? elt))]
+    [`#( ,t* ...) (andmap acc-type? t*)]
+    [_ #f]))
+
 
 ;; The datatype for delayed arrays that are not yet computed by either
 ;; Racket/Accelerack or Haskell/Accelerate.

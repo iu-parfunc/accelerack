@@ -19,11 +19,11 @@
                      (only-in accelerack/private/syntax acc-array)
                      accelerack/private/passes/verify-acc
                      accelerack/private/passes/typecheck
+                     accelerack/private/types
                      (only-in accelerack/private/executor launch-accelerack-ast)
                      (only-in accelerack/private/global_utils accelerack-debug-mode?)
                      rackunit
                      ))
-
 
 (begin-for-syntax
   ;; The table in which Accelerack syntax is accumulated so as to

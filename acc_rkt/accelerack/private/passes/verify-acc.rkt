@@ -17,7 +17,7 @@
          scribble/srcdoc
          racket/trace
          (only-in accelerack/private/global_utils pass-output-chatter)
-         (only-in accelerack/private/syntax accelerack-primitive-function)
+         (only-in accelerack/private/syntax acc-primop Bool Double Int Array)
          )
 (require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
  (for-meta -1
@@ -87,12 +87,12 @@
 
      ;; We have to to be careful with how we influence the back-tracking search performed by
      ;; syntax-parse.
-     [(p:accelerack-primitive-function e ...)
+     [(p:acc-primop e ...)
       #`(p #,@(map loop (syntax->list #'(e ...))))]
 
      [(rator e ...) #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
 
-     [p:accelerack-primitive-function #'p]
+     [p:acc-primop #'p]
 
      ;; If we somehow mess up the imports we can end up with one of the keywords UNBOUND:
      [keywd:id
@@ -134,6 +134,15 @@
       ;; --------------------------------------------------------------------------------
      )))
 
-
+#;
+;; Redundant with acc-type? over sexps.
 (define (verify-type ty)
-  (error 'verify-type "FINISHME"))
+  (let loop ((ty ty))
+    (syntax-parse ty
+      #:literals (Int Bool Double Array)
+      [Int  (void)]
+      [Bool (void)]
+      [Double (void)]
+      [(Array n:integer elt) (loop #'elt)]
+      [#( t* ...) (for-each loop (syntax->list #'(t* ...)))]))
+  ty)

@@ -23,11 +23,13 @@
 (provide acc-array
          array
 
-         accelerack-primitive-function
+         acc-primop
          acc-primop-lits
-         acc-primop-identifier?
+         ; acc-primop-identifier?
+         acc-scalar-lits
+         acc-scalar-type acc-type
 
-         Bool Int Double
+         Bool Int Double Array
          )
 
 (define-for-syntax (infer-type d)
@@ -57,17 +59,34 @@
              #:with type (infer-type #'v)])
   )
 
+;; TODO: Replace with a primop type table:
 (define acc-primop-lits
   (list #'add1 #'sub1 #'+ #'* #'/ #'-))
+
+(define acc-scalar-lits
+  (list #'Bool #'Int #'Double))
 
 (define (acc-primop-identifier? id)
   (member id acc-primop-lits free-identifier=?))
 
-(define-syntax-class accelerack-primitive-function
+(define (acc-scalar-identifier? id)
+  (member id acc-scalar-lits free-identifier=?))
+
+(define-syntax-class acc-primop
   #:description "a primitive function supported by Accelerack (such as +, -, *, map, etc)"
-  ;; How to get this style to work?:
   (pattern p:id #:when (acc-primop-identifier? #'p)))
 
+(define-syntax-class acc-scalar-type
+  #:description "a type for scalar (non-array) data"
+  (pattern p:id #:when (acc-scalar-identifier? #'p))
+  (pattern #(t:acc-scalar-type ...)))
+
+(define-syntax-class acc-type
+  #:description "an Accelerack type"
+  #:literals (-> Array)
+  (pattern (-> opera:acc-type ...))
+  (pattern (Array n:integer elt:acc-scalar-type))
+  (pattern t:acc-scalar-type))
 
 (define-syntax (Bool stx)
   (raise-syntax-error 'error "Bool type used outside of Accelerate block" stx))
@@ -75,6 +94,10 @@
   (raise-syntax-error 'error "Int type used outside of Accelerate block" stx))
 (define-syntax (Double stx)
   (raise-syntax-error 'error "Double type used outside of Accelerate block" stx))
+(define-syntax (Array stx)
+  (raise-syntax-error 'error "Array type constructor used outside of Accelerate block" stx))
+(define-syntax (-> stx)
+  (raise-syntax-error 'error "function (->) type constructor used outside of Accelerate block" stx))
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

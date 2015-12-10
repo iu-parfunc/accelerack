@@ -52,6 +52,7 @@ expression e
   | (vector e ...)          ; Tuple expression
   | (vector-ref e e)        ; Tuple dereference
   | (acc-array-ref e e ...) ; N-dimensional array dereference.
+  | (: e t)                 : Type ascription
 
 let binding, lb
   = [x e] | [x : t e]
@@ -84,13 +85,24 @@ array-data a
 shape sh = (n ...)
 
 
+Language verify-acc
+------------------------------------------------------------
+
+Verify-acc returns a type-stripped version of the AST meant to be
+treated as regular Racket code, not passed on to the rest of the
+compiler.
+
+
 Language post-typecheck
 ------------------------------------------------------------
 
-All binders have explicit types:
+Typecheck takes the starting input language above.
+In its output language, all binders have explicit types:
 
   | (let ((x : t e) ...) e)     ; Let binding
   | (lambda ((x : t) ...) e)    ; Lambda abs
+
+Ascription is removed, becaause it becomes redundant.
 
 Language post-normalization
 ------------------------------------------------------------
@@ -102,4 +114,4 @@ All array operators are directly followed by lambdda:
   | (fold       (lambda (x y) e) e e)
   | (stencil3x3 (lambda (x1 .. x9) e) b e)
 
-Applicatio and lambda are removed.
+Application and lambda are removed.

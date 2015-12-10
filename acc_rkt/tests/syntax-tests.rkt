@@ -13,6 +13,8 @@
 (define-acc ac 3)
 (define-acc foo (+ ac 4)) ;; Use a previous binding.
 
+(define-acc num2 (+ (: 3 Int) 4))
+
 ; (check-eq? ac 3)
 (check-pred acc-delayed-array? ac) ;; TEMP: this needs to be a scalar.
 
@@ -68,6 +70,14 @@
 (check-pred procedure? test09)
 
 (define-acc test10 (let ([x 3] [y : Int 4]) (+ x y )))
+
+(define-acc test11 (: (lambda (x) x) (-> Double Double)))
+(define-acc test12 (: (lambda ((x : Double)) x) (-> Double Double)))
+(define-acc test13 (lambda ((x : Double)) (: x Double)))
+
+; (check-pred procedure? test11)  ;; FIXME... we need to be smart about how we handle these.
+; (check-pred procedure? test12)
+(check-pred procedure? test13)
 
 ;; TODO: the story for scalars is not established yet.
 ; (check-pred acc-delayed-scalar? test10)

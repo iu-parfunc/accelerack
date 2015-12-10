@@ -88,6 +88,26 @@
   )
 
 
+
+(define (verify-type ty)
+  (let loop ((ty ty))
+    (syntax-parse ty
+      #:literals (Int Bool Double Array)
+      [Int  (void)]
+      [Bool (void)]
+      [Double (void)]
+      [(Array n:integer elt) (loop #'elt)]
+      [(-> t* ...) (for-each loop (syntax->list #'(t* ...)))]
+      [#( t* ...) (for-each loop (syntax->list #'(t* ...)))]))
+  ty)
+
+;; PROBLEMS [2015.12.10]:  fix me:
+#;
+(define (verify-type ty)
+  (syntax-parse ty
+    [t:acc-type  (void)]
+    [oth (raise-syntax-error 'Accelerack-type "bad type expression" #'oth)]))
+
 (define acc-keywords-sexp-list
   '(lambda if let :
     generate map zipwith fold generate stencil3x3 acc-array-ref))
@@ -96,35 +116,36 @@
   (let loop ((stx stx))
     (syntax-parse stx
       ;; TODO: use literal-sets:
-      #:literals (acc-array acc-array-ref
+      #:literals (acc-array acc-array-ref :
                   map zipwith fold stencil3x3 generate
                   lambda let if vector vector-ref)
 
-     [n:number  #'n]
-     [b:boolean #'b]
+      [n:number  #'n]
+      [b:boolean #'b]
 
-     ;; FIXME: use the acc-data syntax class:
-     [(acc-array dat) #'(acc-array dat)]
-     ;; Variable arity array dereference.  I.e. it's a special form:
-     [(acc-array-ref e1 e2s ...)
-      #`(acc-array-ref #,(loop #'e1) #,@(r:map loop (syntax->list #'(e2s ...))))]
+      ;; Strip away ascription to yield normal Racket code:
+      [(: e t) (verify-type #'t) (loop #'e)]
 
-     ;; Here these array ops are treated as special forms, not functions.
-     [(generate f es ...)
-      #`(generate #,(loop #'f) #,@(r:map loop (syntax->list #'(es ...))))]
+      ;; FIXME: use the acc-data syntax class:
+      [(acc-array dat) #'(acc-array dat)]
+      ;; Variable arity array dereference.  I.e. it's a special form:
+      [(acc-array-ref e1 e2s ...)
+       #`(acc-array-ref #,(loop #'e1) #,@(r:map loop (syntax->list #'(e2s ...))))]
 
-     [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
-     [(zipwith f e1 e2) #`(zipwith #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
-     [(fold f e1 e2)    #`(fold    #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
-     [(stencil3x3 f e1 e2) #`(stencil3x3 #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
+      ;; Here these array ops are treated as special forms, not functions.
+      [(generate f es ...)
+       #`(generate #,(loop #'f) #,@(r:map loop (syntax->list #'(es ...))))]
 
-     [(if e1 e2 e3) #`(if #,(loop #'e1) #,(loop #'e2) #,(loop #'e3))]
+      [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
+      [(zipwith f e1 e2) #`(zipwith #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
+      [(fold f e1 e2)    #`(fold    #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
+      [(stencil3x3 f e1 e2) #`(stencil3x3 #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
 
-     [#(e* ...)
-      ; #`#( #,@(map loop (syntax->list #'(e* ...))) )
-      (datum->syntax #'(e* ...) (list->vector (r:map loop (syntax->list #'(e* ...)))))
-      ]
+      [(if e1 e2 e3) #`(if #,(loop #'e1) #,(loop #'e2) #,(loop #'e3))]
 
+      [#(e* ...)
+       ; #`#( #,@(map loop (syntax->list #'(e* ...))) )
+       (datum->syntax #'(e* ...) (list->vector (r:map loop (syntax->list #'(e* ...)))))]
 
       ;; Method one, don't match bad params:
       [(lambda (x:acc-lambda-param ...) e)
@@ -223,16 +244,3 @@
           )])]
       ;; --------------------------------------------------------------------------------
      )))
-
-#;
-;; Redundant with acc-type? over sexps.
-(define (verify-type ty)
-  (let loop ((ty ty))
-    (syntax-parse ty
-      #:literals (Int Bool Double Array)
-      [Int  (void)]
-      [Bool (void)]
-      [Double (void)]
-      [(Array n:integer elt) (loop #'elt)]
-      [#( t* ...) (for-each loop (syntax->list #'(t* ...)))]))
-  ty)

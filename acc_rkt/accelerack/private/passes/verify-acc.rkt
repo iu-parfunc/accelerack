@@ -35,11 +35,21 @@
 ;  @proc-doc[ verify-acc any/c ]{ The identity compiler pass that simply checks the grammar. }
 ; (proc-doc verify-acc (-> any/c) () "The identity compiler pass that simply checks the grammar.")
 
+(define (make-env ls)
+  (unless (andmap identifier? ls)
+    (error 'make-env "list contains non-identifiers: ~a\n" ls))
+  ls)
+
+(define (extend-env ls env)
+  (unless (andmap identifier? ls)
+    (error 'extend-env "list contains non-identifiers: ~a\n" ls))
+  (append ls env))
+
 ;; The identity compiler pass that simply checks the grammar.
 ;;
 ;; This must precisely follow the spec in accelerate_grammar.txt
 (define (verify-acc syn-table stx)
-  (define initial-env (r:map car syn-table))
+  (define initial-env (make-env (r:map car syn-table)))
   (define res (verify-acc-helper stx initial-env))
   (pass-output-chatter 'verify-acc res)
   res)
@@ -113,7 +123,7 @@
        ;; TEMP: for now strip the types in the expansion so Racket is happy.
        #`(lambda (x.name ...)
            #,(verify-acc-helper
-              #'e (append (syntax->list #'(x ...)) env)))]
+              #'e (extend-env (syntax->list #'(x.name ...)) env)))]
 #;
       ;; Method two, match bad params so we control the error:
       [(lambda (x ...) e)
@@ -129,7 +139,7 @@
                       (syntax->list #'(x ...))))
        ;; TEMP: for now strip the types in the expansion so Racket is happy.
        #`(lambda #,binds #,(verify-acc-helper
-                                 #'e (append (syntax->list #'(x ...)) env)))]
+                                 #'e (extend-env (syntax->list #'(x.name ...)) env)))]
 
       ;; In principle, this limits the ability to come up with good error messages
       ;; if, for example, a bad type is used in a lambda param.  But that's not working
@@ -150,7 +160,7 @@
       (define els (syntax->list #'(e* ...)))
       #`(let ([x* #,(r:map loop els)] ...)
           #,(verify-acc-helper
-             #'ebod (append xls env)))]
+             #'ebod (extend-env xls env)))]
 
      [(vector e ...)     #`(vector #,@(r:map loop (syntax->list #'(e ...))))]
      [(vector-ref e1 e2) #`(vector-ref #,(loop #'e1) #,(loop #'e2))]

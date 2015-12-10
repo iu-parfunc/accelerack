@@ -53,8 +53,8 @@
 (define-acc (test05) (generate (lambda (x) (+ x 3)) 100))
 (define-acc (test06) (generate (lambda (x y) (+ x y)) 100 100))
 
-; (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
+(define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
 (define-acc test08 (lambda ((y : Int)) 3))
-; (define-acc test09 (lambda ((y : Double) z) (+ y z)))
+(define-acc test09 (lambda ((y : Double) z) (+ y z)))
 
 (define table (snapshot-current-acc-syn-table))

@@ -2,9 +2,9 @@
 
 (require rackunit
          ;; See NOTE below:
-         (only-in accelerack acc-array-ref fold map zipwith generate)
+         (only-in accelerack acc-array acc-array-ref fold map zipwith generate :)
          accelerack/private/passes/syntax-capture
-         (only-in accelerack acc-array))
+         )
 
 (define-acc (sqr x) (* x x))
 
@@ -51,5 +51,8 @@
 (define-acc (test04) (generate (lambda () (+ 3 4))))
 (define-acc (test05) (generate (lambda (x) (+ x 3)) 100))
 (define-acc (test06) (generate (lambda (x y) (+ x y)) 100 100))
+
+; (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
+; (define-acc (test07) (lambda (y) 3))
 
 (define table (snapshot-current-acc-syn-table))

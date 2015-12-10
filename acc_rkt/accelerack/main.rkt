@@ -31,4 +31,5 @@
          ;; Not reexporting from base:
          ; vector vector-ref + * - ...
          ; if let lambda
+         -> :
          )

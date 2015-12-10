@@ -43,16 +43,21 @@ expression e
   | (fold e e e)
   | (generate e e ....)     ; N-dimensional generate
   | (stencil3x3 e b e)      ; Take a function, (lambda (x1 .. x9) e)
-  | (let ((x e) ...) e)     ; Let binding
+  | (let (lb ...) e)        ; Let binding
   | x                       ; Variable
   | p                       ; Primitive function
-  | (lambda (x ...) e)      ; Lambda abs
+  | (lambda (lp ...) e)     ; Lambda abs
   | (e e ...)               ; Application
   | (if e e e)              ; scalar or array conditionals
   | (vector e ...)          ; Tuple expression
   | (vector-ref e e)        ; Tuple dereference
   | (acc-array-ref e e ...) ; N-dimensional array dereference.
 
+let binding, lb
+  = [x e] | [x : t e]
+
+lambda param, lp
+  = x | [x : t]
 
 ;; Extra sugar to add later: or/and, let*, ...
 
@@ -85,7 +90,7 @@ Language post-typecheck
 All binders have explicit types:
 
   | (let ((x : t e) ...) e)     ; Let binding
-  | (lambda (x : t ...) e)      ; Lambda abs
+  | (lambda ((x : t) ...) e)    ; Lambda abs
 
 Language post-normalization
 ------------------------------------------------------------

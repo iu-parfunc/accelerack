@@ -17,14 +17,15 @@
          scribble/srcdoc
          racket/trace
          (only-in accelerack/private/global_utils pass-output-chatter)
-         (only-in accelerack/private/syntax acc-primop Bool Double Int Array)
+         accelerack/private/syntax
          )
 (require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
- (for-meta -1
-           accelerack/private/wrappers
-           (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
-           (only-in accelerack/private/syntax acc-array))
-         )
+ (for-template
+  accelerack/private/wrappers
+  (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
+  (only-in accelerack/private/syntax acc-array : Array)
+  (only-in racket/contract ->))
+ )
 
 ;  @proc-doc[ verify-acc any/c ]{ The identity compiler pass that simply checks the grammar. }
 ; (proc-doc verify-acc (-> any/c) () "The identity compiler pass that simply checks the grammar.")
@@ -37,6 +38,29 @@
   (define res (verify-acc-helper stx initial-env))
   (pass-output-chatter 'verify-acc res)
   res)
+
+(define-syntax-class acc-lambda-param
+  #:description "an Accelerack lambda parameter with optional type"
+  #:literals (:)
+  (pattern x:id)
+  (pattern (x:id : t:acc-type)))
+
+(define-syntax-class acc-let-bind
+  #:description "an Accelerack let-binding with optional type"
+  #:literals (:)
+  (pattern x:id)
+  (pattern (x:id : t:acc-type expr)) ;; FIXME: Need expr class.
+  )
+
+(define-syntax-class acc-type
+  #:description "an Accelerack type"
+  #:literals (-> Array)
+  (pattern (-> opera:acc-type ...))
+  (pattern (Array n:integer elt:acc-scalar-type))
+  (pattern t:acc-scalar-type))
+
+(define acc-keywords-sexp-list
+  '(generate map zipwith fold generate stencil3x3 acc-array-ref :))
 
 (define (verify-acc-helper stx env)
   (let loop ((stx stx))
@@ -71,11 +95,14 @@
       (datum->syntax #'(e* ...) (list->vector (map loop (syntax->list #'(e* ...)))))
       ]
 
-     [(lambda (x:identifier ...) e)
+      [(lambda (x:acc-lambda-param ...) e)
+       ; (printf "VERIFY, Got LAMBDA... ~a\n" (syntax->datum stx))
       #`(lambda (x ...) #,(verify-acc-helper
                            #'e (append (syntax->list #'(x ...)) env)))]
 
-     [(let ([x*:identifier e*] ...) ebod)
+      [(let ( ; lb:acc-let-bind ;; TODO: more work to do here first.
+             [x*:identifier e*]
+             ...) ebod)
       (define xls (syntax->list #'(x* ...)))
       (define els (syntax->list #'(e* ...)))
       #`(let ([x* #,(map loop els)] ...)
@@ -98,7 +125,7 @@
      [keywd:id
       #:when (and (not (identifier-binding #'x))
                   (memq (syntax->datum #'keywd)
-                        '(generate map zipwith fold generate stencil3x3 acc-array-ref)))
+                        acc-keywords-sexp-list))
       (raise-syntax-error
        'error  "Accelerack keyword used but not imported properly.  Try (require accelerack)" #'keywd)]
 
@@ -128,8 +155,8 @@
         [else
          (raise-syntax-error
           'error
-          (format "\n Regular Racket bound variable used in Accelerack expression.\n If it is an array variable, maybe you meant (use ~a) ?"
-                  (syntax->datum #'x))
+          (format "\n Regular Racket bound variable used in Accelerack expression: ~a.\n If it is an array variable, maybe you meant (use ~a)?"
+                  (syntax->datum #'x) (syntax->datum #'x))
           )])]
       ;; --------------------------------------------------------------------------------
      )))

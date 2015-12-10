@@ -2,7 +2,8 @@
 
 (require rackunit
          ;; See NOTE below:
-         (only-in accelerack acc-array acc-array-ref fold map zipwith generate :)
+         (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
+                  Int Bool Double)
          accelerack/private/passes/syntax-capture
          )
 
@@ -53,6 +54,7 @@
 (define-acc (test06) (generate (lambda (x y) (+ x y)) 100 100))
 
 ; (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
-; (define-acc (test07) (lambda (y) 3))
+(define-acc test08 (lambda ((y : Int)) 3))
+; (define-acc test09 (lambda ((y Int)) 3)) ;; temp
 
 (define table (snapshot-current-acc-syn-table))

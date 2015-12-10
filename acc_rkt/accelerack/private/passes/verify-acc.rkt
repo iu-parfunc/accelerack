@@ -23,8 +23,12 @@
  (for-template
   accelerack/private/wrappers
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
-  (only-in accelerack/private/syntax acc-array : Array)
+  (only-in accelerack/private/syntax acc-array : Array Int Bool Double)
   (only-in racket/contract ->))
+
+ ;; Temp: at every stage to make sure:
+ ;(for-syntax (only-in accelerack/private/syntax :))
+ ;(only-in accelerack/private/syntax :)
  )
 
 ;  @proc-doc[ verify-acc any/c ]{ The identity compiler pass that simply checks the grammar. }
@@ -39,11 +43,28 @@
   (pass-output-chatter 'verify-acc res)
   res)
 
+(define-syntax-class acc-type
+  #:description "an Accelerack type"
+  #:literals (-> Array)
+  (pattern (-> opera:acc-type ...))
+  (pattern (Array n:integer elt:acc-scalar-type))
+  (pattern t:acc-scalar-type))
+
 (define-syntax-class acc-lambda-param
   #:description "an Accelerack lambda parameter with optional type"
   #:literals (:)
-  (pattern x:id)
-  (pattern (x:id : t:acc-type)))
+  #:attributes (name type)
+  (pattern x:id
+           #:with name #'x
+           #:with type #f)
+;; Debugging:
+;  (pattern (x:id t) ;; :acc-type is not working yet...
+;           #:with name #'x
+;           #:with type (syntax->datum #'t))
+  (pattern (x:id : t) ;; :acc-type is not working yet...
+           #:with name #'x
+           #:with type (syntax->datum #'t))
+  )
 
 (define-syntax-class acc-let-bind
   #:description "an Accelerack let-binding with optional type"
@@ -52,15 +73,10 @@
   (pattern (x:id : t:acc-type expr)) ;; FIXME: Need expr class.
   )
 
-(define-syntax-class acc-type
-  #:description "an Accelerack type"
-  #:literals (-> Array)
-  (pattern (-> opera:acc-type ...))
-  (pattern (Array n:integer elt:acc-scalar-type))
-  (pattern t:acc-scalar-type))
 
 (define acc-keywords-sexp-list
-  '(generate map zipwith fold generate stencil3x3 acc-array-ref :))
+  '(lambda if let :
+    generate map zipwith fold generate stencil3x3 acc-array-ref))
 
 (define (verify-acc-helper stx env)
   (let loop ((stx stx))
@@ -97,8 +113,20 @@
 
       [(lambda (x:acc-lambda-param ...) e)
        ; (printf "VERIFY, Got LAMBDA... ~a\n" (syntax->datum stx))
-      #`(lambda (x ...) #,(verify-acc-helper
+      #`(lambda (x.name ...) #,(verify-acc-helper
                            #'e (append (syntax->list #'(x ...)) env)))]
+
+      ;; In principle, this limits the ability to come up with good error messages
+      ;; if, for example, a bad type is used in a lambda param.  But that's not working
+      ;; well now anyway...
+      ;; ----------------------------------------
+      [(lambda (x:acc-lambda-param ...) )
+         (raise-syntax-error 'error  "Missing body in lambda" stx)]
+      [(lambda (x:acc-lambda-param ...) bods ...)
+         (raise-syntax-error 'error  "Too many bodies in lambda" stx)]
+      [(lambda rest ...) (raise-syntax-error
+                          'error  "\nBadly formed Accelerack lambda, probably fix the parameter list:" stx)]
+      ;; ----------------------------------------
 
       [(let ( ; lb:acc-let-bind ;; TODO: more work to do here first.
              [x*:identifier e*]
@@ -117,7 +145,11 @@
      [(p:acc-primop e ...)
       #`(p #,@(map loop (syntax->list #'(e ...))))]
 
-     [(rator e ...) #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
+     [(rator e ...)
+       ;; It's never a good error message when we treat a keyword like a rator:
+      #:when (not (memq (syntax->datum #'rator) acc-keywords-sexp-list))
+      ; (printf "RECURRING ON APP, rator ~a ~a \n" #'rator (syntax->datum #'rator))
+       #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
 
      [p:acc-primop #'p]
 

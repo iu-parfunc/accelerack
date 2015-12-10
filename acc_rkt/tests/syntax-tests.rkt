@@ -55,6 +55,6 @@
 
 ; (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
 (define-acc test08 (lambda ((y : Int)) 3))
-; (define-acc test09 (lambda ((y Int)) 3)) ;; temp
+; (define-acc test09 (lambda ((y : Double) z) (+ y z)))
 
 (define table (snapshot-current-acc-syn-table))

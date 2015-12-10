@@ -18,6 +18,7 @@
          racket/trace
          (only-in accelerack/private/global_utils pass-output-chatter)
          accelerack/private/syntax
+         (prefix-in r: racket/base)
          )
 (require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
  (for-template
@@ -38,7 +39,7 @@
 ;;
 ;; This must precisely follow the spec in accelerate_grammar.txt
 (define (verify-acc syn-table stx)
-  (define initial-env (map car syn-table))
+  (define initial-env (r:map car syn-table))
   (define res (verify-acc-helper stx initial-env))
   (pass-output-chatter 'verify-acc res)
   res)
@@ -57,14 +58,9 @@
   (pattern x:id
            #:with name #'x
            #:with type #f)
-;; Debugging:
-;  (pattern (x:id t) ;; :acc-type is not working yet...
-;           #:with name #'x
-;           #:with type (syntax->datum #'t))
   (pattern (x:id : t) ;; :acc-type is not working yet...
            #:with name #'x
-           #:with type (syntax->datum #'t))
-  )
+           #:with type (syntax->datum #'t)))
 
 (define-syntax-class acc-let-bind
   #:description "an Accelerack let-binding with optional type"
@@ -93,11 +89,11 @@
      [(acc-array dat) #'(acc-array dat)]
      ;; Variable arity array dereference.  I.e. it's a special form:
      [(acc-array-ref e1 e2s ...)
-      #`(acc-array-ref #,(loop #'e1) #,@(map loop (syntax->list #'(e2s ...))))]
+      #`(acc-array-ref #,(loop #'e1) #,@(r:map loop (syntax->list #'(e2s ...))))]
 
      ;; Here these array ops are treated as special forms, not functions.
      [(generate f es ...)
-      #`(generate #,(loop #'f) #,@(map loop (syntax->list #'(es ...))))]
+      #`(generate #,(loop #'f) #,@(r:map loop (syntax->list #'(es ...))))]
 
      [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
      [(zipwith f e1 e2) #`(zipwith #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
@@ -108,21 +104,40 @@
 
      [#(e* ...)
       ; #`#( #,@(map loop (syntax->list #'(e* ...))) )
-      (datum->syntax #'(e* ...) (list->vector (map loop (syntax->list #'(e* ...)))))
+      (datum->syntax #'(e* ...) (list->vector (r:map loop (syntax->list #'(e* ...)))))
       ]
 
+
+      ;; Method one, don't match bad params:
       [(lambda (x:acc-lambda-param ...) e)
+       ;; TEMP: for now strip the types in the expansion so Racket is happy.
+       #`(lambda (x.name ...)
+           #,(verify-acc-helper
+              #'e (append (syntax->list #'(x ...)) env)))]
+#;
+      ;; Method two, match bad params so we control the error:
+      [(lambda (x ...) e)
        ; (printf "VERIFY, Got LAMBDA... ~a\n" (syntax->datum stx))
-      #`(lambda (x.name ...) #,(verify-acc-helper
-                           #'e (append (syntax->list #'(x ...)) env)))]
+       (define binds (r:map
+                      (lambda (bnd)
+                        (syntax-parse bnd
+                          [xt:acc-lambda-param
+                           #'xt.name]
+                          [oth
+                           (raise-syntax-error
+                            'error "Bad parameter in lambda:" #'oth)]))
+                      (syntax->list #'(x ...))))
+       ;; TEMP: for now strip the types in the expansion so Racket is happy.
+       #`(lambda #,binds #,(verify-acc-helper
+                                 #'e (append (syntax->list #'(x ...)) env)))]
 
       ;; In principle, this limits the ability to come up with good error messages
       ;; if, for example, a bad type is used in a lambda param.  But that's not working
       ;; well now anyway...
       ;; ----------------------------------------
-      [(lambda (x:acc-lambda-param ...) )
+      [(lambda (x ...) )
          (raise-syntax-error 'error  "Missing body in lambda" stx)]
-      [(lambda (x:acc-lambda-param ...) bods ...)
+      [(lambda (x ...) bods ...)
          (raise-syntax-error 'error  "Too many bodies in lambda" stx)]
       [(lambda rest ...) (raise-syntax-error
                           'error  "\nBadly formed Accelerack lambda, probably fix the parameter list:" stx)]
@@ -133,23 +148,23 @@
              ...) ebod)
       (define xls (syntax->list #'(x* ...)))
       (define els (syntax->list #'(e* ...)))
-      #`(let ([x* #,(map loop els)] ...)
+      #`(let ([x* #,(r:map loop els)] ...)
           #,(verify-acc-helper
              #'ebod (append xls env)))]
 
-     [(vector e ...)     #`(vector #,@(map loop (syntax->list #'(e ...))))]
+     [(vector e ...)     #`(vector #,@(r:map loop (syntax->list #'(e ...))))]
      [(vector-ref e1 e2) #`(vector-ref #,(loop #'e1) #,(loop #'e2))]
 
      ;; We have to to be careful with how we influence the back-tracking search performed by
      ;; syntax-parse.
      [(p:acc-primop e ...)
-      #`(p #,@(map loop (syntax->list #'(e ...))))]
+      #`(p #,@(r:map loop (syntax->list #'(e ...))))]
 
      [(rator e ...)
        ;; It's never a good error message when we treat a keyword like a rator:
       #:when (not (memq (syntax->datum #'rator) acc-keywords-sexp-list))
       ; (printf "RECURRING ON APP, rator ~a ~a \n" #'rator (syntax->datum #'rator))
-       #`(#,(loop #'rator) #,@(map loop (syntax->list #'(e ...))))]
+       #`(#,(loop #'rator) #,@(r:map loop (syntax->list #'(e ...))))]
 
      [p:acc-primop #'p]
 

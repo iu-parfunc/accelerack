@@ -7,9 +7,10 @@
 ;;      for any ype errors.
 ;; ---------------------------------------------------------------
 
-(provide (contract-out
-          [typecheck-expr (-> syntax? syntax?)]
-          ))
+(provide
+ typecheck-expr
+ ; (contract-out [typecheck-expr (-> list? syntax? (syntax? syntax?))])
+ )
 
 (require (for-syntax racket/base
                      syntax/parse)
@@ -18,18 +19,21 @@
          (only-in accelerack/private/global_utils pass-output-chatter)
          )
 
-;; Temp Placeholders
-(define (acc-array d) #f)
-(define (map f x) #f)
-
-
 ;; The full type-checking pass.
-(define (typecheck-expr e)
+;; Returns two values:
+;;   (1) principal type of expression
+;;   (2) fully annotated expression
+(define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
-  e)
+  ;; TODO:
+  (values #() e))
 
 ;; Everything below this point is just a playground for small tests:
 ;; -----------------------------------------------------------------
+
+;; Temp Placeholders
+(define (acc-array d) #f)
+(define (map f x) #f)
 
 (begin-for-syntax
   (define (helper stx)

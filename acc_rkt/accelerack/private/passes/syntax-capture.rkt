@@ -4,18 +4,21 @@
 ;; The syntax-capture and verification step.
 ;; ---------------------------------------------------------------
 
-(provide define-acc acc run-acc snapshot-current-acc-syn-table)
+(provide define-acc
+         ; acc ;; Not exposing this yet.
+         run-gpu
+         snapshot-current-acc-syn-table)
 
-(require (for-syntax racket/base)
-         syntax/parse
-         syntax/to-string
+(require syntax/parse syntax/to-string
 
          ;; We use the identifiers from "wrappers" as our names for map/fold/etc
          accelerack/private/wrappers
+         accelerack/private/types
          ; accelerack/private/racket_ops
          (only-in accelerack/private/syntax acc-array)
-         )
-(require (for-syntax syntax/parse syntax/id-table racket/dict
+
+         (for-syntax racket/base
+                     syntax/parse syntax/id-table racket/dict
                      (only-in accelerack/private/syntax acc-array)
                      accelerack/private/passes/verify-acc
                      accelerack/private/passes/typecheck
@@ -38,6 +41,7 @@
   (define (snap-as-list) (dict-map (unbox acc-syn-table) cons))
 
   ;; Just the front-end part of the compiler.
+  ;; Returns three values.
   (define (front-end-compiler e)
     (define syn-table (snap-as-list))
     (when (accelerack-debug-mode?)
@@ -45,8 +49,10 @@
                "\nInvoking compiler front-end, given syntax table: ~a\n"
                (map (lambda (x) (list (syntax->datum (car x)) (syntax->datum (cdr x))))
                     syn-table)))
+    (define stripped (verify-acc syn-table e))
     ; (printf "Woo compiler frontend! ~a\n" e)
-    (typecheck-expr (verify-acc syn-table e)))
+    (define-values (main-type with-types) (typecheck-expr syn-table e))
+    (values stripped main-type with-types))
 
   (define (extend-syn-table name type expr)
     (define entry (acc-syn-entry type expr))
@@ -59,7 +65,11 @@
   (define (lookup-acc-expr name)
     (acc-syn-entry-expr (dict-ref (unbox acc-syn-table) name)))
 
-  (define dummy-type #())
+  (define (is-a-lambda? stx)
+    (syntax-parse stx
+      #:literals (lambda)
+      [(lambda rest ...) #t]
+      [else #f]))
   )
 
 ;; Surprisingly, this form of persistence changes the VALUES of the
@@ -69,30 +79,55 @@
 
 ;; --------------------------------------------------------------------------------
 
-;; TODO: need to defer execution:
-(define-syntax (acc stx)
-  (syntax-parse stx
-    [(_ e) (front-end-compiler #'e)]))
+;; Not doing this yet until we sort out the story of where/how the
+;; captured syntax would be stored.
+;;
+;; (define-syntax (acc stx)
+;;   (syntax-parse stx
+;;     [(_ e) (front-end-compiler #'e)]))
 
 ;; Type-checking happens at expansion time.
-(define-syntax (run-acc stx)
+(define-syntax (run-gpu stx)
   (syntax-parse stx
     [(_ e) #`(launch-accelerack-ast #,(front-end-compiler #'e))]))
 
 ;; TODO: Need to defer execution ...
 (define-syntax (define-acc stx)
+
+  (define (go name bod)
+    (let-values ([(stripped mainTy withTys) (front-end-compiler bod)])
+      (extend-syn-table name mainTy withTys)
+
+      ;; Expand into the stripped version with no types:
+
+      ;; HACK: fix this to the second alternative after typechecking works:
+      (if (is-a-lambda? bod)
+          #`(define #,name #,stripped)
+          #`(define #,name (acc-delayed-array (lambda () #,stripped))))
+#;
+      (cond
+        [(is-array-type? mainTy)
+         ;; Deferred execution:
+         #`(define #,name (acc-delayed-array (lambda () #,stripped)))]
+        [(is-function-type? mainTy)
+         ;; If it's a function but not immediately a lambda, that's
+         ;; sort of a weird case for us.
+         (unless (is-a-lambda? bod)
+           (raise-syntax-error
+            'error "Accelerack implementation does not yet support functions that are not immediately lambdas" bod)
+           #`(define #,name #,stripped))]
+        [else
+         ;(raise-syntax-error
+         ; 'error "FINISHME: Accelerack needs to handle deferred scalar computations" bod)
+         #`(define #,name (acc-delayed-scalar (lambda () #,stripped)))])
+
+      ))
+
   ;; Infers the type of the given expression and adds that type and
   ;; the expression to the syntax table.
   (syntax-parse stx
-    [(_ (f:identifier x:identifier ...) e)
-     (with-syntax ((bod (front-end-compiler #'(lambda (x ...) e))))
-       (extend-syn-table  #'f dummy-type #'bod)
-       #`(define f bod))]
-    [(_ x:identifier e)
-     (let ((e2 (front-end-compiler #'e)))
-       (extend-syn-table #'x dummy-type e2)
-     #`(define x #,e2))]
-  ))
+    [(_ x:identifier e)                     (go #'x #'e)]
+    [(_ (f:identifier x:identifier ...) e)  (go #'f #'(lambda (x ...) e))]))
 
 
 ; --------------------------------------------------------------------------------

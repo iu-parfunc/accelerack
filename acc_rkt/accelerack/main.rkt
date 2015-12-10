@@ -25,7 +25,7 @@
 
          map fold zipwith stencil3x3 generate
 
-         acc run-acc define-acc
+         define-acc run-gpu
          Int Bool Double
 
          ;; Not reexporting from base:

@@ -16,6 +16,9 @@
 
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-scalar-type?
+
+          acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
+          acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
           )
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
@@ -72,8 +75,23 @@
 ;; The datatype for delayed arrays that are not yet computed by either
 ;; Racket/Accelerack or Haskell/Accelerate.
 ;;
-(struct acc-delayed-array ())
+;; TODO: If we eventually want to make (define x (acc y)) equivalent to (define-acc x y)
+;; then we will need to store the captured syntax in here also, because we will not
+;; have top-level bindings entered in the table.
+(struct acc-delayed-array (thunk)
+  #:guard (lambda (th _)
+            (unless (procedure? th)
+              (raise-argument-error 'acc-delayed-array "procedure?" th))
+            th))
 
+;; The same idea, but for scalar data.
+;;
+;; PROBLEM: are we going to overload +,*,etc to work over delayed scalars?
+(struct acc-delayed-scalar (thunk)
+  #:guard (lambda (th _)
+            (unless (procedure? th)
+              (raise-argument-error 'acc-delayed-scalar "procedure?" th))
+            th))
 
 ;; TODO:
 

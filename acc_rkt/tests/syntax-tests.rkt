@@ -5,6 +5,7 @@
          (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
                   Int Bool Double)
          accelerack/private/passes/syntax-capture
+         (only-in accelerack/private/types acc-delayed-array?)
          )
 
 (define-acc (sqr x) (* x x))
@@ -12,7 +13,8 @@
 (define-acc ac 3)
 (define-acc foo (+ ac 4)) ;; Use a previous binding.
 
-(check-eq? ac 3)
+; (check-eq? ac 3)
+(check-pred acc-delayed-array? ac) ;; TEMP: this needs to be a scalar.
 
 (check-eq? 9 (sqr 3))
 

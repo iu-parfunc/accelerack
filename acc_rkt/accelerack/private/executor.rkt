@@ -5,5 +5,5 @@
 (provide launch-accelerack-ast)
 
 (define (launch-accelerack-ast ast)
-  (printf "TODO: Accelerack launching program: ~a\n" ast)
+  (printf "TODO/FINISHME: Accelerack needs to launch this program: ~a\n" ast)
   )

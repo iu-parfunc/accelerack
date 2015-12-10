@@ -47,6 +47,19 @@
                     syn-table)))
     ; (printf "Woo compiler frontend! ~a\n" e)
     (typecheck-expr (verify-acc syn-table e)))
+
+  (define (extend-syn-table name type expr)
+    (define entry (acc-syn-entry type expr))
+    (set-box! acc-syn-table
+              (dict-set (unbox acc-syn-table) name entry)))
+
+  (define (lookup-acc-type name)
+    (acc-syn-entry-type (dict-ref (unbox acc-syn-table) name)))
+
+  (define (lookup-acc-expr name)
+    (acc-syn-entry-expr (dict-ref (unbox acc-syn-table) name)))
+
+  (define dummy-type #())
   )
 
 ;; Surprisingly, this form of persistence changes the VALUES of the
@@ -59,8 +72,7 @@
 ;; TODO: need to defer execution:
 (define-syntax (acc stx)
   (syntax-parse stx
-    [(_ e) (front-end-compiler ; (snapshot-current-acc-syn-table)
-            #'e)]))
+    [(_ e) (front-end-compiler #'e)]))
 
 ;; Type-checking happens at expansion time.
 (define-syntax (run-acc stx)
@@ -69,19 +81,16 @@
 
 ;; TODO: Need to defer execution ...
 (define-syntax (define-acc stx)
+  ;; Infers the type of the given expression and adds that type and
+  ;; the expression to the syntax table.
   (syntax-parse stx
     [(_ (f:identifier x:identifier ...) e)
      (with-syntax ((bod (front-end-compiler #'(lambda (x ...) e))))
-       ; (check-pred syntax? bod)
-       ; (printf "Capturing lambda syntax: ~a\n" #'bod)
-       (set-box! acc-syn-table
-                 (dict-set (unbox acc-syn-table) #'f #'bod))
+       (extend-syn-table  #'f dummy-type #'bod)
        #`(define f bod))]
     [(_ x:identifier e)
      (let ((e2 (front-end-compiler #'e)))
-       (check-pred syntax? e2)
-       (set-box! acc-syn-table
-                 (dict-set (unbox acc-syn-table) #'x e2))
+       (extend-syn-table #'x dummy-type e2)
      #`(define x #,e2))]
   ))
 

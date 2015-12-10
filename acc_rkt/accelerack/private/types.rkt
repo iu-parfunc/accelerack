@@ -15,7 +15,7 @@
           acc-array->list
 
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
-          acc-type?
+          acc-type? acc-scalar-type?
           )
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
@@ -44,18 +44,30 @@
 
 ;; An entry in the syntax table.  It provides everything Accelerack
 ;; needs to know about a symbol bound with define-acc.
-(define-struct acc-syn-entry (type expr))
+(define-struct acc-syn-entry (type expr)
+  #:guard (lambda (t e _)
+            (unless (acc-type? t)
+              (raise-argument-error 'acc-syn-entry "acc-type?" t))
+            (unless (syntax? e)
+              (raise-argument-error 'acc-syn-entry "syntax?" e))
+            (values t e))
+  #:transparent)
 
 ;; The SExp representation for an Accelerack type.
-(define (acc-type? t)
+(define (acc-scalar-type? t)
   (match t
     ['Int #t]
     ['Bool #t]
     ['Double #t]
-    [`(Array ,n ,elt) (and (fixnum? n) (acc-type? elt))]
-    [`#( ,t* ...) (andmap acc-type? t*)]
+    [`#( ,t* ...) (andmap acc-scalar-type? t*)]
     [_ #f]))
 
+(define (acc-type? t)
+  (match t
+    [`(Array ,n ,elt) (and (fixnum? n) (acc-scalar-type? elt))]
+    [`#( ,t* ...)     (andmap acc-type? t*)]
+    [`(-> ,t* ...)    (andmap acc-type? t*)]
+    [t (acc-scalar-type? t)]))
 
 ;; The datatype for delayed arrays that are not yet computed by either
 ;; Racket/Accelerack or Haskell/Accelerate.

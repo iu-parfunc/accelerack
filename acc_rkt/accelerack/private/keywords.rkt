@@ -1,17 +1,20 @@
 #lang racket
 
-;; The grammar of types used by Accelerack itself.
+;; Syntax definitions for keywords only allowed inside Accelerack
+;; syntax blocks.  This includes teh names of types used in Accelerack
+;; types.
+
 
 (provide
  ;; Types:
  Bool Int Double Array
  Num SExp
 
- ;; Syntax for type ascription:
- :
-
  ;; Reexports:
  ->
+
+ ;; Syntax for type ascription and other forms:
+ : use
  )
 
 (require (only-in racket/contract ->))
@@ -30,6 +33,9 @@
 
 (define-syntax (: stx)
   (raise-syntax-error 'error "colon (:) syntax for type annotation should be used in an Accelerate block" stx))
+
+(define-syntax (use stx)
+  (raise-syntax-error 'error "use keyword outside of Accelerate block" stx))
 
 (define-syntax (Num stx)
   (raise-syntax-error 'error "Num type constructor used outside of Accelerate block" stx))

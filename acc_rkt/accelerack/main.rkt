@@ -7,7 +7,6 @@
          accelerack/private/parse
          (prefix-in rkt: accelerack/private/racket_ops)
 
-         ffi/unsafe
          (prefix-in r: racket/base)
          (for-syntax racket/base syntax/parse)
 
@@ -31,5 +30,5 @@
          ;; Not reexporting from base:
          ; vector vector-ref + * - ...
          ; if let lambda
-         -> :
+         -> : use
          )

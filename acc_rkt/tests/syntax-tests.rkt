@@ -3,7 +3,7 @@
 (require rackunit
          ;; See NOTE below:
          (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
-                  Int Bool Double)
+                  Int Bool Double use)
          accelerack/private/passes/syntax-capture
          (only-in accelerack/private/types acc-delayed-array?)
          )
@@ -14,6 +14,9 @@
 (define-acc foo (+ ac 4)) ;; Use a previous binding.
 
 (define-acc num2 (+ (: 3 Int) 4))
+
+; (define plain 34)
+; (define-acc num3 (+ 1 (use plain)))
 
 ; (check-eq? ac 3)
 (check-pred acc-delayed-array? ac) ;; TEMP: this needs to be a scalar.
@@ -78,6 +81,11 @@
 ; (check-pred procedure? test11)  ;; FIXME... we need to be smart about how we handle these.
 ; (check-pred procedure? test12)
 (check-pred procedure? test13)
+
+(define rktarr (acc-array (1 2 3)))
+(define-acc test14 (map add1 (use rktarr)))
+
+(check-pred acc-delayed-array? test14)
 
 ;; TODO: the story for scalars is not established yet.
 ; (check-pred acc-delayed-scalar? test10)

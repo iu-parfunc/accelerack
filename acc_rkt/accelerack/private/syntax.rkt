@@ -22,8 +22,8 @@
          (for-template (only-in racket/contract ->))
 
          ;; Regular require, careful of phasing of these identifiers:
-         accelerack/private/accelerack-types
-         (for-template accelerack/private/accelerack-types)
+         accelerack/private/keywords
+         (for-template accelerack/private/keywords)
 
          (only-in rackunit check-not-false)
          )
@@ -38,7 +38,7 @@
          acc-scalar-lits
          acc-scalar-type
          )
-(provide (all-from-out accelerack/private/accelerack-types))
+(provide (all-from-out accelerack/private/keywords))
 
 (define-for-syntax (infer-type d)
   (syntax-parse d

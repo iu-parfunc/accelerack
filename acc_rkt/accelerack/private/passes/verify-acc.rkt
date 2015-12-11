@@ -23,9 +23,10 @@
 (require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
  (for-template
   accelerack/private/wrappers
+  ;; Keyword symbols come from a mix of three places currently:
+  (only-in accelerack/private/syntax acc-array)
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
-  (only-in accelerack/private/syntax acc-array : Array Int Bool Double)
-  (only-in racket/contract ->))
+  (only-in accelerack/private/keywords : Array Int Bool Double use ->))
 
  ;; Temp: at every stage to make sure:
  ;(for-syntax (only-in accelerack/private/syntax :))
@@ -87,13 +88,17 @@
            ) ;; TODO: Could use acc-expr class.  Transform verify-acc into it?
   )
 
+;; Make sure a piece of syntax is a valid type.
+;; If (verify-type s) then (acc-type? (syntax->datum s)),
+;; but not the converse.
 (define (verify-type ty)
   (syntax-parse ty
     [t:acc-type  (void)]
     [oth (raise-syntax-error 'Accelerack-type "bad type expression" #'oth)]))
 
+;; TODO: compute this from the list of actual-syntax keywords:
 (define acc-keywords-sexp-list
-  '(lambda if let :
+  '(lambda if let : use
     generate map zipwith fold generate stencil3x3 acc-array-ref))
 
 (define (verify-acc-helper stx env)
@@ -109,6 +114,9 @@
 
       ;; Strip away ascription to yield normal Racket code:
       [(: e t:acc-type) (verify-type #'t) (loop #'e)]
+
+      ;; For now only allowing identifiers, not arbitrary expressions.
+      [(use x:id) #'x]
 
       ;; FIXME: use the acc-data syntax class:
       [(acc-array dat) #'(acc-array dat)]

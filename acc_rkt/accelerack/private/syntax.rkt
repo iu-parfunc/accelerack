@@ -20,6 +20,11 @@
          (only-in accelerack/private/types make-acc-array)
          (for-template racket/base)
          (for-template (only-in racket/contract ->))
+
+         ;; Regular require, careful of phasing of these identifiers:
+         accelerack/private/accelerack-types
+
+         (only-in rackunit check-not-false)
          )
 
 (provide acc-array
@@ -28,11 +33,11 @@
          acc-primop
          acc-primop-lits
          ; acc-primop-identifier?
-         acc-scalar-lits
-         acc-scalar-type ; acc-type
 
-         Bool Int Double Array :
+         acc-scalar-lits
+         acc-scalar-type
          )
+(provide (all-from-out accelerack/private/accelerack-types))
 
 (define-for-syntax (infer-type d)
   (syntax-parse d
@@ -68,11 +73,16 @@
 (define acc-scalar-lits
   (list #'Bool #'Int #'Double))
 
+(check-not-false (andmap identifier-binding acc-primop-lits))
+(check-not-false (andmap identifier-binding acc-scalar-lits))
+
 (define (acc-primop-identifier? id)
-  (member id acc-primop-lits free-identifier=?))
+  (and (identifier-binding id) ;; could throw an error for this.
+       (member id acc-primop-lits free-identifier=?)))
 
 (define (acc-scalar-identifier? id)
-  (member id acc-scalar-lits free-identifier=?))
+  (and (identifier-binding id) ;; could throw an error for this.
+       (member id acc-scalar-lits free-identifier=?)))
 
 (define-syntax-class acc-primop
   #:description "a primitive function supported by Accelerack (such as +, -, *, map, etc)"
@@ -82,19 +92,6 @@
   #:description "a type for scalar (non-array) data"
   (pattern p:id #:when (acc-scalar-identifier? #'p))
   (pattern #(t:acc-scalar-type ...)))
-
-(define-syntax (Bool stx)
-  (raise-syntax-error 'error "Bool type used outside of Accelerate block" stx))
-(define-syntax (Int stx)
-  (raise-syntax-error 'error "Int type used outside of Accelerate block" stx))
-(define-syntax (Double stx)
-  (raise-syntax-error 'error "Double type used outside of Accelerate block" stx))
-(define-syntax (Array stx)
-  (raise-syntax-error 'error "Array type constructor used outside of Accelerate block" stx))
-;(define-syntax (-> stx)
-;  (raise-syntax-error 'error "function (->) type constructor used outside of Accelerate block" stx))
-(define-syntax (: stx)
-  (raise-syntax-error 'error "colon (:) syntax for type annotation should be used in an Accelerate block" stx))
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

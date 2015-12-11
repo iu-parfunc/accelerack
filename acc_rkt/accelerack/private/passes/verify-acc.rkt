@@ -68,7 +68,7 @@
   (pattern x:id
            #:with name #'x
            #:with type #f)
-  (pattern (x:id : t) ;; FIXME :acc-type is not working yet...
+  (pattern (x:id : t:acc-type)
            #:with name #'x
            #:with type (syntax->datum #'t)))
 
@@ -80,29 +80,13 @@
            #:with name #'x
            #:with type #f
            #:with rhs #'expr)
-  (pattern (x:id : t expr) ;; FIXME acc-type
+  (pattern (x:id : t:acc-type expr)
            #:with name #'x
            #:with type (syntax->datum #'t)
            #:with rhs #'expr
-           ) ;; FIXME: Need expr class.
+           ) ;; TODO: Could use acc-expr class.  Transform verify-acc into it?
   )
 
-
-
-(define (verify-type ty)
-  (let loop ((ty ty))
-    (syntax-parse ty
-      #:literals (Int Bool Double Array)
-      [Int  (void)]
-      [Bool (void)]
-      [Double (void)]
-      [(Array n:integer elt) (loop #'elt)]
-      [(-> t* ...) (for-each loop (syntax->list #'(t* ...)))]
-      [#( t* ...) (for-each loop (syntax->list #'(t* ...)))]))
-  ty)
-
-;; PROBLEMS [2015.12.10]:  fix me:
-#;
 (define (verify-type ty)
   (syntax-parse ty
     [t:acc-type  (void)]
@@ -124,7 +108,7 @@
       [b:boolean #'b]
 
       ;; Strip away ascription to yield normal Racket code:
-      [(: e t) (verify-type #'t) (loop #'e)]
+      [(: e t:acc-type) (verify-type #'t) (loop #'e)]
 
       ;; FIXME: use the acc-data syntax class:
       [(acc-array dat) #'(acc-array dat)]

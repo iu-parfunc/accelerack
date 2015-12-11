@@ -1,5 +1,7 @@
 #lang racket
 
+;; TODO: figure out what to do with this.
+
 (require (except-in ffi/unsafe ->)
          racket/contract
          accelerack/private/arrayutils)
@@ -23,14 +25,14 @@
             (if (list? type)
                 (if (check-tuple type) #t #f)
                 #f))))
-    
+
     (define check-shape
       (lambda (shape)
         (cond
           ((null? shape) #t)
           ((exact-integer? (car shape)) (and #t (check-shape (cdr shape))))
           (else #f))))
-    
+
     (define dbl_vector?
       (lambda (vec-list)
         (cond
@@ -45,7 +47,7 @@
           ((null? vec-list) #t)
           ((pair? (car vec-list)) (and (int_vector? (car vec-list)) (int_vector? (cdr vec-list))))
           ((exact-integer? (car vec-list)) (int_vector? (cdr vec-list)))
-          (else #f))))  
+          (else #f))))
 
     (define bool_vector?
       (lambda (vec-list)
@@ -53,8 +55,8 @@
           ((null? vec-list) #t)
           ((pair? (car vec-list)) (and (bool_vector? (car vec-list)) (bool_vector? (cdr vec-list))))
           ((boolean? (car vec-list)) (bool_vector? (cdr vec-list)))
-          (else #f))))  
-  
+          (else #f))))
+
     (define check-length
       (lambda (vec-list shape)
         (cond
@@ -70,7 +72,7 @@
         ((null? data) (if (null? type) #t #f))
         ((pair? (car type)) (and (check-tuple-expr-length (car type) (car data)) (check-tuple-expr-length (cdr type) (cdr data))))
         (else (and #t (check-tuple-expr-length (cdr type) (cdr data))))))
-  
+
     (define (build-type type ls len shape)
       (cond
         ((zero? len) (list->md-array ls shape))
@@ -81,7 +83,7 @@
         ((equal? 'c-int type) (exact-integer? data))
         ((equal? 'c-double type) (double-flonum? data))
         ((equal? 'c-bool type) (boolean? data))))
-    
+
     (define (check-tuple-expr type data)
       (cond
         ((null? type) #t)
@@ -92,7 +94,7 @@
       (lambda (exp shape type)
             (if (ctype? type)
                 (if (check-length exp shape)
-                    (if (if (equal? type _int) (int_vector? exp) 
+                    (if (if (equal? type _int) (int_vector? exp)
                             (if (equal? type _double) (dbl_vector? exp)
                                 (if (equal? type _bool) (bool_vector? exp)
                                     #f)))
@@ -104,10 +106,10 @@
                         '(#t)
                        '(#f "failed ! Invalid expression: type mismatch"))
                    '(#f "failed ! Invalid expression: length mismatch")))))
-    
+
     (match exp
       [`#(,type ,shape ,exp ...) #:when (list? shape)
-         (let ((val (if (check-type type) 
+         (let ((val (if (check-type type)
                       (if (check-shape shape)
                           (let ((ret (check-exp (car exp) shape type)))
                                (if (equal? #t (car ret))

@@ -3,8 +3,7 @@
 ;; Macros for working with Accelerack data.
 ;; Syntax helpers for defining core Accelerate macros and compiler passes.
 
-(require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
-         ; ffi/unsafe/define
+(require (only-in ffi/unsafe ctype?)
 	 racket/runtime-path
          accelerack/private/parse
          accelerack/private/allocate
@@ -24,12 +23,13 @@
          ;; Regular require, careful of phasing of these identifiers:
          accelerack/private/accelerack-types
          (for-template accelerack/private/accelerack-types)
+         (for-syntax accelerack/private/accelerack-types)
 
          (only-in rackunit check-not-false)
+         ; (for-meta 2 (only-in racket/base #%top quote))
          )
 
 (provide acc-array
-         array
 
          acc-primop
          acc-primop-lits
@@ -40,13 +40,23 @@
          )
 (provide (all-from-out accelerack/private/accelerack-types))
 
-(define-for-syntax (infer-type d)
-  (syntax-parse d
-    [_:boolean #'_bool]
-    [_:number (if (flonum? (syntax-e d)) #'_double #'_int)]
-    [#(v ...) #`(#,@(list->vector (map infer-type (syntax->list #'(v ...)))))]
-    [(v more ...) (infer-type #'v)]
-    ))
+;; Infer the type of constant data.
+(define-for-syntax infer-type
+  (lambda (d)
+    (printf "INFERING TYPE ~a\n" d)
+    (syntax-parse d
+      [_:boolean #'(quote Bool)]
+      [_:number
+       (printf "NUMBER CASE... ~a\n" (if (flonum? (syntax-e d))
+                                         #'(quote Double)
+                                         #'(quote Int)))
+       (if (flonum? (syntax-e d))
+           #'(quote Double)
+           #'(quote Int))]
+      [#(v ...)
+       (list->vector (map infer-type (syntax->list #'(v ...))))]
+      [(v more ...) (infer-type #'v)]
+      )))
 
 (define-for-syntax (infer-shape d)
   (syntax-parse d
@@ -106,49 +116,8 @@
 
 ;;------------------------------
 
-;; TODO - Need to rework the macros
-
-(define (process-data data)
-  (match data
-    ((list (list x ...) ...) (r:map process-data x))
-    (`(,x ...) (r:map process-data x))
-    (`,x (if (or (pair? x) (vector? x)) (vector->list* x) x))))
-
-(define-syntax (array stx)
-  (syntax-case stx ()
-
-    [(array (shape ...) #(type ...) (data ...))
-                           #'(letrec ([data* (process-data (syntax->datum (syntax (data ...))))]
-                                      [type* (r:map map-type  (list type ...))]
-                                      [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) data*))])
-                                     (if (car ret)
-                                         (acc-alloc type* (syntax->datum (syntax (shape ...))) data*)
-                                         (error 'verify-accelerack (cadr ret))))]
-    [(array (shape ...) #(type ...) data)
-                           #'(let ([type* (r:map map-type (list type ...))]
-                                   [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) (flatten data)))])
-                                  (if (car ret)
-                                      (acc-alloc type* (syntax->datum (syntax (shape ...))) data)
-                                      (error 'verify-accelerack (cadr ret))))]
-    [(array (shape ...) type (data ...))  #'(ctype? type)
-                           #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
-                                      (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
-                                     (if (car ret)
-                                         (acc-alloc type (syntax->datum (syntax (shape ...))) data*)
-                                         (error 'verify-accelerack (cadr ret))))]
-    [(array (shape ...) type data)  #'(ctype? type)
-                           #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
-                                  (if (car ret)
-                                      (acc-alloc type (syntax->datum (syntax (shape ...))) data)
-                                      (error 'verify-accelerack (cadr ret))))]))
-
-(define map-type
-  (lambda (x)
-    (cond
-      ((ctype? x) (ctype->symbol x))
-      ((symbol? x) (ctype->symbol x))
-      ((pair? x) (cons (map-type (car x)) (map-type (cdr x))))
-      ((vector? x) (cons (map-type (car (vector->list x))) (map-type (cdr (vector->list x)))))
-      (else x))))
+(define-syntax (array stx) (error 'array "FINISHME"))
+;; Need to replace this with direct use of the allocation API:
+; (acc-alloc type* (syntax->datum (syntax (shape ...))) data)
 
 (define test (acc-array (1 2 3 4)))

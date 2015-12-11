@@ -15,7 +15,7 @@
          accelerack/private/wrappers
          accelerack/private/types
          ; accelerack/private/racket_ops
-         (only-in accelerack/private/syntax acc-array)
+         (only-in accelerack/private/syntax acc-array :)
 
          (for-syntax racket/base
                      syntax/parse syntax/id-table racket/dict
@@ -94,9 +94,17 @@
 ;; TODO: Need to defer execution ...
 (define-syntax (define-acc stx)
 
-  (define (go name bod)
-    (let-values ([(stripped mainTy withTys) (front-end-compiler bod)])
-      (extend-syn-table name mainTy withTys)
+  (define (go name maybeType bod)
+    (let-values ([(stripped inferredTy withTys) (front-end-compiler bod)])
+      (define finalTy
+        (if maybeType
+            (if (unify-types inferredTy maybeType)
+                (syntax->datum maybeType)
+                ;; TODO: can report a more detailed unification error:
+                (raise-syntax-error name "inferred type of binding (~a) did not match declared type"
+                                    inferredTy  maybeType))
+            inferredTy))
+      (extend-syn-table name finalTy withTys)
 
       ;; Expand into the stripped version with no types:
 
@@ -126,8 +134,10 @@
   ;; Infers the type of the given expression and adds that type and
   ;; the expression to the syntax table.
   (syntax-parse stx
-    [(_ x:identifier e)                     (go #'x #'e)]
-    [(_ (f:identifier x:identifier ...) e)  (go #'f #'(lambda (x ...) e))]))
+    ;; TODO: allow acc-lambda-param, not just identifier:
+    [(_ x:identifier e)                     (go #'x #f #'e)]
+    [(_ x:identifier : t:acc-type e)        (go #'x #'t #'e)]
+    [(_ (f:identifier x:identifier ...) e)  (go #'f #f #'(lambda (x ...) e))]))
 
 
 ; --------------------------------------------------------------------------------

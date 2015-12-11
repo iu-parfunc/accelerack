@@ -9,6 +9,7 @@
 
 (provide
  typecheck-expr
+ unify-types
  ; (contract-out [typecheck-expr (-> list? syntax? (syntax? syntax?))])
  )
 
@@ -27,6 +28,10 @@
   (pass-output-chatter 'typecheck-expr e)
   ;; TODO:
   (values #() e))
+
+(define (unify-types ty1 ty2)
+  ;; FINISHME
+  #t)
 
 ;; Everything below this point is just a playground for small tests:
 ;; -----------------------------------------------------------------

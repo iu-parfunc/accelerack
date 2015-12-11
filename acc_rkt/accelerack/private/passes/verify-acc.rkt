@@ -9,7 +9,8 @@
  ; (proc-doc verify-acc (-> (syntax? list?) syntax?) "test")
  (contract-out
   [verify-acc (-> list? syntax? syntax?)]
-  ))
+  )
+ acc-type)
 
 (require ; (for-syntax (except-in racket/base map))
          syntax/parse

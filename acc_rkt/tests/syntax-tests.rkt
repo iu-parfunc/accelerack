@@ -66,13 +66,14 @@
 
 (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
 (define-acc test08 (lambda ((y : Int)) 3))
-(define-acc test09 (lambda ((y : Double) z) (+ y z)))
+(define-acc test09 : (-> Double Double Double)
+  (lambda ((y : Double) z) (+ y z)))
 
 (check-pred procedure? test07)
 (check-pred procedure? test08)
 (check-pred procedure? test09)
 
-(define-acc test10 (let ([x 3] [y : Int 4]) (+ x y )))
+(define-acc test10 : Int (let ([x 3] [y : Int 4]) (+ x y )))
 
 (define-acc test11 (: (lambda (x) x) (-> Double Double)))
 (define-acc test12 (: (lambda ((x : Double)) x) (-> Double Double)))

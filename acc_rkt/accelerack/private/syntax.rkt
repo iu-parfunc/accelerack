@@ -23,6 +23,7 @@
 
          ;; Regular require, careful of phasing of these identifiers:
          accelerack/private/accelerack-types
+         (for-template accelerack/private/accelerack-types)
 
          (only-in rackunit check-not-false)
          )
@@ -73,6 +74,8 @@
 (define acc-scalar-lits
   (list #'Bool #'Int #'Double))
 
+;; [2015.12.11] Huh.. these work when I load this modulue, but fail
+;; when this moudle is imported by syntax-tests.rkt:
 (check-not-false (andmap identifier-binding acc-primop-lits))
 (check-not-false (andmap identifier-binding acc-scalar-lits))
 

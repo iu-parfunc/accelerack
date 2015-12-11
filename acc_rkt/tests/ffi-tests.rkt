@@ -9,7 +9,7 @@
          racket/runtime-path
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
-(require accelerack)
+(require (except-in accelerack ->))
 
 (require accelerack/private/header ;; C data reps.
          (only-in accelerack/private/syntax   array)

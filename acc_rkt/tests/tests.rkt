@@ -2,7 +2,7 @@
 
 ;; General tests??
 
-(require ffi/unsafe
+(require (except-in ffi/unsafe ->)
          ;ffi/unsafe/define
          ;ffi/unsafe/cvector
          ;racket/runtime-path

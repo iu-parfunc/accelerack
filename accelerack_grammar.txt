@@ -33,12 +33,14 @@ type t
   | (Array n t)       ; Array Type
   | (-> t t)          ; Function Type
   | SExp              ; A value in the meta-language
+  | a                 ; Type variable
+  | (Num a)           ; Numeric type variable
 
 n = non-negative integer
 
 expression e
-  = (acc-array a)
-  | (map e e)             ; map is not first class
+  = (acc-array a)           ; Literal arrays
+  | (map e e)               ; Map is *not* first class
   | (zipwith e e e)
   | (fold e e e)
   | (generate e e ....)     ; N-dimensional generate
@@ -53,6 +55,7 @@ expression e
   | (vector-ref e e)        ; Tuple dereference
   | (acc-array-ref e e ...) ; N-dimensional array dereference.
   | (: e t)                 : Type ascription
+  | (use x)                 ; (unquote) Import a normal Racket variable
 
 let binding, lb
   = [x e] | [x : t e]

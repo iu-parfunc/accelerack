@@ -3,8 +3,8 @@
 ;; Macros for working with Accelerack data.
 ;; Syntax helpers for defining core Accelerate macros and compiler passes.
 
-(require ffi/unsafe
-         ffi/unsafe/define
+(require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
+         ; ffi/unsafe/define
 	 racket/runtime-path
          accelerack/private/parse
          accelerack/private/allocate

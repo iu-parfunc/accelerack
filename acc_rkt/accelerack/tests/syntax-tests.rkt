@@ -91,4 +91,4 @@
 ;; TODO: the story for scalars is not established yet.
 ; (check-pred acc-delayed-scalar? test10)
 
-(define table (snapshot-current-acc-syn-table))
+;;(define table (snapshot-current-acc-syn-table))

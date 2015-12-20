@@ -4,7 +4,6 @@
 
 (require
  (only-in accelerack/private/allocate read-data*)
- ; accelerack/private/header
  (only-in accelerack/private/header acc-manifest-array?)
  ; racket/trace
  )
@@ -22,10 +21,11 @@
           )
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
+;; I think this is resolved.
 (define (acc-array->list x)
   (if (acc-array? x)
       (read-data* (acc-array-val x))
-      (read-data* x)))
+      (error 'acc-array->list "works only on acc-array"))) ;;(read-data* x)))
 
 ;; The data-type for Racket-side arrays, which may be either
 ;; manifest or delayed.

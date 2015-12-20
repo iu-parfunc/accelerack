@@ -5,13 +5,10 @@
 ;; These operations are not necessarily 
 
 (require (except-in ffi/unsafe ->)
-         ffi/unsafe/cvector
          accelerack/private/header
          accelerack/private/allocate
          accelerack/private/arrayutils
          accelerack/private/global_utils
-         ;;accelerack/private/syntax
-	 ;;accelerack/private/sexp
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          racket/contract
          )

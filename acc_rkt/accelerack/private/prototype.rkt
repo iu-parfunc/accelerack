@@ -6,24 +6,21 @@
 (require ffi/unsafe
          ffi/unsafe/define
 	 racket/runtime-path
-         accelerack/private/parse
          accelerack/private/allocate
          accelerack/private/arrayutils
-         accelerack/private/global_utils
-         (prefix-in rkt: accelerack/private/racket_ops)
+         accelerack/private/racket_ops
          accelerack/private/header
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
-         (for-syntax racket/base syntax/parse)
+         (for-syntax racket/base) ;syntax/parse
          (prefix-in r: racket/base)
-
          accelerack/private/types
          )
 
 (provide acc
          cmap
-         acc-map
-         acc-zipwith
-         acc-fold
+         ;;acc-map
+         ;;acc-zipwith
+         ;;acc-fold
 ;         generate
 
          segment-length
@@ -73,30 +70,6 @@
 (define-hs accelerateFold (_fun _acc-manifest-array-pointer _acc-manifest-array-pointer _int _int -> _void))
 (define-sxp runAcc (_fun _string _acc-manifest-array-pointer _acc-manifest-array-pointer -> _void))
 (define run-acc runAcc)
-
-;; Merging acc_sexp.rkt and ../main.rkt to avoid cycles while loading modules
-;;----------------------------------------------------------------------------
-
-
-;; RRN: No, the racket ops should use the acc-array representation FROM THE START:
-(define (acc-map f x)
-  (if (acc-array? x)
-      (make-acc-array (rkt:acc-map f (acc-array-val x)))
-      (error 'acc-map "acc-array expected")))
-
-(define (acc-zipwith f x y)
-  (if (and (acc-array? x) (acc-array? y))
-      (make-acc-array (rkt:acc-zipwith f (acc-array-val x) (acc-array-val y)))
-      (error 'acc-zipwith "acc-array expected")))
-
-(define (acc-fold f def x)
-  (if (acc-array? x)
-      (make-acc-array (rkt:acc-fold f def (acc-array-val x)))
-      (error 'acc-zipwith "acc-array expected")))
-
-
-
-;---------------
 
 (define (procedure->symbol proc)
   (cond
@@ -245,7 +218,7 @@
     [`(id ,val)
      (begin
        ;;(printf "val ~s and payload ~s\n" val (read-data* (rkt:array-get payload val)))
-       (convert-ptr (rkt:array-get payload val)))]
+       (convert-ptr (array-get payload val)))]
     [x (error "No matching pattern found")]))
 
 

@@ -5,7 +5,7 @@
          accelerack/private/header
          accelerack/private/syntax
          accelerack/private/parse
-         (prefix-in rkt: accelerack/private/racket_ops)
+         accelerack/private/racket_ops
 
          (prefix-in r: racket/base)
          (for-syntax racket/base syntax/parse)

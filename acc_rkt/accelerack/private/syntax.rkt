@@ -4,15 +4,10 @@
 ;; Syntax helpers for defining core Accelerate macros and compiler passes.
 
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
-         ; ffi/unsafe/define
-	 racket/runtime-path
          accelerack/private/parse
          accelerack/private/allocate
          accelerack/private/arrayutils
          accelerack/private/global_utils
-         (prefix-in rkt: accelerack/private/racket_ops)
-         accelerack/private/header
-         (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
 

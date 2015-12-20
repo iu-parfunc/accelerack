@@ -10,6 +10,7 @@
          accelerack/private/arrayutils
          accelerack/private/racket_ops
          accelerack/private/header
+         accelerack/private/wrappers
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base) ;syntax/parse
          (prefix-in r: racket/base)
@@ -18,9 +19,6 @@
 
 (provide acc
          cmap
-         ;;acc-map
-         ;;acc-zipwith
-         ;;acc-fold
 ;         generate
 
          segment-length
@@ -31,7 +29,7 @@
          append-string*
 
          ;; wrappers:
-         map fold zipwith
+         ;;map fold zipwith
          )
 
 (begin-for-syntax
@@ -288,53 +286,3 @@
     [(acc exp exp2 x ...) #'(begin (acc exp) (acc exp2 x ...))]
     ))
 
-;(define x (acc-array (1 2 3 4 5 6 7 8)))
-;(define y (acc-array (10 20 30 40 50 60 70 80)))
-;(define z (acc-array (100 200 300 400 500 600 700 800)))
-
-;(define y (acc-array (12.34 56.78 34.12 45.32 65.45)))
-;(define z (acc-array (71.50 45.12 45.68 76.34 57.90)))
-;(define z1 (acc-array (10.009 20.009 30.009 40.009 50.009)))
-
-#|(define (tester1)
-  (letrec-values (;[(sexp payld) (build-sexp zipwith (++) x y)]
-                  [(sexp* payld*) (build-sexp map add1 x)]) ;;sexp payld)])
-    (begin
-      (printf "function (map add1 (zipwith (++) x y)\n")
-      (printf "s-exp ~s\n" sexp*)
-      (printf "x ~s\n" x)
-      (printf "y ~s\n" y)
-      (sexp-interpreter sexp* payld*))))
-
-(tester1)
-
-(map add1 x)|#
-
-;; (define x (acc-array ((1.11 2.22 3.33) (4.44 5.55 6.66))))
-;; (read-data (acc-manifest-array-shape (acc-array-val x)))
-
-
-
-;; These have been replace by wrappers.rkt:
-;; --------------------------------------------------------------------------------
-
-(define (map f x)
-  (if (acc-array? x)
-      (make-acc-array (acc (acc:map f (acc-array-val x))))
-      (if (acc-manifest-array? x)
-          (make-acc-array (acc (acc:map f x)))
-             (r:map f x))))
-
-(define (fold f def x)
-  (if (acc-array? x)
-      (make-acc-array (acc (acc:fold f def (acc-array-val x))))
-      (if (acc-manifest-array? x)
-          (make-acc-array (acc (acc:fold f def x)))
-          (error 'fold "acc-array expected"))))
-
-(define (zipwith f x y)
-  (if (and (acc-array? x) (acc-array? y))
-      (make-acc-array (acc (acc:zipwith f (acc-array-val x) (acc-array-val y))))
-      (if (and (acc-manifest-array? x) (acc-manifest-array? y))
-          (make-acc-array (acc (acc:zipwith f x y)))
-          (error 'zipwith "acc-array expected"))))

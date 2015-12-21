@@ -1,3 +1,8 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DefaultSignatures #-}
 {-# Language TypeOperators #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE CPP                      #-}
@@ -17,11 +22,12 @@ import Control.Monad
 import Control.Monad.State
 
 import Data.Array.Accelerate as A hiding ((++), replicate, product)
-import Data.Array.Accelerate.IO (fromPtr, toPtr)
+import Data.Array.Accelerate.IO (fromPtr, toPtr,BlockPtrs)
 import Data.Array.Accelerate.Interpreter as I
 import Data.Array.Accelerate.Array.Sugar as Sugar
 
 import Data.IORef
+import Data.Proxy
 import qualified Data.List as L
 
 -- C structure to store tuple/scalar information (one payload)
@@ -98,11 +104,44 @@ pokeArrayPtrs p accarray = do
         (\hsc_ptr -> pokeByteOff hsc_ptr 8) p $ ashape accarray
         (\hsc_ptr -> pokeByteOff hsc_ptr 16) p $ adata accarray
 
+class (Storable a, Elt a) => AccelerackType a where
+  toBlockPtrs :: Ptr a -> BlockPtrs (EltRepr a)
+  accTypeAnnot :: Proxy a -> String
+  default toBlockPtrs :: (BlockPtrs (EltRepr a) ~ ((),Ptr a)) => Ptr a -> BlockPtrs (EltRepr a)
+  toBlockPtrs p = ((),p)
+
+instance AccelerackType Int32 where
+  accTypeAnnot _ = "Int"
+instance AccelerackType Double where
+  accTypeAnnot _ = "Double"
+
+class Shape sh => AccelerackShape sh where
+  accShapeAnnot :: Proxy sh -> String
+
+instance AccelerackShape DIM0 where accShapeAnnot _ = "DIM0"
+instance AccelerackShape DIM1 where accShapeAnnot _ = "DIM1"
+instance AccelerackShape DIM2 where accShapeAnnot _ = "DIM2"
+instance AccelerackShape DIM3 where accShapeAnnot _ = "DIM3"
+instance AccelerackShape DIM4 where accShapeAnnot _ = "DIM4"
+instance AccelerackShape DIM5 where accShapeAnnot _ = "DIM5"
+instance AccelerackShape DIM6 where accShapeAnnot _ = "DIM6"
+
+toAccArray :: forall sh a. (AccelerackType a, Shape sh) => Proxy sh -> Proxy a -> [CInt] -> Segment -> IO (A.Array sh a)
+toAccArray _ _ shp seg = fromPtr (mkDim shp) $ toBlockPtrs (castPtr $ sdata seg :: Ptr a) -- ((),segData $ sdata seg)
+
+fromAccArray :: forall sh a. (AccelerackType a, Shape sh) => A.Array sh a -> IO Segment
+fromAccArray arr = do
+  ptr :: Ptr a <- mallocArray sz
+  toPtr arr $ toBlockPtrs ptr
+  return $ Segment (Prelude.fromIntegral sz) 0 $ castPtr ptr
+  where
+  shp = A.arrayShape arr
+  sz  = A.arraySize shp
+
 -- Converts from haskell array to accelerate array
-toAccArrayInt :: (Shape sh) => sh -> Segment -> IO (A.Array sh Int32)
-toAccArrayInt shp Segment {slength = len, stype = ty, sdata = ptr } = do
-  arr <- fromPtr shp ((), castPtr ptr :: Ptr Int32)
-  return arr
+toAccArrayInt :: Shape sh => sh -> Segment -> IO (A.Array sh Int32)
+toAccArrayInt shp Segment {slength = len, stype = ty, sdata = ptr } =
+  fromPtr shp ((), castPtr ptr :: Ptr Int32)
 
 -- Converts from accelerate array to haskell array
 fromAccArrayInt :: (Shape sh) => A.Array sh Int32 -> IO Segment
@@ -115,9 +154,8 @@ fromAccArrayInt arr =
 
 -- Converts from haskell array to accelerate array
 toAccArrayDbl :: (Shape sh) => sh -> Segment -> IO (A.Array sh Double)
-toAccArrayDbl shp Segment {slength = len, stype = ty, sdata = ptr } = do
-  arr <- fromPtr shp ((), castPtr ptr :: Ptr Double)
-  return arr
+toAccArrayDbl shp Segment {slength = len, stype = ty, sdata = ptr } =
+  fromPtr shp ((), castPtr ptr :: Ptr Double)
 
 -- Converts from accelerate array to haskell array
 fromAccArrayDbl :: (Shape sh) => A.Array sh Double -> IO Segment

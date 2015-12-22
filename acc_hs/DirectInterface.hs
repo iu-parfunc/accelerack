@@ -5,7 +5,7 @@
 {-# LANGUAGE LambdaCase #-} 
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ExInterface where
+module DirectInterface where
 
 import Foreign
 import Foreign.C

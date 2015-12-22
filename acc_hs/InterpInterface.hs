@@ -11,7 +11,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -- {-# NOINLINE foo #-}
 
-module SxpInterface where
+module InterpInterface where
 
 import Foreign
 import Foreign.C

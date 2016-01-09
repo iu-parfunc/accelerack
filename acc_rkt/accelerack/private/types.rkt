@@ -97,4 +97,6 @@
 
 ;; The type of self-contained, serializable, Accelerack computations.
 ;; These can be sent across the FFI, or, in principle, even across the network.
-; (struct acc-portable-package )
+(struct acc-portable-package (sexp array-table)
+
+  )

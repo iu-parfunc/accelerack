@@ -60,7 +60,7 @@ expression e
   | (vector-ref e e)        ; Tuple dereference
   | (acc-array-ref e e ...) ; N-dimensional array dereference.
   | (: e t)                 : Type ascription
-  | (use x)                 ; (unquote) Import a normal Racket variable
+  | (use x t)               ; (unquote) Import a normal Racket variable
 
 let binding, lb
   = [x e] | [x : t e]
@@ -134,17 +134,11 @@ This pass should never throw errors, which is why its safe to operate
 on the SExp rep rather than the rich syntax representation.
 
 
-[Tentative] Language after lift-const-array
-------------------------------------------------------------
-
-The idea here is that array literals are lifted out to top-level?
-
-This uses syntax-local-lift expressions.
-
-
 [Tentative] Language after monomorphise
 ------------------------------------------------------------
 
+Optional: double check after normalization that everything looks
+good.
 
 
 Language after gen-array-ref
@@ -179,7 +173,8 @@ mono scalar-type st
 expression e
   = x                       ; Variable
   | p                       ; Primitive function
-  | (if e e e)              ; scalar or array conditionals
+  | (acond e e e)           ; array conditionals
+  | (econd e e e)           ; scalar conditionals
   | (vector e ...)          ; Tuple expression
   | (vector-ref e e)        ; Tuple dereference
   | (acc-array-ref e e ...) ; N-dimensional array dereference.

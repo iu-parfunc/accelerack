@@ -52,6 +52,10 @@
     (define stripped (verify-acc syn-table e))
     ; (printf "Woo compiler frontend! ~a\n" e)
     (define-values (main-type with-types) (typecheck-expr syn-table e))
+
+    (fprintf (current-error-port)
+             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
+
     (values stripped main-type with-types))
 
   (define (extend-syn-table name type expr)
@@ -95,7 +99,7 @@
 (define-syntax (define-acc stx)
 
   (define (go name maybeType bod)
-    (let-values ([(stripped inferredTy withTys) (front-end-compiler bod)])
+    (let-values ([(stripped inferredTy progWithTys) (front-end-compiler bod)])
       (define finalTy
         (if maybeType
             (if (unify-types inferredTy maybeType)
@@ -104,7 +108,7 @@
                 (raise-syntax-error name "inferred type of binding (~a) did not match declared type"
                                     inferredTy  maybeType))
             inferredTy))
-      (extend-syn-table name finalTy withTys)
+      (extend-syn-table name finalTy progWithTys)
 
       ;; Expand into the stripped version with no types:
 

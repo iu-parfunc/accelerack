@@ -8,6 +8,8 @@
          (only-in accelerack/private/types acc-delayed-array?)
          )
 
+(printf "Running syntax tests that use define-acc\n")
+
 (define-acc (sqr x) (* x x))
 
 (define-acc ac 3)

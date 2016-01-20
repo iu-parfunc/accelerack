@@ -7,53 +7,80 @@
 ;;      rather than rich syntax expression
 ;; ---------------------------------------------------------------
 
-(require ffi/unsafe
-         ffi/unsafe/define
-         rackunit
-         rackunit/text-ui
-         racket/runtime-path
-	 racket/match
-         (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
-
-;; Validate if output matches the expected output
-;; ---------------------------------------------------------------
-;; TODO - needs changes according to output of typecheck
-;; Should throw an error for incorrect input 
-(define (check-if-lambda exp)
-  (let ((check-e check-if-array-ops-followed-by-lamda))
-    (begin      
-      (check-match exp `(lambda (,x ...) ,e))
-      (match exp
-	    (`(lambda (,x ...) ,e) (check-e e))
-	    (`,x (void))))))
-
-;; TODO - This currently supresses any errors in input - but input should match output of typecheck
-(define (check-if-array-ops-followed-by-lamda exp)
-  (let ((check check-if-array-ops-followed-by-lamda))
-    (match exp
-      (`(map ,l ,e2) (and (check-if-lambda l) (check e2)))
-      (`(zipwith ,l ,e1 ,e2) (begin
-			       (check-if-lambda l)
-			       (check e1)
-			       (check e2)))
-      (`(fold ,l ,e1 ,e2) (begin
-			       (check-if-lambda l)
-			       (check e1)
-			       (check e2)))
-      (`(generate ,e ....) (map check e))
-      (`(stencil3x3 ,l ,b ,e) (begin
-			       (check-if-lambda l)
-			       (check e)))      
-      (`(let (,x ...) ,e) (check e))
-      (`(lambda (,x ...) ,e) (check e))
-      (`(if ,e1 ,e2 ,e3) (begin
-			   (check e1) (check e2) (check e3)))
-      (`(acc-array ,a) (void))
-      ;; General application is removed - Only primitives allowed
-      (`(,p ,e ...) (memq p '(acc-array-ref vector vector-ref)) (map check e))
-      (`,x (void)))))
-
-(check-if-array-ops-followed-by-lamda `(begin
-					 (map (lambda(x) 1) (list (1 23 4)))))
+(require
+ rackunit
+ rackunit/text-ui         
+ racket/match)
+(require macro-debugger/expand)
 
 
+(require racket/trace)
+(require (for-syntax racket/trace))
+(require accelerack/private/wrappers)
+(require
+ (for-syntax (except-in racket/base map))
+ syntax/parse
+ syntax/to-string
+ scribble/srcdoc
+ racket/trace
+ (only-in accelerack/private/global_utils pass-output-chatter)
+ accelerack/private/syntax
+ (prefix-in r: racket/base))
+
+(require (for-syntax syntax/parse))
+
+(provide (contract-out
+          (normalize (-> syntax? syntax?))))
+(require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
+ (for-template
+  accelerack/private/wrappers
+  
+  ;; Keyword symbols come from a mix of three places currently:
+  (only-in accelerack/private/syntax acc-array)
+  (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
+  (only-in accelerack/private/keywords : Array Int Bool Double use ->))
+
+ ;; Temp: at every stage to make sure:
+ ;(for-syntax (only-in accelerack/private/syntax :))
+ ;(only-in accelerack/private/syntax :)
+ )
+
+(define (con s)
+  (cond
+    ((syntax? s) (syntax->datum s))
+    ((list? s) (map con s))
+    (else s)))
+
+(define (concat xls yls)
+  (let ((xls (con  xls))
+        (yls (con yls)))    
+    (cond
+      ((null? xls) xls)
+      (else (cons `(,(cadar xls) ,(cadar yls)) (concat (cdr xls) (cdr yls)))))
+    ))
+
+;; Implemented using syntax parse -- Should this be done using match ?
+(define (normalize stx)  
+  (let loop ((stx stx))
+    (syntax-parse stx
+      #:literals (acc-array acc-array-ref :
+                            map zipwith fold stencil3x3 generate
+                            lambda let if vector vector-ref)
+      #:disable-colon-notation
+      [(it (lambda(x...) e) e1...) #:when #`(memq #`it '(map zipwith)) #`(it (lambda(x...) e) e1...)]
+      [(map f e) #`(map (lambda (x)  (#,(loop #'f) x))  #,(loop #'e))]
+      [(zipwith e1 e2 e3) #`(zipwith (lambda(x y) (#,(loop #'e1) x y))
+                                     #,(loop #'e2) #,(loop #'e3))]
+      [((lambda(x ...) e) e1 ...) (let ((k (concat  #`(#'x ...) #`(#'e1 ...)))
+                                        (e (loop #'e)))
+                                    #`(let #,(datum->syntax #f k) #,(datum->syntax #f e)))]
+      [n  #'n]
+      )))
+
+;; (display (syntax->datum (normalize (normalize (normalize #'(map add1 (list 12 3)))))))
+;; (display "\n")
+;; (display (syntax->datum (normalize #'((lambda(x y) (map x y)) add1 (list 1 2)) )))
+;; (display "\n")
+;; (display (syntax->datum (normalize #'((lambda (x y) (map x y)) add1 1) )))
+;; (display "\n")
+;; (display (syntax->datum (normalize #'(map x y) )))

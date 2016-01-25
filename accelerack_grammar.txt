@@ -31,7 +31,7 @@ scalar-type st
   | Bool
   | Double
   | #(st ...)   ; Tuple of Scalars
-  | a                 ; Type variable
+  | a                 ; Type variable (lower case)
   | (Num a)           ; Numeric type variable
   | SExp              ; A value in the meta-language
 
@@ -39,7 +39,7 @@ type t
   = st                ; Scalar Type
   | #(t ...)          ; Tuple Type
   | (Array n t)       ; Array Type
-  | (-> t t)          ; Function Type
+  | (-> t ... t)      ; Function Type
 
 n = non-negative integer
 
@@ -192,7 +192,7 @@ expression e
   | (zipwith    (lambda (x y) e) e e)
   | (fold       (lambda (x y) e) e e)
   | (stencil3x3 (lambda (x1 .. x9) e) b e)
-  | (generate   (lambda (x1 .. xN) e1 .. eN)
+  | (generate e ... (lambda (x1 .. xN) e1 .. eN))
   | (let ([x : t] ...) e)   ; Let binding
   | (p e ...)               ; Primitive Application
 

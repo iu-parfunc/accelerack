@@ -33,6 +33,27 @@
   ;; FINISHME
   #t)
 
+;; Typing environment:
+'(
+  [map  (-> (-> a b) (Array (Num n) a) (Array (Num n) b))]
+  ;; ^ PLUS side condition that a/b don't contain Array
+  [fold (-> (-> a a a) a
+            (Array (add1 (Num n)) a)
+            (Array (Num n) b))]
+
+  ;; Shorthands for convenience and simplicity:
+  [fold1 (-> (-> a a a) a (Array 1 a) (Array 0 b))]
+  [fold2 (-> (-> a a a) a (Array 2 a) (Array 1 b))]
+
+  ; (generate (lambda () 99))
+  ; (generate 3 (lambda (i) i))
+  ; (generate 3 4 (lambda (x y) (+ x y)))
+  ;; Psuedo-syntax for the type:
+  [generate (-> Int_1 ... Int_n (-> Int_1 ... Int_n a) (Array n a))]
+
+  )
+
+
 ;; Everything below this point is just a playground for small tests:
 ;; -----------------------------------------------------------------
 

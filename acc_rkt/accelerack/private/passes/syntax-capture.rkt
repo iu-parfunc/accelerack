@@ -53,8 +53,8 @@
     ; (printf "Woo compiler frontend! ~a\n" e)
     (define-values (main-type with-types) (typecheck-expr syn-table e))
 
-    (fprintf (current-error-port)
-             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
+;    (fprintf (current-error-port)
+;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
 
     (values stripped main-type with-types))
 

@@ -141,6 +141,14 @@ Optional: double check after normalization that everything looks
 good.
 
 
+Language split-conds
+------------------------------------------------------------
+
+This pass uses the TYPES (Array versus scalar) to turn:
+
+  (if a b c) -> (econd a b c)
+  (if a b c) -> (acond a b c)
+
 Language after gen-array-ref
 ------------------------------------------------------------
 

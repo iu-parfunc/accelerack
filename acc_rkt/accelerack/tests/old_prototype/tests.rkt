@@ -19,7 +19,7 @@
          (only-in accelerack/private/global_utils accelerack-debug-mode?)
          )
 
-(require "test-utils.rkt")
+; (require "test-utils.rkt")
 
 (define (maybe-display msg)
   (when (accelerack-debug-mode?)
@@ -240,6 +240,18 @@
                        (cmap 'sub1 cptr)
                        (check-equal? (read-data* temp) (read-data* cptr))))
              (maybe-display "Test 17 Success !!!"))))
+
+(define (add1* ls)
+  (cond
+    ((null? ls) '())
+    ((pair? (car ls)) (cons (add1* (car ls)) (add1* (cdr ls))))
+    (else (cons (add1 (car ls)) (add1* (cdr ls))))))
+
+(define (sub1* ls)
+  (cond
+    ((null? ls) '())
+    ((pair? (car ls)) (cons (sub1* (car ls)) (sub1* (cdr ls))))
+    (else (cons (sub1 (car ls)) (sub1* (cdr ls))))))
 
 (maybe-display "\n<----------- Invalid test-cases Run ----------->\n")
 (if (run-tests acc-invalid-test_cases)

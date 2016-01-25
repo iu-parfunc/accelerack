@@ -20,14 +20,14 @@
 
 
 (printf "<-------------- Setting up the Haskell environment --------------->")
-(define-runtime-path librachs "../../../acc_hs/librachs.so")
+(define-runtime-path librachs "../../../../acc_hs/librachs.so")
 (define lib-hs (ffi-lib librachs))
 (define-ffi-definer define-hs lib-hs)
 
-;;(define lib-ifc (ffi-lib "../../../acc_hs/libhsifc"))
+;;(define lib-ifc (ffi-lib "../../../../acc_hs/libhsifc"))
 ;;(define-ffi-definer define-ifc lib-ifc)
 
-(define-runtime-path librts "../../../acc_c/librts.so")
+(define-runtime-path librts "../../../../acc_c/librts.so")
 (define lib-rts (ffi-lib librts))
 (define-ffi-definer define-rts lib-rts)
 

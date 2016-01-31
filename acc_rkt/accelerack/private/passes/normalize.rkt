@@ -30,53 +30,168 @@
 (require (for-syntax syntax/parse))
 
 (provide (contract-out
-          (normalize (-> syntax? syntax?))))
-(require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
- (for-template
-  accelerack/private/wrappers
-  
-  ;; Keyword symbols come from a mix of three places currently:
-  (only-in accelerack/private/syntax acc-array)
-  (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
-  (only-in accelerack/private/keywords : Array Int Bool Double use ->))
+          (normalize (-> list? any/c list?))))
 
- ;; Temp: at every stage to make sure:
- ;(for-syntax (only-in accelerack/private/syntax :))
- ;(only-in accelerack/private/syntax :)
- )
 
-(define (con s)
-  (cond
-    ((syntax? s) (syntax->datum s))
-    ((list? s) (map con s))
-    (else s)))
+(define primitive-ls '(vector vector-ref map fold zipwith generate stencil3x3))
+(define (returns-lambda? exp)
+  (match exp
+    ;; TODO Do i need 2 let conds or can i just use ...* ?
+    (`(let ,xls ,y ... ,z) (returns-lambda? z))
+    (`(let ,xls ,z) (returns-lambda? z))
+    (`(if ,x ,y ,z) (returns-lambda? y))
+    (`(lambda (,x ...) ,y ...) #t)
+    (`,else #f)))
 
-(define (concat xls yls)
-  (let ((xls (con  xls))
-        (yls (con yls)))    
-    (cond
-      ((null? xls) xls)
-      (else (cons `(,(cadar xls) ,(cadar yls)) (concat (cdr xls) (cdr yls)))))
-    ))
+;; Return set of scalar expressions, add lambda's to environment
+(define (normalize-exp-let xls env)
+  (if (null? xls)
+      (values '() env)
+      (let ((x (caar xls))
+	    (xp (normalize (cadar xls) env)))
+	(let-values (((exp env) (normalize-exp-let (cdr xls) env)))
+	  (if (returns-lambda? xp)	     
+	      (values exp (cons `(,x ,xp) env))   ;; Add to env if lambda
+	      (values (cons `(,x ,xp) exp) env)))))) ;; Else just let it remain in expression
 
-;; Implemented using syntax parse -- Should this be done using match ?
-(define (normalize stx)  
-  (let loop ((stx stx))
-    (syntax-parse stx
-      #:literals (acc-array acc-array-ref :
-                            map zipwith fold stencil3x3 generate
-                            lambda let if vector vector-ref)
-      #:disable-colon-notation
-      [(it (lambda(x...) e) e1...) #:when #`(memq #`it '(map zipwith)) #`(it (lambda(x...) e) e1...)]
-      [(map f e) #`(map (lambda (x)  (#,(loop #'f) x))  #,(loop #'e))]
-      [(zipwith e1 e2 e3) #`(zipwith (lambda(x y) (#,(loop #'e1) x y))
-                                     #,(loop #'e2) #,(loop #'e3))]
-      [((lambda(x ...) e) e1 ...) (let ((k (concat  #`(#'x ...) #`(#'e1 ...)))
-                                        (e (loop #'e)))
-                                    #`(let #,(datum->syntax #f k) #,(datum->syntax #f e)))]
-      [n  #'n]
-      )))
+;; The normalize front end                   
+(define (normalize exp env)  
+  (let-values (((v sym) (normalize-exp exp env)))
+    v))
 
+(define (add-to-env xls e env)
+  (if (null? xls)
+      env
+      (cons `(,(car xls) ,(normalize (car e) env)) (add-to-env (cdr xls) (cdr e) env))))
+
+;; Take an expressio
+(define (normalize-to-lambda e l x env)
+  (match l
+    (`(lambda(,x...) ,y...) `(,e ,l ,@x))
+    (`(if ,c ,y ,z) `(if ,c
+			 ,(normalize-to-lambda e y x env)
+			 ,(normalize-to-lambda e z x env)))
+    ;; TODO Do i need 2 let conds or can i just use ...* ?
+    (`(let ,xls ,b) `(let ,xls ,(normalize-to-lambda e b x env)))
+    (`(let ,xls ,a ... ,b) `(let ,xls ,@a
+				 ,(normalize-to-lambda e b x env)))))
+
+
+;; Environment contains only lambda's for now
+;; Anything more ??
+(define (normalize-exp exp env)
+  (let loop ((exp exp) (env env))
+    (match exp
+      (`(let ,xls ,b ...)
+       (let*-values (((exp env) (normalize-exp-let xls env)))
+	 (let ((bexp (map (lambda(x) (normalize x env)) b)))
+	   (if (null? exp)	       
+	       (values `(let () ,@bexp) env)
+	       (values `(let ,exp ,@bexp) env)))))
+      (`(if ,x ,y ,z) (values `(if ,(normalize x env) ,(normalize y env) ,(normalize z env)) env))
+      (`(,e ,l ,x ...) #:when(memq e primitive-ls) (let ((l (normalize l env))
+							 (x (map (lambda(x) (normalize x env)) x)))
+						     (values (normalize-to-lambda e l x env) env)))
+      ;; Substitute values - When lambda application 
+      (`((lambda (,x ...) ,y ...) ,e ...)  (values (normalize y (add-to-env x e env)) env))
+      (`,x #:when(assq x env) (values (cadr (assq x env)) env))
+      (`,x (values x env)))))
+
+(define test1 '(let ((f (lambda(k) (map add1 k))))                 
+                 (let ((a (f (acc-array (1 2 3))))
+                       (b (f (acc-array (1 2 4)))) )
+                   (map f (generate a b)))))
+
+
+(define test2 '(let ((f (lambda(k) (map add1 k))))
+                 (let ((g (lambda(k) (let ((a (f (acc-array (1 2 3))))
+                                           (b (f (acc-array (1 2 4)))))
+                                       (map f (generate a b))))))
+                   (generate f g))))
+
+(define test3 '(let ((f 1))
+                 (if (eq? f 1)
+                     (acc-array (1 2 3))
+                     (acc-array (2 3 4)))))
+
+(define test4 '(let ((f (if #t
+			    (lambda(x) x)
+			    (lambda(x) (* 2 x)))))
+		 (map f (acc-array (1 2 3)))))
+;; Solution ??
+(define test4-step1 `(if #t
+		       (let ((f (lambda(x) x)))
+			 (map f (acc-array (1 2 3))))
+		       (let ((f (lambda(x) (* 2 x))))
+			 (map f (acc-array (1 2 3))))))
+(define test4-step2 `(if #t
+			 (map (lambda(x) x) (acc-array (1 2 3)))
+			 (map (lambda(x) (* 2 x)) (acc-array (1 2 3)))))
+
+(define test6 '(let ((f (let ((a 1))
+			  (lambda(x) (+ a x)))))
+		 (map f (acc-array 1 2))))
+
+
+(define test5 '(let ((f (let ((x 1))
+				(if (eq? x 1)
+				    (lambda (x) x)
+				    (lambda (x) (* 2 x)))))
+		     (g (if (eq? 1 1)
+			    (acc-array 1 2 3)
+			    (acc-array 2 3 4))))
+		 (map f g)))
+
+(define test5-step1 '(let ((f (let ((x 1))
+				(if (eq? x 1)
+				    (lambda (x) x)
+				    (lambda (x) (* 2 x)))))
+			   (g (if (eq? 1 1)
+				  (acc-array 1 2 3)
+				  (acc-array 2 3 4))))
+		       (map f g)))
+
+(display (normalize test4 '()))
+
+
+
+
+
+
+
+
+;; (define (con s)
+;;   (cond
+;;     ((syntax? s) (syntax->datum s))
+;;     ((list? s) (map con s))
+;;     (else s)))
+
+;; (define (concat xls yls)
+;;   (let ((xls (con  xls))
+;;         (yls (con yls)))    
+;;     (cond
+;;       ((null? xls) xls)
+;;       (else (cons `(,(cadar xls) ,(cadar yls)) (concat (cdr xls) (cdr yls)))))
+;;     ))
+
+;; ;; Implemented using syntax parse -- Should this be done using match ?
+;; (define (normalize2 stx)  
+;;   (let loop ((stx stx))
+;;     (syntax-parse stx
+;;       #:literals (acc-array acc-array-ref :
+;;                             map zipwith fold stencil3x3 generate
+;;                             lambda let if vector vector-ref)
+;;       #:disable-colon-notation
+;;       [(it (lambda(x...) e) e1...) #:when #`(memq #`it '(map zipwith)) #`(it (lambda(x...) e) e1...)]
+;;       [(map f e)       
+;;        #`(map (lambda (x)  (#,(loop #'f) x))  #,(loop #'e))]
+;;       [(zipwith e1 e2 e3) #`(zipwith (lambda(x y) (#,(loop #'e1) x y))
+;;                                      #,(loop #'e2) #,(loop #'e3))]
+;;       [((lambda(x ...) e) e1 ...) (let ((k (concat  #`(#'x ...) #`(#'e1 ...)))
+;;                                         (e (loop #'e)))
+;;                                     #`(let #,(datum->syntax #f k) #,(datum->syntax #f e)))]
+;;       [n  #'n]
+;;       )))
 ;; (display (syntax->datum (normalize (normalize (normalize #'(map add1 (list 12 3)))))))
 ;; (display "\n")
 ;; (display (syntax->datum (normalize #'((lambda(x y) (map x y)) add1 (list 1 2)) )))
@@ -84,3 +199,16 @@
 ;; (display (syntax->datum (normalize #'((lambda (x y) (map x y)) add1 1) )))
 ;; (display "\n")
 ;; (display (syntax->datum (normalize #'(map x y) )))
+
+
+
+  ;; (match exp
+  ;;   (`(let ,ls ,b) '#f)
+  ;;   (`,x `,x)))
+
+
+
+     ;; (let-values (((xls env) (normailze ls env)))
+     ;;                ))))
+                                  
+    

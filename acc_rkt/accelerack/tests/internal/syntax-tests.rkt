@@ -3,13 +3,11 @@
 (require rackunit
          ;; See NOTE below:
          (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
-                  Int Bool Double use acc-array->list)
+                  Int Bool Double use)
          accelerack/private/passes/syntax-capture
          (only-in accelerack/private/types acc-delayed-array?)
          )
 
-(provide sqr ac num2 num
-         test01 test01B)
 
 (printf "Running syntax tests that use define-acc\n")
 
@@ -30,7 +28,7 @@
 
 (define-acc num (* 3 (+ 4 (- 5 (add1 2)))))
 
-(define-acc id1 (lambda (x) x))
+;; (define-acc id1 (lambda (x) x))
 
 
 ;; TODO: unit tests for syntax failures:
@@ -51,8 +49,7 @@
 ;; supposed special-forms like array-ref/acc-array/etc.
 (define-acc test01 (lambda (x) (acc-array-ref (if #t x x) 0 3)))
 
-(define-acc test01B (test01 (acc-array ((1 2 3 4 5 6)))))
-
+;; (define-acc test01B (test01 (acc-array ((1 2 3 4 5 6)))))
 ;; Not working yet, need to sort out first class primitive handling:
 
 (define-acc test02 (lambda (x)

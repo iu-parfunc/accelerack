@@ -36,9 +36,7 @@
 (define primitive-ls '(vector vector-ref map fold zipwith generate stencil3x3))
 (define (returns-lambda? exp)
   (match exp
-    ;; TODO Do i need 2 let conds or can i just use ...* ?
     (`(let ,xls ,y ... ,z) (returns-lambda? z))
-    (`(let ,xls ,z) (returns-lambda? z))
     (`(if ,x ,y ,z) (returns-lambda? y))
     (`(lambda (,x ...) ,y ...) #t)
     (`,else #f)))
@@ -69,12 +67,11 @@
   (match l
     (`(lambda(,x...) ,y...) `(,e ,l ,@x))
     (`(if ,c ,y ,z) `(if ,c
-			 ,(normalize-to-lambda e y x env)
-			 ,(normalize-to-lambda e z x env)))
-    ;; TODO Do i need 2 let conds or can i just use ...* ?
-    (`(let ,xls ,b) `(let ,xls ,(normalize-to-lambda e b x env)))
+			 ,(normalize-to-lambda e (normalize y env) x env)
+			 ,(normalize-to-lambda e (normalize z env) x env)))
     (`(let ,xls ,a ... ,b) `(let ,xls ,@a
-				 ,(normalize-to-lambda e b x env)))))
+				 ,(normalize-to-lambda e b x env)))
+    ))
 
 
 ;; Environment contains only lambda's for now
@@ -92,8 +89,10 @@
       (`(,e ,l ,x ...) #:when(memq e primitive-ls) (let ((l (normalize l env))
 							 (x (map (lambda(x) (normalize x env)) x)))
 						     (values (normalize-to-lambda e l x env) env)))
-      ;; Substitute values - When lambda application 
-      (`((lambda (,x ...) ,y ...) ,e ...)  (values (normalize y (add-to-env x e env)) env))
+      ;; Substitute values - When lambda application -- TODO -- Discarding all other values since no side effects
+      (`((lambda (,x ...) ,y ... ,z) ,e ...)
+       (let ((lenv (add-to-env x e env)))
+         (values (normalize z lenv) env)))
       (`,x #:when(assq x env) (values (cadr (assq x env)) env))
       (`,x (values x env)))))
 
@@ -142,6 +141,15 @@
 			    (acc-array 2 3 4))))
 		 (map f g)))
 
+(define test7 '(let ((f (let ((x 1))
+                          (if (eq? x 1)
+                              ((lambda (x) x) (lambda(x) x))
+                              (lambda (x) (* 2 x)))))
+		     (g (if (eq? 1 1)
+			    (acc-array 1 2 3)
+			    (acc-array 2 3 4))))
+		 (map f g)))
+
 (define test5-step1 '(let ((f (let ((x 1))
 				(if (eq? x 1)
 				    (lambda (x) x)
@@ -151,8 +159,14 @@
 				  (acc-array 2 3 4))))
 		       (map f g)))
 
-(display (normalize test4 '()))
+(pretty-print test4)
+(pretty-print (normalize test4 '()))
+(pretty-print test5)
+(pretty-print (normalize test5 '()))
+(pretty-print test6)
+(pretty-print (normalize test6 '()))
 
+(pretty-print (normalize test7 '()))
 
 
 

@@ -96,17 +96,33 @@
       (`,x #:when(assq x env) (values (cadr (assq x env)) env))
       (`,x (values x env)))))
 
-(define test1 '(let ((f (lambda(k) (map add1 k))))                 
-                 (let ((a (f (acc-array (1 2 3))))
-                       (b (f (acc-array (1 2 4)))) )
-                   (map f (generate a b)))))
 
+;; Some test cases
+(define (is-normalized? exp)
+  (let loop ((exp exp))
+    (match exp
+      (`(let ,xls ,b ...) (and (andmap loop (map cadr xls)) (andmap loop b)))
+      (`(if ,x ,y ,z) (and  (loop y) (loop z)))
+      (`(acc-array ,x ...) (andmap loop x))
+      (`(,e ,x ,y ...) #:when(memq e primitive-ls)
+       (and (loop e) (andmap loop y) (match x
+                                       (`(lambda ,xls ,yls) #t)
+                                       (`,els #f))))      
+      (`(lambda ,xls ,yls) #f)
+      (`,x #t))))
 
-(define test2 '(let ((f (lambda(k) (map add1 k))))
-                 (let ((g (lambda(k) (let ((a (f (acc-array (1 2 3))))
-                                           (b (f (acc-array (1 2 4)))))
-                                       (map f (generate a b))))))
-                   (generate f g))))
+;; Probably invalid 
+;; (define test1 '(let ((f (lambda(k) (map add1 k))))                 
+;;                  (let ((a (f (acc-array (1 2 3))))
+;;                        (b (f (acc-array (1 2 4)))) )
+;;                    (map f (generate a b)))))
+
+;; Invalid
+;; (define test2 '(let ((f (lambda(k) (map add1 k))))
+;;                  (let ((g (lambda(k) (let ((a (f (acc-array (1 2 3))))
+;;                                            (b (f (acc-array (1 2 4)))))
+;;                                        (map f (generate a b))))))
+;;                    (generate f g))))
 
 (define test3 '(let ((f 1))
                  (if (eq? f 1)
@@ -118,14 +134,14 @@
 			    (lambda(x) (* 2 x)))))
 		 (map f (acc-array (1 2 3)))))
 ;; Solution ??
-(define test4-step1 `(if #t
-		       (let ((f (lambda(x) x)))
-			 (map f (acc-array (1 2 3))))
-		       (let ((f (lambda(x) (* 2 x))))
-			 (map f (acc-array (1 2 3))))))
-(define test4-step2 `(if #t
-			 (map (lambda(x) x) (acc-array (1 2 3)))
-			 (map (lambda(x) (* 2 x)) (acc-array (1 2 3)))))
+;; (define test4-step1 `(if #t
+;; 		       (let ((f (lambda(x) x)))
+;; 			 (map f (acc-array (1 2 3))))
+;; 		       (let ((f (lambda(x) (* 2 x))))
+;; 			 (map f (acc-array (1 2 3))))))
+;; (define test4-step2 `(if #t
+;; 			 (map (lambda(x) x) (acc-array (1 2 3)))
+;; 			 (map (lambda(x) (* 2 x)) (acc-array (1 2 3)))))
 
 (define test6 '(let ((f (let ((a 1))
 			  (lambda(x) (+ a x)))))
@@ -150,23 +166,30 @@
 			    (acc-array 2 3 4))))
 		 (map f g)))
 
-(define test5-step1 '(let ((f (let ((x 1))
-				(if (eq? x 1)
-				    (lambda (x) x)
-				    (lambda (x) (* 2 x)))))
-			   (g (if (eq? 1 1)
-				  (acc-array 1 2 3)
-				  (acc-array 2 3 4))))
-		       (map f g)))
+;; (define test5-step1 '(let ((f (let ((x 1))
+;; 				(if (eq? x 1)
+;; 				    (lambda (x) x)
+;; 				    (lambda (x) (* 2 x)))))
+;; 			   (g (if (eq? 1 1)
+;; 				  (acc-array 1 2 3)
+;; 				  (acc-array 2 3 4))))
+;; 		       (map f g)))
 
-(pretty-print test4)
-(pretty-print (normalize test4 '()))
-(pretty-print test5)
-(pretty-print (normalize test5 '()))
-(pretty-print test6)
-(pretty-print (normalize test6 '()))
+;; ********************* TEST CASE
 
-(pretty-print (normalize test7 '()))
+(map (lambda(x)
+       (check-pred is-normalized? x))
+     (map (lambda(x) (normalize x '()))
+          (list test3 test4 test5 test6 test7)))
+(void)
+;; (pretty-print test4)
+;; (pretty-print (normalize test4 '()))
+;; (pretty-print test5)
+;; (pretty-print (normalize test5 '()))
+;; (pretty-print test6)
+;; (pretty-print (normalize test6 '()))
+
+;; (pretty-print (normalize test7 '()))
 
 
 

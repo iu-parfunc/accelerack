@@ -65,10 +65,10 @@
       env
       (cons `(,(car xls) ,(normalize (car e) env)) (add-to-env (cdr xls) (cdr e) env))))
 
-;; Take an expressio
+;; Take a final expression and lambda 
 (define (normalize-to-lambda e l x env)
   (match l
-    (`(lambda(,x...) ,y...) `(,e ,l ,@x))
+    (`(lambda ,x ,y ... ,z) `(,e (lambda ,x ,(normalize z env)) ,@x))
     (`(if ,c ,y ,z) `(if ,c
 			 ,(normalize-to-lambda e (normalize y env) x env)
 			 ,(normalize-to-lambda e (normalize z env) x env)))
@@ -77,20 +77,18 @@
            ,(normalize-to-lambda e b x env)))
     ))
 
-
 ;; Environment contains only lambda's for now
 ;; Anything more ??
 (define (normalize-exp exp env)
   (let loop ((exp exp) (env env))
     (match exp
-      (`(let ,xls ,b ...)
+      (`(let ,xls ,b)
        (let*-values (((exp env) (normalize-exp-let xls env)))
-	 (let ((bexp (map (lambda(x) (normalize x env)) b)))
+	 (let ((bexp (normalize b env)))
 	   (if (null? exp)
-	       (values `(let () ,@bexp) env)
-	       (values `(let ,exp ,@bexp) env)))))
+	       (values bexp env)
+	       (values `(let ,exp ,bexp) env)))))
       (`(if ,x ,y ,z) (values `(if ,(normalize x env) ,(normalize y env) ,(normalize z env)) env))
-
       (`(,e ,l ,x ...) #:when(memq e lambda-first-primitive-ls)
        (let ((l (normalize l env))
              (x (map (lambda(x) (normalize x env)) x)))
@@ -99,11 +97,11 @@
       (`(,p ,x ...) #:when(memq p primitive-ls)
        (let ((x (map (lambda(x) (normalize x env)) x)))
          (values `(,p ,@x) env)))
-
-      ;; Substitute values - When lambda application -- TODO -- Discarding all other values since no side effects
-      (`((lambda (,x ...) ,y ... ,z) ,e ...)
-       (let ((lenv (add-to-env x e env)))
-         (values (normalize z lenv) env)))
+      ;; Substitute values - When lambda application -- Discarding all values except last since no side effects
+      (`((lambda (,x ...) ,y ... ,z) ,e ...) (let ((lenv (add-to-env x e env)))
+                                               (values (normalize z lenv) env)))
+      ;; (`(lambda ,x ,y ...) (values `(lambda ,x ,@(map (lambda(x) (normalize x env)) y)) env))
+      (`(,x ...) (values `,(map (lambda(x) (normalize x env)) x) env))
       (`,x #:when(assq x env) (values (cadr (assq x env)) env))
       ;; RRN: This seems a bit questionable: what about (add1 e)
       (`,x (values x env))
@@ -121,12 +119,14 @@
       (`(if ,x ,y ,z) (and  (loop y) (loop z)))
       ;; Acc-array has literals only, not expressions:
       (`(acc-array ,x) #t)
-      (`(,e ,x ,y ...) #:when(memq e primitive-ls)
+      (`(,e ,x ,y ...) #:when(memq e lambda-first-primitive-ls)
        (and (loop e) (andmap loop y) (match x
-                                       (`(lambda ,xls ,yls) #t)
+                                       (`(lambda ,xls ,yls) (is-normalized? yls))
                                        (`,els #f))))
+      (`(,e ,x ,y ...) #:when (memq e primitive-ls) (and (loop x) (andmap loop y)))
       (`(lambda ,xls ,yls) #f)
-
+      ;; Any other application return false 
+      (`(,e ,x ,y) #f)
       (`,x (error 'is-normalized "unexpected expression: ~a\n" x))
       )))
 
@@ -170,17 +170,6 @@
                     a2)
                   ))
 
-
-;; Solution ??
-;; (define test4-step1 `(if #t
-;; 		       (let ((f (lambda(x) x)))
-;; 			 (map f (acc-array (1 2 3))))
-;; 		       (let ((f (lambda(x) (* 2 x))))
-;; 			 (map f (acc-array (1 2 3))))))
-;; (define test4-step2 `(if #t
-;; 			 (map (lambda(x) x) (acc-array (1 2 3)))
-;; 			 (map (lambda(x) (* 2 x)) (acc-array (1 2 3)))))
-
 (define test6 '(let ((f (let ((a 1))
 			  (lambda(x) (+ a x)))))
 		 (map f (acc-array (1 2)))))
@@ -204,97 +193,31 @@
 			    (acc-array (2 3 4)))))
 		 (map f g)))
 
+
 (define test8
   `(add1 (vector-ref (let ((f (lambda(x) x)))
                        (map f (acc-array (1 2 3)))) 0)))
 
-;; (define test5-step1 '(let ((f (let ((x 1))
-;; 				(if (eq? x 1)
-;; 				    (lambda (x) x)
-;; 				    (lambda (x) (* 2 x)))))
-;; 			   (g (if (eq? 1 1)
-;; 				  (acc-array 1 2 3)
-;; 				  (acc-array 2 3 4))))
-;; 		       (map f g)))
+(define test9 '(let ((a 2)
+                     (b (lambda(x y) (* y x))))
+                 (let ((l (lambda(x) (b x 2))))
+                   (map l (acc-array (1 2 3))))))
 
-;; ********************* TEST CASE
+
+;; ********************* TEST CASE ************************
+(pretty-print (normalize test9 '()))
+
 
 ;; Passing tests:
 (for-each (lambda(x)
             (check-pred is-normalized? x))
      (map (lambda(x) (normalize x '()))
           (list test3 test4 test4a test4b test4c
-                test5 test6 test7
-                )))
+                test5 test6 test7 test8 test9)))
 
 ;; Known failures, FIXME FIXME!
 (for-each (lambda (t)
             (check-pred (lambda (x) (not (is-normalized? x)))
                         (normalize t '())))
-          (list test8))
+          (list))
 
-;; (pretty-print test4)
-;; (pretty-print (normalize test4 '()))
-;; (pretty-print test5)
-;; (pretty-print (normalize test5 '()))
-;; (pretty-print test6)
-;; (pretty-print (normalize test6 '()))
-
-;; (pretty-print (normalize test7 '()))
-
-
-
-
-
-
-
-;; (define (con s)
-;;   (cond
-;;     ((syntax? s) (syntax->datum s))
-;;     ((list? s) (map con s))
-;;     (else s)))
-
-;; (define (concat xls yls)
-;;   (let ((xls (con  xls))
-;;         (yls (con yls)))
-;;     (cond
-;;       ((null? xls) xls)
-;;       (else (cons `(,(cadar xls) ,(cadar yls)) (concat (cdr xls) (cdr yls)))))
-;;     ))
-
-;; ;; Implemented using syntax parse -- Should this be done using match ?
-;; (define (normalize2 stx)
-;;   (let loop ((stx stx))
-;;     (syntax-parse stx
-;;       #:literals (acc-array acc-array-ref :
-;;                             map zipwith fold stencil3x3 generate
-;;                             lambda let if vector vector-ref)
-;;       #:disable-colon-notation
-;;       [(it (lambda(x...) e) e1...) #:when #`(memq #`it '(map zipwith)) #`(it (lambda(x...) e) e1...)]
-;;       [(map f e)
-;;        #`(map (lambda (x)  (#,(loop #'f) x))  #,(loop #'e))]
-;;       [(zipwith e1 e2 e3) #`(zipwith (lambda(x y) (#,(loop #'e1) x y))
-;;                                      #,(loop #'e2) #,(loop #'e3))]
-;;       [((lambda(x ...) e) e1 ...) (let ((k (concat  #`(#'x ...) #`(#'e1 ...)))
-;;                                         (e (loop #'e)))
-;;                                     #`(let #,(datum->syntax #f k) #,(datum->syntax #f e)))]
-;;       [n  #'n]
-;;       )))
-;; (display (syntax->datum (normalize (normalize (normalize #'(map add1 (list 12 3)))))))
-;; (display "\n")
-;; (display (syntax->datum (normalize #'((lambda(x y) (map x y)) add1 (list 1 2)) )))
-;; (display "\n")
-;; (display (syntax->datum (normalize #'((lambda (x y) (map x y)) add1 1) )))
-;; (display "\n")
-;; (display (syntax->datum (normalize #'(map x y) )))
-
-
-
-  ;; (match exp
-  ;;   (`(let ,ls ,b) '#f)
-  ;;   (`,x `,x)))
-
-
-
-     ;; (let-values (((xls env) (normailze ls env)))
-     ;;                ))))

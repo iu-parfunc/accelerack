@@ -82,6 +82,8 @@
 (define (normalize-exp exp env)
   (let loop ((exp exp) (env env))
     (match exp
+      (x #:when (assq x env) (values (cadr (assq x env)) env))
+      (x #:when (or (symbol? x) (number? x) (boolean? x)) (values x env))
       (`(let ,xls ,b)
        (let*-values (((exp env) (normalize-exp-let xls env)))
 	 (let ((bexp (normalize b env)))
@@ -89,7 +91,7 @@
 	       (values bexp env)
 	       (values `(let ,exp ,bexp) env)))))
       (`(if ,x ,y ,z) (values `(if ,(normalize x env) ,(normalize y env) ,(normalize z env)) env))
-      (`(,e ,l ,x ...) #:when(memq e lambda-first-primitive-ls)
+      (`(,e ,l ,x ...) #:when (memq e lambda-first-primitive-ls)
        (let ((l (normalize l env))
              (x (map (lambda(x) (normalize x env)) x)))
          (values (normalize-to-lambda e l x env) env)))
@@ -100,11 +102,7 @@
       ;; Substitute values - When lambda application -- Discarding all values except last since no side effects
       (`((lambda (,x ...) ,y ... ,z) ,e ...) (let ((lenv (add-to-env x e env)))
                                                (values (normalize z lenv) env)))
-      ;; (`(lambda ,x ,y ...) (values `(lambda ,x ,@(map (lambda(x) (normalize x env)) y)) env))
-      (`(,x ...) (values `,(map (lambda(x) (normalize x env)) x) env))
-      (`,x #:when(assq x env) (values (cadr (assq x env)) env))
-      ;; RRN: This seems a bit questionable: what about (add1 e)
-      (`,x (values x env))
+      (`(,x ...) (values `,(map (lambda(x) (normalize x env)) x) env))      
       )))
 
 
@@ -112,8 +110,7 @@
 (define (is-normalized? exp)
   (let loop ((exp exp))
     (match exp
-      (x #:when (symbol? x) x)
-      (n #:when (number? n) n)
+      (x #:when (or (symbol? x) (number? x) (boolean? x)) #t)
       (`(let ([,v ,rhs*] ...) ,b) (and (andmap loop rhs*)
                                      (loop b)))
       (`(if ,x ,y ,z) (and  (loop y) (loop z)))
@@ -130,7 +127,7 @@
       (`,x (error 'is-normalized "unexpected expression: ~a\n" x))
       )))
 
-;; Probably invalid
+;; Probably invalid according to type check
 ;; (define test1 '(let ((f (lambda(k) (map add1 k))))
 ;;                  (let ((a (f (acc-array (1 2 3))))
 ;;                        (b (f (acc-array (1 2 4)))) )
@@ -205,7 +202,7 @@
 
 
 ;; ********************* TEST CASE ************************
-(pretty-print (normalize test9 '()))
+;; (pretty-print (normalize test9 '()))
 
 
 ;; Passing tests:
@@ -221,3 +218,4 @@
                         (normalize t '())))
           (list))
 
+;; (pretty-print (eval test8))

@@ -6,28 +6,13 @@
 ;;  (2) Should never throw errors hence can directly operate on sexp
 ;;      rather than rich syntax expression
 ;; ---------------------------------------------------------------
-
-(require
- rackunit
- rackunit/text-ui
- racket/match)
-(require macro-debugger/expand)
-
-
-(require racket/trace)
-(require (for-syntax racket/trace))
-(require accelerack/private/wrappers)
-(require
- (for-syntax (except-in racket/base map))
- syntax/parse
- syntax/to-string
- scribble/srcdoc
- racket/trace
- (only-in accelerack/private/global_utils pass-output-chatter)
- accelerack/private/syntax
- (prefix-in r: racket/base))
-
-(require (for-syntax syntax/parse))
+(require rackunit
+         rackunit/text-ui
+         racket/match
+         accelerack/private/header
+         accelerack/private/wrappers
+         accelerack/private/types
+         accelerack/private/allocate)
 
 (provide (contract-out
           (normalize (-> list? any/c list?)))
@@ -55,20 +40,15 @@
 	      (values exp (cons `(,x ,xp) env))   ;; Add to env if lambda
 	      (values (cons `(,x ,xp) exp) env)))))) ;; Else just let it remain in expression
 
-;; The normalize front end
-(define (normalize exp env)
-  (let-values (((v sym) (normalize-exp exp env)))
-    v))
-
 (define (add-to-env xls e env)
   (if (null? xls)
       env
       (cons `(,(car xls) ,(normalize (car e) env)) (add-to-env (cdr xls) (cdr e) env))))
 
-;; Take a final expression and lambda 
+;; Take a final expression and lambda
 (define (normalize-to-lambda e l x env)
   (match l
-    (`(lambda ,x ,y ... ,z) `(,e (lambda ,x ,(normalize z env)) ,@x))
+    (`(lambda ,xls ,y ... ,z) `(,e (lambda ,xls ,(normalize z env)) ,@x))
     (`(if ,c ,y ,z) `(if ,c
 			 ,(normalize-to-lambda e (normalize y env) x env)
 			 ,(normalize-to-lambda e (normalize z env) x env)))
@@ -102,10 +82,17 @@
       ;; Substitute values - When lambda application -- Discarding all values except last since no side effects
       (`((lambda (,x ...) ,y ... ,z) ,e ...) (let ((lenv (add-to-env x e env)))
                                                (values (normalize z lenv) env)))
-      (`(,x ...) (values `,(map (lambda(x) (normalize x env)) x) env))      
+      (`(,x ...) (values `,(map (lambda(x) (normalize x env)) x) env))
       )))
 
 
+;; The normalize front end -- Make env optional
+(define (normalize exp [env '()])
+  (let-values (((v sym) (normalize-exp exp env)))
+    v))
+
+
+;;************************************************** TEST stuff **************************************************
 ;; Some test cases
 (define (is-normalized? exp)
   (let loop ((exp exp))
@@ -122,7 +109,7 @@
                                        (`,els #f))))
       (`(,e ,x ,y ...) #:when (memq e primitive-ls) (and (loop x) (andmap loop y)))
       (`(lambda ,xls ,yls) #f)
-      ;; Any other application return false 
+      ;; Any other application return false
       (`(,e ,x ,y) #f)
       (`,x (error 'is-normalized "unexpected expression: ~a\n" x))
       )))
@@ -140,10 +127,11 @@
 ;;                                        (map f (generate a b))))))
 ;;                    (generate f g))))
 
-(define test3 '(let ((f 1))
-                 (if (eq? f 1)
-                     (acc-array (1 2 3))
-                     (acc-array (2 3 4)))))
+;; (define test3 '(let ((f 1))
+;;                  (if (eq? f 1)
+;;                      (acc-array (1 2 3))
+;;                      (acc-array (2 3 4)))))
+(define test3 '(acc-array (1 2 3)))
 
 (define test4 '(let ((f (if #t
 			    (lambda(x) x)
@@ -201,21 +189,72 @@
                    (map l (acc-array (1 2 3))))))
 
 
+
 ;; ********************* TEST CASE ************************
-;; (pretty-print (normalize test9 '()))
+;; (define (eqv-acc-mainfest-array? a b)
+;;   (let ((alen (acc-length a))
+;;         (blen (acc-length b)))
+;;     (if (eqv? alen blen)
+;;         (let ((aarr (map (lambda(x) (array-get a x)) (build-list alen values)))
+;;               (barr (map (lambda(x) (array-get b x)) (build-list blen values))))
+;;           (equal? aarr barr))
+;;         #f)))
+
+(define ns (make-base-namespace))
+(require (planet williams/describe/describe))
+(define (eval-and-check exp)
+  (let ((x (eval `(begin
+                    (require accelerack)
+                    ;; (require accelerack/private/wrappers)
+                    ,exp
+                    ) ns))
+        (nexp (eval `(begin
+                       (require accelerack)
+                       (require accelerack/private/wrappers)
+                       ,(normalize exp '())) ns)))
+    (cond
+      ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
+      ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
+      ;; TODO - This doesn't work
+      ((acc-array? x) (begin
+                        ;; (display (acc-array->list x))
+                        ;; (display (acc-array->list nexp))
+                        (equal? (acc-array->list x) (acc-array->list nexp))))
+      ;; TODO super Hacky - This is wrong since it can lead to unprinted objects
+      ;; being marked as equal
+      ;;- Converting to string and making it work
+      (else (begin
+              (equal? (~s x) (~s nexp)))))))
 
 
+;; Check if eval and actual result is equal
+(check-true (eval-and-check test3))
+(check-true (eval-and-check test4))
+(check-true (eval-and-check test4a))
+(check-true (eval-and-check test4b))
+(check-true (eval-and-check test4c))
+(check-true (eval-and-check test5))
+(check-true (eval-and-check test6))
+(check-true (eval-and-check test7))
+(check-true (eval-and-check test9))
+
+
+
+
+
+;; Validate output of normalize to
 ;; Passing tests:
 (for-each (lambda(x)
             (check-pred is-normalized? x))
-     (map (lambda(x) (normalize x '()))
-          (list test3 test4 test4a test4b test4c
-                test5 test6 test7 test8 test9)))
+          (map (lambda(x) (normalize x '()))
+               (list test3 test4 test4a test4b test4c
+                     test5 test6 test7 test8 test9)))
+
 
 ;; Known failures, FIXME FIXME!
+;; Add some invalid cases
 (for-each (lambda (t)
             (check-pred (lambda (x) (not (is-normalized? x)))
                         (normalize t '())))
           (list))
 
-;; (pretty-print (eval test8))

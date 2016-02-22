@@ -13,12 +13,23 @@
           acc-array-val
           acc-array->list
 
+          acc-scalar?
+
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-scalar-type?
 
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
+          ;; we should get rid of delayed scalars!
           acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
           )
+
+;; Is the datum compatible with ANY accelerack scalar types?
+(define (acc-scalar? x)
+  (or ; (fixnum? x) ;; FIXME: this rules out some numbers at the high ange.
+      (and (integer? x)
+           (<= (- (expt 2 63)) x (sub1 (expt 2 64))))
+      (boolean? x)
+      (flonum? x)))
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
 ;; I think this is resolved.
@@ -29,7 +40,8 @@
 
 ;; The data-type for Racket-side arrays, which may be either
 ;; manifest or delayed.
-(define-struct acc-array (val)
+(define-struct acc-array
+  (val) ;; Eventually, hide acc-array-val & make-acc-array from user!
   #:guard (lambda (v _)
             (unless (or (acc-delayed-array? v) (acc-manifest-array? v))
               (raise-argument-error 'acc-array "acc-array?" v))
@@ -42,7 +54,7 @@
             (list 'acc-array "<DELAYED ARRAY>")
             (list 'acc-array (read-data* arr))))
       prt))]
-  #:transparent
+  #:transparent ;; Temporary!  For debugging.
   #:omit-define-syntaxes)
 
 ;; An entry in the syntax table.  It provides everything Accelerack

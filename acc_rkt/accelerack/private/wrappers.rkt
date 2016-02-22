@@ -10,9 +10,15 @@
          accelerack/private/types
          )
 
-(provide map fold zipwith stencil3x3 generate
+(provide map
+         (contract-out [fold (-> procedure? acc-scalar? acc-array? acc-array?)])
+         zipwith stencil3x3 generate
          acc-array-ref)
 
+;; The contract for this map is complicated.
+;; Either, it works like this:
+;;    [map (-> procedure? acc-array? acc-array?)]
+;; Or it falls through to the normal map behavior.
 (define (map f x)
   (cond
     [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))

@@ -208,13 +208,21 @@
                     ;; (require accelerack/private/wrappers)
                     ,exp
                     ) ns))
-        (nexp (eval `(begin
-                       (require accelerack)
-                       (require accelerack/private/wrappers)
-                       ,(normalize exp '())) ns)))
+        (exp `(begin
+                (require accelerack)
+                (require accelerack/private/wrappers)
+                ,(normalize exp '())))
+        (nexp (eval exp ns))
+
+        ;; (test (eval `(begin
+        ;;                (require accelerack)
+        ;;                (require accelerack/private/wrappers)
+        ;;                (acc-array? ,(normalize exp '()))) ns))
+        ;; (pred (eval `(begin (require accelerack) acc-array?) ns))
+        )
+;    (printf "TEST result: ~a from exp ~a, pred result ~a\n"
+ ;           test exp (pred nexp))
     (cond
-      ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
-      ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
       ;; TODO - This doesn't work
       ((acc-array? x) (begin
                         ;; (display (acc-array->list x))
@@ -224,7 +232,11 @@
       ;; being marked as equal
       ;;- Converting to string and making it work
       (else (begin
-              (equal? (~s x) (~s nexp)))))))
+              ; (equal? (~s x) (~s nexp))
+              (error 'eval-and-check "ERROR / FINISHME: ~a ~a ~a\n"
+                     (list (pair? x) (pair? nexp) (acc-array? x) (acc-array? nexp))
+                     x nexp)
+              )))))
 
 
 ;; Check if eval and actual result is equal

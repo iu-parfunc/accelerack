@@ -4,9 +4,23 @@
 
 (provide p*-infer)
 
-; ('== t1 t2)
-; ('implicit t1 t2 m)
-; ('explicit t1 t2)
+
+;; Datatype definitions:
+;; ------------------------------------------
+;; A InferRecord is a triple:
+;;  - ( variable-renames constraints type )
+
+;; An Environment is:
+;;  - a set of bound symbols
+
+;; A Constraint is:
+;;  - (== type1 type2)
+;;  - ('implicit t1 t2 m)
+;;  - ('explicit t1 t2)
+
+;; A Substitution is:
+;;  - ...
+;; ------------------------------------------
 
 (define var-cnt 0)
 (define (reset-var-cnt) (set! var-cnt 0))
@@ -43,26 +57,29 @@
 	[`(let ,vars ,b) (infer-let e env)]
 	[`(,rator . ,rand) (infer-app e env)]
 	[(? symbol?) (infer-var e)]
-	[else (infer-lit e)]))
+	[else (infer-lit e)]
+    ))
 
 
-; [Var]
+; [Var] 
+; infer-var: Variable -> InferRecord
 (define (infer-var x)
-  (let ((type (dict-ref environment x #f)))
-    (if type
-        `(,(mutable-set) ,(mutable-set) ,type)
+  (let ((top-type (dict-ref environment x #f)))
+    (if top-type
+        `(,(mutable-set) ,(mutable-set) ,top-type)
         (let ([var (fresh x)])
           `(,(mutable-set (cons x var)) ,(mutable-set) ,var)))))
 
-; [Lit]
+; [Lit] : Exp -> InferRecord
 (define (infer-lit exp)
   `(,(mutable-set)
     ,(mutable-set)
     ,(cond ((number?  exp) 'Int)
            ((boolean? exp) 'Bool)
-           (else 'Unknown))))
+           (else (error "infer-lit: this literal is not supported yet: ~a " exp
+                 )))))
 
-; [App]
+; [App] : Exp Environment -> InferRecord
 (define (infer-app exp env)
   (let ((e1 (car exp))
         (args (cdr exp))
@@ -80,7 +97,7 @@
 
 ; [Abs]
 (define (infer-abs exp env)
-  (let* ((args (cadr exp))
+  (let* ((args (cadr exp)) ;; Formal parameters of lambda
          (e (caddr exp))
          (abs (map (lambda (x) (cons x (fresh "arg"))) args))
          (bs (map (lambda (ab) (cdr ab)) abs))
@@ -212,22 +229,18 @@
                                               (free_vars v2)) nxt)]))
          (set) constraints))
 
-
+;; unify : type type -> constraint set
 (define (unify t1 t2)
   (cond ((and (pair? t1) (pair? t2))
-      (match-let* ((`(,_ . ,t1pars) t1)
-                   (t1params (take t1pars (length t1pars)))
-                   (t1r (car (take-right t1pars 1)))
-                   (`(,_ . ,t2pars) t2)
-                   (t2params (take t2pars (length t2pars)))
-                   (t2r (car (take-right t2pars 1))))
-        (if (not (eq? (length t1params) (length t2params)))
+      (match-let* ((`(-> . ,t1pars) t1)
+                   (`(-> . ,t2pars) t2)
+                   )
+        (if (not (eq? (length t1pars) (length t2pars)))
             (raise "incompatible arguments")
             (let ((s (foldl (lambda (p1 p2 s)
                               (set-union (unify (substitute s p1) (substitute s p2))
-                                         s)) '() t1params t2params)))
-              (set-union (unify (substitute s t1r) (substitute s t2r))
-                         s)))))
+                                         s)) '() t1pars t2pars)))
+              s))))
         ((equal? t1 t2) '())
         ((type_var? t1)
          (varbind t1 t2))
@@ -235,10 +248,13 @@
          (varbind t2 t1))
         (else (error (format "Can't Unify t1: ~s and t2: ~s" t1 t2)))))
 
+;; Var Type -> ( ( var . ty) ...)
 (define (varbind var type)
   ;(print type)
   (cond ((equal? var type) '())
-        ((set-member? (free_vars type) var) `(infinite-type ,var ,type))
+        ((set-member? (free_vars type) var)
+         ;`(infinite-type ,var ,type)
+         (error varbind "occurs check failed, ~a occurs in ~a\n" var type))
         (else `(,(cons var type)))))
       
          

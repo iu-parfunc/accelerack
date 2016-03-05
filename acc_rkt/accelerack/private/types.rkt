@@ -11,13 +11,11 @@
 (provide  acc-array?
           make-acc-array
           acc-array-val
+          eq-acc-array?
           acc-array->list
-
           acc-scalar?
-
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-scalar-type?
-
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
           ;; we should get rid of delayed scalars!
           acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
@@ -30,6 +28,17 @@
            (<= (- (expt 2 63)) x (sub1 (expt 2 64))))
       (boolean? x)
       (flonum? x)))
+
+;; Check if 2 acc-arrays are equal
+(define (eq-acc-array? x nexp)
+  (cond
+    ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
+    ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
+    ;; TODO - This doesn't work
+    ;; ((acc-delayed-array? ))
+    ((acc-array? x) (equal? (acc-array->list x) (acc-array->list nexp)))
+    ;; Throw error if you can't find reason
+    (else #f)))
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
 ;; I think this is resolved.

@@ -203,30 +203,18 @@
 (define ns (make-base-namespace))
 (require (planet williams/describe/describe))
 (define (eval-and-check exp)
-  (let ((x (eval `(begin
-                    (require accelerack)
-                    ;; (require accelerack/private/wrappers)
-                    ,exp
-                    ) ns))
-        (nexp (eval `(begin
-                       (require accelerack)
-                       (require accelerack/private/wrappers)
-                       ,(normalize exp '())) ns)))
-    (cond
-      ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
-      ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
-      ;; TODO - This doesn't work
-      ((acc-array? x) (begin
-                        ;; (display (acc-array->list x))
-                        ;; (display (acc-array->list nexp))
-                        (equal? (acc-array->list x) (acc-array->list nexp))))
-      ;; TODO super Hacky - This is wrong since it can lead to unprinted objects
-      ;; being marked as equal
-      ;;- Converting to string and making it work
-      (else (begin
-              (equal? (~s x) (~s nexp)))))))
-
-
+  (eval `(begin
+           (require accelerack)
+           (require accelerack/private/header)
+           (require accelerack/private/wrappers)
+           (require accelerack/private/types)
+           (require accelerack/private/allocate)
+           (let ((x ,exp)
+                 (nexp ,(normalize exp '())))
+             (if (eq-acc-array? x nexp)
+                 #t
+                 (error 'is-normalized "unexpected expression: ~a\n" x))
+             )) ns))
 ;; Check if eval and actual result is equal
 (check-true (eval-and-check test3))
 (check-true (eval-and-check test4))

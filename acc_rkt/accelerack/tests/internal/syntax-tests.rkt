@@ -3,6 +3,7 @@
 (require rackunit
          ;; See NOTE below:
          (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
+                  acc-array?
                   Int Bool Double use)
          accelerack/private/passes/syntax-capture
          (only-in accelerack/private/types acc-delayed-array?)
@@ -22,7 +23,7 @@
 ; (define-acc num3 (+ 1 (use plain)))
 
 ; (check-eq? ac 3)
-(check-pred acc-delayed-array? ac) ;; TEMP: this needs to be a scalar.
+(check-pred acc-array? ac) ;; TEMP: this needs to be a scalar.
 
 (check-eq? 9 (sqr 3))
 
@@ -67,9 +68,9 @@
 (define-acc test05 (generate (lambda (x) (+ x 3)) 100))
 (define-acc test06 (generate (lambda (x y) (+ x y)) 100 100))
 
-(check-pred acc-delayed-array? test04)
-(check-pred acc-delayed-array? test05)
-(check-pred acc-delayed-array? test06)
+(check-pred acc-array? test04)
+(check-pred acc-array? test05)
+(check-pred acc-array? test06)
 
 (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
 (define-acc test08 (lambda ((y : Int)) 3))
@@ -93,7 +94,7 @@
 (define rktarr (acc-array (1 2 3)))
 (define-acc test14 (map add1 (use rktarr)))
 
-(check-pred acc-delayed-array? test14)
+(check-pred acc-array? test14)
 
 ;; TODO: the story for scalars is not established yet.
 ; (check-pred acc-delayed-scalar? test10)

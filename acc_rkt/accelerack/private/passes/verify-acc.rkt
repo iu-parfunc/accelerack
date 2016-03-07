@@ -117,7 +117,7 @@
       [(: e t:acc-type) (verify-type #'t) (loop #'e)]
 
       ;; For now only allowing identifiers, not arbitrary expressions.
-      [(use x:id) #'x]
+      [(use x:id) #'x] ;; FIXME!  Check that it is bound in the syntax table.
 
       ;; FIXME: use the acc-data syntax class:
       [(acc-array dat) #'(acc-array dat)]

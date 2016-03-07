@@ -16,6 +16,21 @@
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
 
+ #|
+-- TODO: Test different unbound variable errors.
+
+  (test-case "failing-test-case 1"
+             "failing-test-case 1"
+             (define-acc x (map add1 unbound))
+             (check-equal? 2 3)             
+             )
+  
+  (define unbound 3)
+  (define-acc x (map add1 unbound))
+
+  |#
+
+  ;; TODO: (use v t) where the value doesn't match the type at runtime.
   ))
 
 (define user-ifc-valid-test_cases (test-suite
@@ -66,9 +81,11 @@
              (define-acc x (acc-array (1 2 3)))
              (define-acc y (map (lambda(x) (+ x 1)) x))
              (check-equal? 2 (car (acc-array->list y)))
-             (maybe-display "Test 8
- Success !!!"))
+             (maybe-display "Test 8 Success !!!"))
+
+  ;; TODO: Test case for valid (use v t)
   
+ 
   ))
 
 

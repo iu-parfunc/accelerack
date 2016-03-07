@@ -202,41 +202,20 @@
 
 (define ns (make-base-namespace))
 (require (planet williams/describe/describe))
-(define (eval-and-check exp)
-  (let ((x (eval `(begin
-                    (require accelerack)
-                    ;; (require accelerack/private/wrappers)
-                    ,exp
-                    ) ns))
-        (exp `(begin
-                (require accelerack)
-                (require accelerack/private/wrappers)
-                ,(normalize exp '())))
-        (nexp (eval exp ns))
 
-        ;; (test (eval `(begin
-        ;;                (require accelerack)
-        ;;                (require accelerack/private/wrappers)
-        ;;                (acc-array? ,(normalize exp '()))) ns))
-        ;; (pred (eval `(begin (require accelerack) acc-array?) ns))
-        )
-;    (printf "TEST result: ~a from exp ~a, pred result ~a\n"
- ;           test exp (pred nexp))
-    (cond
-      ;; TODO - This doesn't work
-      ((acc-array? x) (begin
-                        ;; (display (acc-array->list x))
-                        ;; (display (acc-array->list nexp))
-                        (equal? (acc-array->list x) (acc-array->list nexp))))
-      ;; TODO super Hacky - This is wrong since it can lead to unprinted objects
-      ;; being marked as equal
-      ;;- Converting to string and making it work
-      (else (begin
-              ; (equal? (~s x) (~s nexp))
-              (error 'eval-and-check "ERROR / FINISHME: ~a ~a ~a\n"
-                     (list (pair? x) (pair? nexp) (acc-array? x) (acc-array? nexp))
-                     x nexp)
-              )))))
+;; Test an array expression:
+(define (eval-and-check exp)
+  (printf "TEST expression: ~a\n" exp)
+  (let* ((testexp `(begin
+                     (require accelerack)
+                     (require accelerack/private/wrappers)
+                     (acc-array=? ,exp
+                                  ,(normalize exp '()))
+                     ))
+         (result (eval testexp ns))
+         )
+    (printf "Result: ~a\n" result)
+    result))
 
 
 ;; Check if eval and actual result is equal

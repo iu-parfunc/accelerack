@@ -11,7 +11,7 @@
          )
 
 (provide map
-         (contract-out [fold (-> procedure? acc-scalar? acc-array? acc-array?)])
+         fold ; (contract-out [fold (-> procedure? acc-scalar? acc-array? acc-array?)])
          zipwith stencil3x3 generate
          acc-array-ref)
 

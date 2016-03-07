@@ -27,8 +27,7 @@
           )
 
 (define (acc-array=? x y)
-  (equal? (acc-array->list (acc-array-val x))
-          (acc-array->list (acc-array-val y))))
+  (equal? (acc-array->list x) (acc-array->list y)))
   
 ;; Is the datum compatible with ANY accelerack scalar types?
 (define (acc-scalar? x)
@@ -46,30 +45,25 @@
      (read-data* (acc-array-val x))]
     [else
      ;; FIXME!!!  Handle deferred.  Probably move to another module.
-     (error 'acc-array->list "works only on manifest acc-array currently")]))
-
+     (error 'acc-array->list "works only on manifest acc-array currently, received ~a" x)]))
 
 ;; The data-type for Racket-side arrays, which may be either
 ;; manifest or delayed.
 (define-struct acc-array
   (val) ;; Eventually, hide acc-array-val & make-acc-array from user!
-  #:prefab
-  ;; TEMP! We want to get rid of this prefab business when we fix up the
-  ;; use of eval (namespaces) or we get rid of eval from our testing workflow.
-  ;; ------------------------------------------------
-  ;; #:guard (lambda (v _)
-  ;;           (unless (or (acc-delayed-array? v) (acc-manifest-array? v))
-  ;;             (raise-argument-error 'acc-array "acc-array?" v))
-  ;;           v)
-  ;; #:methods gen:custom-write
-  ;; [(define (write-proc v prt mode)
-  ;;    ((if mode write print)
-  ;;     (let ((arr (acc-array-val v)))
-  ;;       (if (acc-delayed-array? arr)
-  ;;           (list 'acc-array "<DELAYED ARRAY>")
-  ;;           (list 'acc-array (read-data* arr))))
-  ;;     prt))]
-  ; #:transparent ;; Temporary!  For debugging.
+  #:guard (lambda (v _)
+            (unless (or (acc-delayed-array? v) (acc-manifest-array? v))
+              (raise-argument-error 'acc-array "acc-array?" v))
+            v)
+  #:methods gen:custom-write
+  [(define (write-proc v prt mode)
+     ((if mode write print)
+      (let ((arr (acc-array-val v)))
+        (if (acc-delayed-array? arr)
+            (list 'acc-array "<DELAYED ARRAY>")
+            (list 'acc-array (read-data* arr))))
+      prt))]
+  #:transparent ;; Temporary!  For debugging.
   #:omit-define-syntaxes
   )
 

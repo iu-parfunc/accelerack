@@ -22,14 +22,14 @@
 (define (map f x)
   (cond
     [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
-     (acc-map f (acc-array-val x))]
+     (make-acc-array (acc-map f (acc-array-val x)))]
     [(acc-array? x) (error 'map "deferred array not handled yet!!")]
     [else (r:map f x)]))
 
 (define (fold f def x)
   (cond
     [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
-     (acc-fold f def (acc-array-val x))]
+     (make-acc-array (acc-fold f def (acc-array-val x)))]
     [(acc-array? x) (error 'fold "deferred array not handled yet!!")]
     ; [else (r:fold f def x)]
     [else (error 'fold "FINISHME: define list version of fold")]
@@ -39,7 +39,7 @@
   (cond
     [(and (acc-array? x) (acc-manifest-array? (acc-array-val x))
           (acc-array? y) (acc-manifest-array? (acc-array-val y)))
-     (acc-zipwith f (acc-array-val x) (acc-array-val y))]
+     (make-acc-array (acc-zipwith f (acc-array-val x) (acc-array-val y)))]
     [else (error 'fold "FINISHME: zipwith: handle non-manifest case")]
     ))
 

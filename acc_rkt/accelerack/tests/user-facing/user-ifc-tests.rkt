@@ -15,6 +15,7 @@
 
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
+
   ))
 
 (define user-ifc-valid-test_cases (test-suite
@@ -43,6 +44,22 @@
              (define x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
              (check-equal? '(#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f))) (acc-array->list x))
              (maybe-display "Test 4 Success !!!"))
+
+  (test-case "test-case 5"
+             "test-case 5"
+             (define-acc x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
+             (check-pred acc-array? x)
+             (maybe-display "Test 5 Success !!!"))
+  (test-case "test-case 7"
+             "test-case 7"
+             (define-acc x (acc-array (1 2 3)))
+             (check-equal? 1 (car (acc-array->list x)))
+             (maybe-display "Test 7 Success !!!"))
+  ;; (test-case "test-case 6"
+  ;;            "test-case 6"
+  ;;            (define-acc x (map (lamda(x) (+ x 1) (acc-array (1 2 3)))))
+  ;;            (check-equal? 2 (car (acc-array->list x)))
+  ;;            (maybe-display "Test 6 Success !!!"))
   ))
 
 

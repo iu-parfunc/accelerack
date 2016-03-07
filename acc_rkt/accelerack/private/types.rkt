@@ -40,11 +40,23 @@
     ;; Throw error if you can't find reason
     (else #f)))
 
+
+;; Resolves a acc-array with delayed array , resolves it and overwrites it and return value
+(define (read-delayed-array* x)
+  (let* ((v (acc-array-val x))
+         (val (acc-delayed-array-thunk v))
+         (fval (acc-array-val (val))))
+    (set-acc-array-val! x fval)
+    fval))
+
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
 ;; I think this is resolved.
 (define (acc-array->list x)
   (if (acc-array? x)
-      (read-data* (acc-array-val x))
+      (if (acc-manifest-array? (acc-array-val x))
+          (read-data* (acc-array-val x))
+          ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
+          (read-data* (read-delayed-array* x)))
       (error 'acc-array->list "works only on acc-array"))) ;;(read-data* x)))
 
 ;; The data-type for Racket-side arrays, which may be either
@@ -64,6 +76,7 @@
             (list 'acc-array (read-data* arr))))
       prt))]
   #:transparent ;; Temporary!  For debugging.
+  #:mutable
   #:omit-define-syntaxes)
 
 ;; An entry in the syntax table.  It provides everything Accelerack
@@ -121,3 +134,9 @@
 (struct acc-portable-package (sexp array-table)
 
   )
+
+
+;; (display "Is Acc-array :  ")
+;; (define  x (make-acc-array (acc-delayed-array (lambda(x) 1))))
+;; (display (acc-array? x))
+;; (display "\n")

@@ -19,6 +19,7 @@
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
           ;; we should get rid of delayed scalars!
           acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
+          force-delayed-array!
           )
 
 ;; Is the datum compatible with ANY accelerack scalar types?
@@ -42,12 +43,20 @@
 
 
 ;; Resolves a acc-array with delayed array , resolves it and overwrites it and return value
-(define (read-delayed-array* x)
-  (let* ((v (acc-array-val x))
-         (val (acc-delayed-array-thunk v))
-         (fval (acc-array-val (val))))
-    (set-acc-array-val! x fval)
-    fval))
+;; acc-array? -> acc-manifest-array?
+(define (force-delayed-array! x)
+  (cond
+    [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
+     (acc-array-val x)]
+    [(and (acc-array? x) (acc-delayed-array? (acc-array-val x)))
+     (let* ((v (acc-array-val x))
+            (val (acc-delayed-array-thunk v))
+            ;; val is of type () -> acc-array?
+            ;; FIXME: change the convention to have the thunk return acc-manifest-array?
+            (fval (acc-array-val (val))))
+       (set-acc-array-val! x fval)
+       fval)]
+    [else (error 'force-delayed-array! "Expected an acc-array, got ~a" x)]))
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
 ;; I think this is resolved.
@@ -56,7 +65,7 @@
       (if (acc-manifest-array? (acc-array-val x))
           (read-data* (acc-array-val x))
           ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
-          (read-data* (read-delayed-array* x)))
+          (read-data* (force-delayed-array! x)))
       (error 'acc-array->list "works only on acc-array"))) ;;(read-data* x)))
 
 ;; The data-type for Racket-side arrays, which may be either

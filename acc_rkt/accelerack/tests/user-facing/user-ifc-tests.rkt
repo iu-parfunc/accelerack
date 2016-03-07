@@ -60,6 +60,15 @@
              (define-acc x (map (lambda(x) (+ x 1)) (acc-array (1 2 3))))
              (check-equal? 2 (car (acc-array->list x)))
              (maybe-display "Test 6 Success !!!"))
+
+  (test-case "test-case 8"
+             "test-case 8"
+             (define-acc x (acc-array (1 2 3)))
+             (define-acc y (map (lambda(x) (+ x 1)) x))
+             (check-equal? 2 (car (acc-array->list y)))
+             (maybe-display "Test 8
+ Success !!!"))
+  
   ))
 
 

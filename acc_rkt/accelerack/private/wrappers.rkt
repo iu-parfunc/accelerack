@@ -21,9 +21,10 @@
 ;; Or it falls through to the normal map behavior.
 (define (map f x)
   (cond
-    [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
-     (make-acc-array (acc-map f (acc-array-val x)))]
-    [(acc-array? x) (error 'map "deferred array not handled yet!!")]
+    [(acc-array? x)
+     ;; If we're running on the Racket side, we force upstream computations
+     ;; in the same way:
+     (make-acc-array (acc-map f (force-delayed-array! x)))]
     [else (r:map f x)]))
 
 (define (fold f def x)

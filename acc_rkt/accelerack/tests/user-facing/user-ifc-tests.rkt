@@ -28,6 +28,17 @@
                    (define-acc y (map (lambda(y) (+ z (use q))) (acc-array (1 2 3))))
                    (check-equal? 2 (car (acc-array->list y))))
                  ))))
+  (test-case "test-case 2"
+             "test-case 2"
+             (check-exn
+              #rx"Unbound variable used in Accelerack 'use'\n"
+              (lambda ()
+                (convert-compile-time-error
+                 (let ()
+                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define-acc y (map (lambda(y) (+ y (use q))) (acc-array (1 2 3))))
+                   (check-equal? 2 (car (acc-array->list y))))
+                 ))))
  #|
 -- TODO: Test different unbound variable errors.
 
@@ -95,9 +106,16 @@
              (check-equal? 2 (car (acc-array->list y)))
              (maybe-display "Test 8 Success !!!"))
 
-  ;; TODO: Test case for valid (use v t)
-  
- 
+  ;; Test case for valid (use v t)
+  (test-case "test-case 9"
+             "test-case 9"
+             (convert-compile-time-error
+                 (let ()
+                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define q 1)
+                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+                   (check-equal? 2 (car (acc-array->list y))))))
+
   ))
 
 

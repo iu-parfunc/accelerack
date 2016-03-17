@@ -117,7 +117,9 @@
       [(: e t:acc-type) (verify-type #'t) (loop #'e)]
 
       ;; For now only allowing identifiers, not arbitrary expressions.
-      [(use x:id) (if (equal? (identifier-binding #'x) 'lexical)
+      ;; TODO - Check for identifier binding may have flaws
+      ;; Atleast catches unbound vars correctly but may work weirdly with define on accelerack stuff 
+      [(use x:id) (if (identifier-binding #'x)
                       #'x
                       (raise-syntax-error
                        'error "Unbound variable used in Accelerack 'use'" #'stx ))]

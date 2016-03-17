@@ -7,6 +7,7 @@
 (require rackunit
          rackunit/text-ui
          (only-in accelerack/private/global_utils accelerack-debug-mode?)
+         syntax/macro-testing
          )
 
 (define (maybe-display msg)
@@ -15,7 +16,18 @@
 
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
-
+  (test-case "test-case 1"
+             "test-case 1"
+             (check-exn
+              #rx"undefined variable used in Accelerack expression"
+              (lambda ()
+                (convert-compile-time-error
+                 (let ()
+                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define q 1)
+                   (define-acc y (map (lambda(y) (+ z (use q))) (acc-array (1 2 3))))
+                   (check-equal? 2 (car (acc-array->list y))))
+                 ))))
  #|
 -- TODO: Test different unbound variable errors.
 

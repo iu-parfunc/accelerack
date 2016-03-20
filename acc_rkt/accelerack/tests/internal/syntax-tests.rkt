@@ -5,7 +5,7 @@
          (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
                   acc-array?
                   Int Bool Double use)
-         accelerack/private/passes/syntax-capture
+         accelerack/private/syntax-capture
          (only-in accelerack/private/types acc-delayed-array?)
          )
 

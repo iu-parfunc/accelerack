@@ -21,7 +21,7 @@
                      accelerack/private/passes/verify-acc
                      accelerack/private/passes/typecheck
                      accelerack/private/types
-		     accelerack/private/passes/front-end
+		     accelerack/private/front-end
                      (only-in accelerack/private/executor launch-accelerack-ast)
                      (only-in accelerack/private/global_utils accelerack-debug-mode?)
                      rackunit

@@ -45,9 +45,9 @@
   (test-case "failing-test-case 1"
              "failing-test-case 1"
              (define-acc x (map add1 unbound))
-             (check-equal? 2 3)             
+             (check-equal? 2 3)
              )
-  
+
   (define unbound 3)
   (define-acc x (map add1 unbound))
 
@@ -116,6 +116,13 @@
                    (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
                    (check-equal? 2 (car (acc-array->list y))))))
 
+  ;; Test cases to check forcing of deferred array in fold
+  (test-case "test-case 10"
+             "test-case 10"
+             (define-acc x (acc-array (1 2 3)))
+             (define-acc y (fold + 0 x))
+             (check-equal? (car (acc-array->list y)) 6)
+             (maybe-display "Test 10 Success !!!"))
   ))
 
 

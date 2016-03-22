@@ -11,6 +11,9 @@ library
     exposed-modules:
         Accelerack.Interface
         Accelerack.Marshal
+        Accelerack.Hello            
+        Racket.DirectInterface
+        Racket.ExUtils
         -- Accelerack.Parse
         -- Accelerack.Run
         -- Accelerack.Gen
@@ -22,7 +25,7 @@ library
         containers,
         hint,
         mtl,
-        -- sexp >=0.7,
+        sexp >=0.7,
         template-haskell,
         haskell-src-meta
     default-language: Haskell2010
@@ -45,6 +48,26 @@ executable libacc-hs.so
     default-language: Haskell2010
     hs-source-dirs: src
 
+executable librachs.so
+    main-is:       Racket/DirectInterface.hs
+    other-modules: Racket.ExUtils
+    build-depends: accelerack
+    build-depends: base >= 4.6 && < 4.9, mtl , accelerate, accelerate-io
+    default-language: Haskell2010
+    ghc-options: -shared -dynamic -fPIC -O0 -lHSrts_debug-ghc7.10.2
+    hs-source-dirs: src
+
+executable libsxp.so
+    main-is:       Racket/InterpInterface.hs
+    other-modules: Racket.ExUtils, Racket.SxpParse
+    build-depends: accelerack
+    build-depends: base >= 4.6 && < 4.9, mtl, accelerate, accelerate-io, bytestring,
+                   split, hint, containers, template-haskell, MissingH, dlist,sexp, either-unwrap
+    default-language: Haskell2010
+    ghc-options: -shared -dynamic -fPIC -O0 -lHSrts_debug-ghc7.10.2
+    -- extra-libraries: HSrts_debug-ghc7.10.2
+    hs-source-dirs: src
+    
 test-suite test-accelerack
     type:	    exitcode-stdio-1.0
     main-is:        Main.hs

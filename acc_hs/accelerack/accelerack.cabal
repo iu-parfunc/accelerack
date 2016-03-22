@@ -54,7 +54,7 @@ executable librachs.so
     build-depends: accelerack
     build-depends: base >= 4.6 && < 4.9, mtl , accelerate, accelerate-io
     default-language: Haskell2010
-    ghc-options: -shared -dynamic -fPIC -O0 -lHSrts_debug-ghc7.10.2
+    ghc-options: -shared -dynamic -fPIC -O0 -lHSrts-ghc7.10.2
     hs-source-dirs: src
 
 executable libsxp.so
@@ -64,7 +64,7 @@ executable libsxp.so
     build-depends: base >= 4.6 && < 4.9, mtl, accelerate, accelerate-io, bytestring,
                    split, hint, containers, template-haskell, MissingH, dlist,sexp, either-unwrap
     default-language: Haskell2010
-    ghc-options: -shared -dynamic -fPIC -O0 -lHSrts_debug-ghc7.10.2
+    ghc-options: -shared -dynamic -fPIC -O0 -lHSrts-ghc7.10.2
     -- extra-libraries: HSrts_debug-ghc7.10.2
     hs-source-dirs: src
     

@@ -9,7 +9,7 @@ cache:
 before_install:
 - mkdir -p ~/.local/bin
 - export PATH=~/.local/bin:$PATH
-- travis_retry curl -L https://github.com/commercialhaskell/stack/releases/download/v0.1.6.0/stack-0.1.6.0-linux-x86_64.tar.gz | tar -zx -C ~/.local/bin
+- travis_retry curl -L https://github-cloud.s3.amazonaws.com/releases/34817922/c32e3948-d728-11e5-8674-5e1ac44bfed0.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAISTNZFOVBIJMK3TQ%2F20160325%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20160325T055627Z&X-Amz-Expires=300&X-Amz-Signature=51ae33cef519950a0878fa7fc039f5b26b1a7af8ac2ae28324a3cce1a1ece65a&X-Amz-SignedHeaders=host&actor_id=0&response-content-disposition=attachment%3B%20filename%3Dstack-1.0.4-linux-x86_64.tar.gz&response-content-type=application%2Foctet-stream | tar -zx -C ~/.local/bin
 - mv ~/.local/bin/stack-0.1.6.0-linux-x86_64/stack ~/.local/bin/stack
 - chmod a+x ~/.local/bin/stack
 - cat /proc/cpuinfo | grep name

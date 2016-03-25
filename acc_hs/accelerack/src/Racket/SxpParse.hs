@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module SxpParse where
+module Racket.SxpParse where
 
 import Foreign.C (CString)
 import Data.ByteString.Lazy.Char8 ( ByteString )

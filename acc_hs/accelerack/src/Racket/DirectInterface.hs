@@ -2,10 +2,10 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE CPP                      #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE LambdaCase #-} 
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module DirectInterface where
+module Racket.DirectInterface where
 
 import Foreign
 import Foreign.C
@@ -24,7 +24,7 @@ import Data.Array.Accelerate.Array.Sugar as Sugar
 import Data.IORef
 import qualified Data.List as L
 
-import ExUtils as E
+import Racket.ExUtils as E
 
 
 -- Exporting defined functions
@@ -50,6 +50,7 @@ accelerateMap p res val opr = do
   sh1 <- peekArray (Prelude.fromIntegral s1ls) (castPtr s1da :: Ptr CInt)
   sh2 <- peekArray (Prelude.fromIntegral s2ls) (castPtr s2da :: Ptr CInt)
   Segment ls ts ds <- peek adata
+  return ()
   E.modifySegmentMap adata sh1 rdata ts opr val
 
 
@@ -64,9 +65,10 @@ accelerateZipWith p1 p2 res bin = do
   Segment s3ls s3ts s3da <- peek rshp
   sh1 <- peekArray (Prelude.fromIntegral s1ls) (castPtr s1da :: Ptr CInt)
   sh2 <- peekArray (Prelude.fromIntegral s2ls) (castPtr s2da :: Ptr CInt)
-  sh3 <- peekArray (Prelude.fromIntegral s3ls) (castPtr s3da :: Ptr CInt) 
+  sh3 <- peekArray (Prelude.fromIntegral s3ls) (castPtr s3da :: Ptr CInt)
   Segment ls ts ds <- peek adata
   Segment ls' ts' ds' <- peek bdata
+  return()
   E.modifySegmentZipWith adata (Prelude.reverse sh1) bdata (Prelude.reverse sh2) rdata ts bin
 
 -- Invoked from racket to access accelerate
@@ -79,6 +81,5 @@ accelerateFold p res def val = do
   sh1 <- peekArray (Prelude.fromIntegral s1ls) (castPtr s1da :: Ptr CInt)
   sh2 <- peekArray (Prelude.fromIntegral s2ls) (castPtr s2da :: Ptr CInt)
   Segment ls ts ds <- peek adata
+  return ()
   E.modifySegmentFold adata (Prelude.reverse sh1) rdata ts def val
-
-

@@ -11,7 +11,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 -- {-# NOINLINE foo #-}
 
-module InterpInterface where
+module Racket.InterpInterface where
 
 import Foreign
 import Foreign.C
@@ -32,9 +32,9 @@ import Data.IORef
 import qualified Data.List as L
 import Text.Read (readMaybe)
 
-import qualified SxpParse as Parse
-import ExUtils (Segment(..),AccArray(..))
-import qualified ExUtils as Ex
+import qualified Racket.SxpParse as Parse
+import Racket.ExUtils (Segment(..),AccArray(..))
+import qualified Racket.ExUtils as Ex
 
 import Language.Haskell.TH
 import Language.Haskell.TH.Ppr

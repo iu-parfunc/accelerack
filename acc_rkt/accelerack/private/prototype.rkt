@@ -46,11 +46,11 @@
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator rkt_handler (_fun _acc-manifest-array-pointer _string -> _void))
 
-(define-runtime-path librachs "../../../acc_hs/librachs.so")
+(define-runtime-path librachs "../../../build/librachs.so")
 (define lib-hs (ffi-lib librachs))
 (define-ffi-definer define-hs lib-hs)
 
-(define-runtime-path libsxp "../../../acc_hs/libsxp.so")
+(define-runtime-path libsxp "../../../build/libsxp.so")
 (define lib-sxp (ffi-lib libsxp))
 (define-ffi-definer define-sxp lib-sxp)
 

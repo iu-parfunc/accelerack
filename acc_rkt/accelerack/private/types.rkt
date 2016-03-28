@@ -11,16 +11,15 @@
 (provide  acc-array?
           make-acc-array
           acc-array-val
+          eq-acc-array?
           acc-array->list
-
           acc-scalar?
-
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-scalar-type?
-
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
           ;; we should get rid of delayed scalars!
           acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
+          force-delayed-array!
           )
 
 ;; Is the datum compatible with ANY accelerack scalar types?
@@ -31,11 +30,42 @@
       (boolean? x)
       (flonum? x)))
 
+;; Check if 2 acc-arrays are equal
+(define (eq-acc-array? x nexp)
+  (cond
+    ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
+    ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
+    ;; TODO - This doesn't work
+    ;; ((acc-delayed-array? ))
+    ((acc-array? x) (equal? (acc-array->list x) (acc-array->list nexp)))
+    ;; Throw error if you can't find reason
+    (else #f)))
+
+
+;; Resolves a acc-array with delayed array , resolves it and overwrites it and return value
+;; acc-array? -> acc-manifest-array?
+(define (force-delayed-array! x)
+  (cond
+    [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
+     (acc-array-val x)]
+    [(and (acc-array? x) (acc-delayed-array? (acc-array-val x)))
+     (let* ((v (acc-array-val x))
+            (val (acc-delayed-array-thunk v))
+            ;; val is of type () -> acc-array?
+            ;; FIXME: change the convention to have the thunk return acc-manifest-array?
+            (fval (acc-array-val (val))))
+       (set-acc-array-val! x fval)
+       fval)]
+    [else (error 'force-delayed-array! "Expected an acc-array, got ~a" x)]))
+
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
 ;; I think this is resolved.
 (define (acc-array->list x)
   (if (acc-array? x)
-      (read-data* (acc-array-val x))
+      (if (acc-manifest-array? (acc-array-val x))
+          (read-data* (acc-array-val x))
+          ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
+          (read-data* (force-delayed-array! x)))
       (error 'acc-array->list "works only on acc-array"))) ;;(read-data* x)))
 
 ;; The data-type for Racket-side arrays, which may be either
@@ -55,6 +85,7 @@
             (list 'acc-array (read-data* arr))))
       prt))]
   #:transparent ;; Temporary!  For debugging.
+  #:mutable
   #:omit-define-syntaxes)
 
 ;; An entry in the syntax table.  It provides everything Accelerack
@@ -112,3 +143,9 @@
 (struct acc-portable-package (sexp array-table)
 
   )
+
+
+;; (display "Is Acc-array :  ")
+;; (define  x (make-acc-array (acc-delayed-array (lambda(x) 1))))
+;; (display (acc-array? x))
+;; (display "\n")

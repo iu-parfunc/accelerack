@@ -1,10 +1,11 @@
 flags: {}
 
 packages:
- - ./acc_hs/accelerack
  - ./acc_hs/deps/sexp
+ - ./acc_hs/accelerack
 
 extra-deps:
  - accelerate-io-0.15.1.0
+ - either-unwrap-1.1
 
 resolver: lts-3.5

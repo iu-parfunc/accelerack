@@ -10,7 +10,7 @@
 {-# LANGUAGE LambdaCase #-} 
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-module ExUtils where
+module Racket.ExUtils where
 
 import Foreign
 import Foreign.C
@@ -188,7 +188,7 @@ test ref f = do { val <- readIORef ref; return (f val) }
 
 while test action = do
   val <- test
-  if val then do {action;ExUtils.while test action}
+  if val then do {action;Racket.ExUtils.while test action}
          else return ()
 
 
@@ -217,7 +217,7 @@ modifySegmentMap p sh1 res ts opr val =
        ref <- newIORef 0
        offset <- newIORef 0
        let ptrSize = 8
-       ExUtils.while (test ref (< (Prelude.fromIntegral lseg)))
+       Racket.ExUtils.while (test ref (< (Prelude.fromIntegral lseg)))
         (do
           offset' <- readIORef offset
           dsg  <- peekByteOff dseg offset'

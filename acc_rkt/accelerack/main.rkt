@@ -14,7 +14,7 @@
          accelerack/private/types
 
          accelerack/private/executor
-         accelerack/private/passes/syntax-capture
+         accelerack/private/syntax-capture
          )
 
 ;; RRN: Here we provide an explicit export list as a final gate-keeper
@@ -28,7 +28,7 @@
          Int Bool Double
 
          ;; Not reexporting from base:
-         ; vector vector-ref + * - ...
-         ; if let lambda
+         ;; vector vector-ref + * - ...
+	 ;; if let lambda
          -> : use
          )

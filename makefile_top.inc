@@ -15,4 +15,3 @@ else
 endif
 
 STKROOT=$(shell $(STACK) path --global-stack-root)
-RAWGHC=$(STKROOT)/programs/x86_64-$(OS)/ghc-$(GHC_VERSION)/bin/ghc

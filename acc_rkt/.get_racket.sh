@@ -4,7 +4,7 @@ set -xe
 
 if [[ -z "$RACKET_VERSION" ]]; then
     echo "Racket version environment variable not set, setting default"
-    export RACKET_VERSION=6.2.1  # set default Racket version
+    export RACKET_VERSION=$MINRACKETVERSION  # set default Racket version
     echo "Version: $RACKET_VERSION"
 fi
 

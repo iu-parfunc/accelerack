@@ -7,6 +7,7 @@
 (require rackunit
          rackunit/text-ui
          (only-in accelerack/private/global_utils accelerack-debug-mode?)
+         syntax/macro-testing
          )
 
 (define (maybe-display msg)
@@ -15,6 +16,44 @@
 
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
+  (test-case "test-case 1"
+             "test-case 1"
+             (check-exn
+              #rx"undefined variable used in Accelerack expression"
+              (lambda ()
+                (convert-compile-time-error
+                 (let ()
+                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define q 1)
+                   (define-acc y (map (lambda(y) (+ z (use q))) (acc-array (1 2 3))))
+                   (check-equal? 2 (car (acc-array->list y))))
+                 ))))
+  (test-case "test-case 2"
+             "test-case 2"
+             (check-exn
+              #rx"Unbound variable used in Accelerack 'use'\n"
+              (lambda ()
+                (convert-compile-time-error
+                 (let ()
+                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define-acc y (map (lambda(y) (+ y (use q))) (acc-array (1 2 3))))
+                   (check-equal? 2 (car (acc-array->list y))))
+                 ))))
+ #|
+-- TODO: Test different unbound variable errors.
+
+  (test-case "failing-test-case 1"
+             "failing-test-case 1"
+             (define-acc x (map add1 unbound))
+             (check-equal? 2 3)
+             )
+
+  (define unbound 3)
+  (define-acc x (map add1 unbound))
+
+  |#
+
+  ;; TODO: (use v t) where the value doesn't match the type at runtime.
   ))
 
 (define user-ifc-valid-test_cases (test-suite
@@ -43,6 +82,47 @@
              (define x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
              (check-equal? '(#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f))) (acc-array->list x))
              (maybe-display "Test 4 Success !!!"))
+
+  (test-case "test-case 5"
+             "test-case 5"
+             (define-acc x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
+             (check-pred acc-array? x)
+             (maybe-display "Test 5 Success !!!"))
+  (test-case "test-case 7"
+             "test-case 7"
+             (define-acc x (acc-array (1 2 3)))
+             (check-equal? 1 (car (acc-array->list x)))
+             (maybe-display "Test 7 Success !!!"))
+  (test-case "test-case 6"
+             "test-case 6"
+             (define-acc x (map (lambda(x) (+ x 1)) (acc-array (1 2 3))))
+             (check-equal? 2 (car (acc-array->list x)))
+             (maybe-display "Test 6 Success !!!"))
+
+  (test-case "test-case 8"
+             "test-case 8"
+             (define-acc x (acc-array (1 2 3)))
+             (define-acc y (map (lambda(x) (+ x 1)) x))
+             (check-equal? 2 (car (acc-array->list y)))
+             (maybe-display "Test 8 Success !!!"))
+
+  ;; Test case for valid (use v t)
+  (test-case "test-case 9"
+             "test-case 9"
+             (convert-compile-time-error
+                 (let ()
+                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define q 1)
+                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+                   (check-equal? 2 (car (acc-array->list y))))))
+
+  ;; Test cases to check forcing of deferred array in fold
+  (test-case "test-case 10"
+             "test-case 10"
+             (define-acc x (acc-array (1 2 3)))
+             (define-acc y (fold + 0 x))
+             (check-equal? (car (acc-array->list y)) 6)
+             (maybe-display "Test 10 Success !!!"))
   ))
 
 

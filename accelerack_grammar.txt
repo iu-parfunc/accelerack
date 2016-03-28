@@ -41,6 +41,7 @@ type t
   | (Array n t)       ; Array Type
   | (-> t ... t)      ; Function Type
 
+
 n = non-negative integer
 
 expression e

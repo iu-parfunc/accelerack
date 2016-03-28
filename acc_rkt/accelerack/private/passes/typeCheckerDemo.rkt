@@ -17,7 +17,9 @@
   ;; Keyword symbols come from a mix of three places currently:
   (only-in accelerack/private/syntax acc-array)
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
-  (only-in accelerack/private/keywords : Array Int Bool Double use ->)))
+  (only-in accelerack/private/keywords : Array Int Bool Double use ->)
+  )
+ (only-in accelerack/private/types acc-scalar?))
 
 (provide p*-infer)
 
@@ -118,9 +120,13 @@
   (match e
     [`(lambda ,x ,b) (infer-abs e env)]
     [`(let ,vars ,b) (infer-let e env)]
-    [`(,rator . ,rand) (infer-app e env)]
     [(? symbol?) (infer-var e)]
-    [else (infer-lit e)])
+    [`(: ,e ,t0)
+     (match-let ([(infer-record a1 c1 t1 te1) (infer-types e env)])
+       (error "Need to handle ascription - instantiate to a type schema and unify: " t0 t1))]
+    [(? acc-scalar?) (infer-lit e)]
+    [`(,rator . ,rand) (infer-app e env)]
+    [else (error 'infer-types "unhandled case: ~a" e)]))
   ;; (syntax-parse e
   ;;   [(lambda (x:acc-lambda-param ...) body) (infer-abs (syntax->datum e) env)]
   ;;   [(let (lb:acc-let-bind ...) body) (infer-let (syntax->datum e) env)]
@@ -129,10 +135,9 @@
   ;;   [x:identifier (infer-var e)]
   ;;   [(~or n:number b:boolean) (infer-lit e)]
   ;;   )
-  )
 
 
-; [Var] 
+; [Var]
 ; infer-var: Variable -> InferRecord
 (define (infer-var x)
   (let ((simple-type (dict-ref environment x #f)))
@@ -151,7 +156,7 @@
   (let ([t (match exp
              [(? number?) 'Int]
              [(? boolean?) 'Bool]
-             [else (error infer-lit "This literal is not supported yet: ~a " exp)])])
+             [else (error 'infer-lit "This literal is not supported yet: ~a " exp)])])
     (infer-record (mutable-set)
                   (mutable-set)
                   t
@@ -250,7 +255,7 @@
                   (cons (car v) (substitute subs1 (cdr v)))) subs2)))
     (foldl (lambda (v res)
              (when (dict-ref subs2 (car v) #f)
-               (error subs-union "Substitutions with same type vars"))
+               (error 'subs-union "Substitutions with same type vars"))
              (set! s (cons v s))) '() subs1) s))
 
 
@@ -260,7 +265,7 @@
     [(type_con? type) type]
     [(type_var? type) (dict-ref s type type)]
     [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
-    [else (error substitute "unknown type: ~a" type)]))
+    [else (error 'substitute "unknown type: ~a" type)]))
 
 
 ;;  substitution -> constraint -> constraint
@@ -284,12 +289,12 @@
 (define (instantiate scheme)
   (match-define `(,_ ,qs ,type) scheme)
   (substitute (for/list ([q qs]) (cons q (fresh "I"))) type))
-  
+
 
 ;; free variables: type -> set
 ;; Fetches all the variables in the input given
 (define (free_vars t)
-  (cond [(type_var? t) (set t)] 
+  (cond [(type_var? t) (set t)]
         [(type_fun? t) (let ([in-types (drop-right (cdr t) 1)]
                              [ret-type (last t)])
                          (set-union (list->set (map free_vars in-types))
@@ -297,7 +302,7 @@
         [(type_con? t) (set)]
         [else (error (format "No match clause for ~s" t))]))
 
-  
+
 ;; active variables: constraints -> set(type var)
 (define (active_vars constraints)
   ;(print constraints)
@@ -331,7 +336,7 @@
     ;This is an infinite type. Send an error back
     [(set-member? (free_vars type) var) (error occurs-check "Occurs check failed, ~a occurs in ~a\n" var type)]
     [else `(,(cons var type))]))
-    
+
 (define environment
   '((+ . (-> Int Int Int))
     (- . (-> Int Int Int))
@@ -363,9 +368,12 @@
 (define (infer e)
   (match-define
     (infer-record assumptions constraints type type-expr)
-    (infer-types (syntax->datum e) (set)))
+    (infer-types (if (syntax? e)
+                     (syntax->datum e)
+                     e)
+                 (set)))
   ;;(displayln assumptions)
-  ;;(displayln constraints)
+  (display "CONSTRAINTS: ")(displayln constraints)
   ;(displayln type-expr)
   ;; (print "Infer types done")
   (list assumptions constraints type (solve (set->list constraints)) type-expr))
@@ -379,7 +387,9 @@
   (displayln (substitute substitutions type))
   (displayln "--- Type Annotated Expression: ----------------------------------")
   (displayln (annotate-expr type-expr substitutions))
-  (displayln "-----------------------------------------------------------------"))
+  (displayln "-----------------------------------------------------------------")
+  (annotate-expr type-expr substitutions)
+  )
 
 (define (p*-infer exp)
   (reset-var-cnt)
@@ -409,8 +419,9 @@
                (let ((g (f 2))) g)))
 
 
-(p-infer e1)
-(p-infer e2)
+(define e1_ (p-infer e1))
+
+(define e2_ (p-infer e2))
 (p-infer e3)
 (p-infer e4)
 (p-infer e5)
@@ -421,5 +432,7 @@
 (p-infer e10)
 (p-infer e11)
 
-
-
+(display "Feeding back through:\n")
+; (p-infer e2_)
+;; Expected output:
+;;  (lambda ((: x t1)) x)

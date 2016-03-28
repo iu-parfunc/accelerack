@@ -1,6 +1,23 @@
 #lang racket
-(require racket/set)
-(require racket/dict)
+(require (for-syntax (except-in racket/base map))
+         syntax/parse
+         syntax/to-string
+         scribble/srcdoc
+         racket/trace
+         racket/set
+         racket/dict
+         (only-in accelerack/private/global_utils pass-output-chatter)
+         accelerack/private/syntax
+         accelerack/private/wrappers
+         (prefix-in r: racket/base))
+
+(require ;; We use the identifiers from "wrappers" as our names for map/fold/etc
+ (for-template
+  accelerack/private/wrappers
+  ;; Keyword symbols come from a mix of three places currently:
+  (only-in accelerack/private/syntax acc-array)
+  (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
+  (only-in accelerack/private/keywords : Array Int Bool Double use ->)))
 
 (provide p*-infer)
 
@@ -25,6 +42,32 @@
 (define var-cnt 0)
 (define (reset-var-cnt) (set! var-cnt 0))
 
+;; (define (verify-acc syn-table stx)
+;;   (define initial-env (make-env (r:map car syn-table)))
+;;   (define res (verify-acc-helper stx initial-env))
+;;   (pass-output-chatter 'verify-acc res)
+;;   res)
+
+
+;; (define (verify-type ty)
+;;   (syntax-parse ty
+;;     [t:acc-type  (void)]
+;;     [oth (raise-syntax-error 'Accelerack-type "bad type expression" #'oth)]))
+
+(define (make-env ls)
+  (unless (andmap identifier? ls)
+    (error 'make-env "list contains non-identifiers: ~a\n" ls))
+  ls)
+
+(define (extend-env ls env)
+  (unless (andmap identifier? ls)
+    (error 'extend-env "list contains non-identifiers: ~a\n" ls))
+  (append ls env))
+
+(define acc-keywords-sexp-list
+  '(lambda if let : use
+    generate map zipwith fold generate stencil3x3 acc-array-ref))
+
 
 ;; types
 ; 1
@@ -32,12 +75,17 @@
 ; (-> (t1 ... tn) tr)
 (struct infer-record ([assumptions #:mutable]
                       [contraints #:mutable]
-                      type)
-  #:guard (lambda (as con t type-name)
+                      type
+                      type-expr)
+  #:transparent
+  #:guard (lambda (as con t te type-name)
             (cond
-              [(not (set-mutable? as)) (error type-name "Assumptions: ~e has to be of the type mutable-set" as)]
-              [(not (set-mutable? con)) (error type-name "Constraints: ~e has to be of the type mutable-set" con)]
-              [else (values as con t)])))
+              [(not (set-mutable? as))
+               (error type-name "Assumptions: ~e has to be of the type mutable-set" as)]
+              [(not (set-mutable? con))
+               (error type-name "Constraints: ~e has to be of the type mutable-set" con)]
+              [else (values as con t te)])))
+
 (define type_var? string?)
 (define type_con? symbol?)
 (define (type_fun? type)
@@ -51,8 +99,10 @@
 ;; Symbol -> String
 (define (fresh var)
   (set! var-cnt (+ var-cnt 1))
-   (string-append (if (symbol? var) (symbol->string var) var)
-                  (number->string var-cnt)))
+  (string-append (if (symbol? var)
+                     (symbol->string var)
+                     (if (syntax? var) (symbol->string (syntax->datum var)) var))
+                 (number->string var-cnt)))
 
 
 ;; type environment
@@ -66,11 +116,20 @@
 ;;                                              type)
 (define (infer-types e env)
   (match e
-	[`(lambda ,x ,b) (infer-abs e env)]
-	[`(let ,vars ,b) (infer-let e env)]
-	[`(,rator . ,rand) (infer-app e env)]
-	[(? symbol?) (infer-var e)]
-	[else (infer-lit e)]))
+    [`(lambda ,x ,b) (infer-abs e env)]
+    [`(let ,vars ,b) (infer-let e env)]
+    [`(,rator . ,rand) (infer-app e env)]
+    [(? symbol?) (infer-var e)]
+    [else (infer-lit e)])
+  ;; (syntax-parse e
+  ;;   [(lambda (x:acc-lambda-param ...) body) (infer-abs (syntax->datum e) env)]
+  ;;   [(let (lb:acc-let-bind ...) body) (infer-let (syntax->datum e) env)]
+  ;;   [(rator rand ...) (infer-app (syntax->datum e) env)]
+  ;;   [(p:acc-primop val ...) (infer-var (car e))]
+  ;;   [x:identifier (infer-var e)]
+  ;;   [(~or n:number b:boolean) (infer-lit e)]
+  ;;   )
+  )
 
 
 ; [Var] 
@@ -78,18 +137,25 @@
 (define (infer-var x)
   (let ((simple-type (dict-ref environment x #f)))
     (if simple-type
-        (infer-record (mutable-set) (mutable-set) simple-type)
+        (infer-record (mutable-set) (mutable-set) simple-type `(: ,x ,simple-type))
         (let ([var (fresh x)])
-          (infer-record (mutable-set (cons x var)) (mutable-set) var)))))
+          (infer-record (mutable-set (cons x var))
+                        (mutable-set)
+                        var
+                        `(: ,x ,var))))))
+
 
 
 ; [Lit] : Exp -> InferRecord
 (define (infer-lit exp)
-  (infer-record (mutable-set)
-                (mutable-set)
-                (cond ((number?  exp) 'Int)
-                      ((boolean? exp) 'Bool)
-                      (else (error infer-lit "This literal is not supported yet: ~a " exp)))))
+  (let ([t (match exp
+             [(? number?) 'Int]
+             [(? boolean?) 'Bool]
+             [else (error infer-lit "This literal is not supported yet: ~a " exp)])])
+    (infer-record (mutable-set)
+                  (mutable-set)
+                  t
+                  `(: ,exp ,t))))
 
 
 ; [App] : Exp Environment -> InferRecord
@@ -97,45 +163,68 @@
   (let ((e1 (car exp))
         (args (cdr exp))
         (typevar (fresh "app")))
-    (match-define (infer-record a1 c1 t1) (infer-types e1 env))
-    (define argtypes
-      (for/list [(arg args)]
-        (match-define (infer-record a2 c2 t2) (infer-types arg env))
-        ;(set-add! a1 typevar)
-        (set-union! a1 a2)
-        (set-union! c1 c2)
-        t2))
-    (set-union! c1 (set `(== ,t1 (-> ,@argtypes ,typevar))))
-    (infer-record a1 c1 typevar)))
+    (match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
+    (let ([te1 `(,te1)])
+      (define argtypes
+        (for/list [(arg args)]
+          (match-define (infer-record a2 c2 t2 te2) (infer-types arg env))
+          ;(set-add! a1 typevar)
+          (set-union! a1 a2)
+          (set-union! c1 c2)
+          (set! te1 (append te1 `(,te2)))
+          t2))
+      (set-union! c1 (set `(== ,t1 (-> ,@argtypes ,typevar))))
+      (infer-record a1 c1 typevar `(: ,te1 ,typevar)))))
 
 
 ; [Abs]
 (define (infer-abs exp env)
   (match-define `(lambda ,args ,body) exp)
-  (let* ((arg-env (map (curryr cons (fresh "arg")) args))
+  (let* ((arg-env (map (lambda (arg)
+                         (cons arg (fresh "arg"))) args))
          (arg-vars (map cdr arg-env))
          (c (mutable-set))
          (a2 (mutable-set)))
-    (match-define (infer-record a c t) (infer-types body (set-union env (list->set args))))
+    ;(displayln arg-env)
+    ;(displayln arg-vars)
+    (match-define (infer-record a c t e) (infer-types body (set-union env (list->set args))))
+    ;(display a)
+    ;(displayln c)
     (set-for-each a (lambda (y)
                       (let ((lkp (assoc (car y) arg-env)))
                         (if lkp
                             (set-add! c `(== ,(cdr y) ,(cdr lkp)))
                             (set-add! a2 y)))))
-    (infer-record a2 c `(-> ,@arg-vars ,t))))
+    ;(displayln c)
+    (set-union! a2 a)
+    (define ret-type `(-> ,@arg-vars ,t))
+    (infer-record a2 c ret-type `(: (lambda ,(map (lambda (x)
+                                                    `(: ,(car x) ,(cdr x)))
+                                                  arg-env) (: ,e ,t)) ,ret-type))))
 
 
 ; [Let]
 (define (infer-let exp env)
-  (match-define `(let ((,x ,e1)) ,body) exp)
-  (match-define (infer-record a1 c1 t1) (infer-types e1 env))
-  (match-define (infer-record a2 c2 t2) (infer-types body env))
+  (match-define `(let ,vars ,body) exp)
+  (match-define (infer-record a1 c1 t1 te1)
+    (foldl (lambda (var res)
+             (match-let ([`(,x ,e1) var])
+               (match-define (infer-record a c t te) (infer-types e1 env))
+               (match-define (infer-record ares cres tres te-res) res)
+               (set-union! ares a)
+               (set-union! cres c)
+               (infer-record ares cres tres (append te-res `(((: ,x ,t) (: ,te ,t)))))))
+           (infer-record (mutable-set) (mutable-set) 'None '()) vars))
+  ;;(match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
+  (match-define (infer-record a2 c2 t2 te2) (infer-types body env))
+  ;(set-union! a1 a2)
   (set-union! c1 c2)
   (set-for-each a2 (lambda (a)
-                     (if (equal? (car a) x)
-                         (set-add! c1 `(implicit ,(cdr a) ,t1 ,env))
-                         (set-add! a1 a))))
-  (infer-record a1 c1 t2))
+                     (let ([aval (assoc (car a) (map cdar te1))])
+                       (if aval
+                           (set-add! c1 `(implicit ,(cdr a) ,(last aval) ,env))
+                           (set-add! a1 a)))))
+  (infer-record a1 c1 t2 `(: (let ,te1 (: ,te2 ,t2)) ,t2)))
 
 
 ;; Solver: list(constraint) -> subsitution
@@ -145,7 +234,7 @@
     [else (let ((constraint (car constraints)))
             (match constraint
               [`(== ,t1 ,t2) (let ((s (unify t1 t2)))
-                               (subs-union (solve (sub_constraints s (cdr constraints))) s))]
+                               (subs-union (solve (map (curry sub_constraint s) (cdr constraints))) s))]
               [`(implicit ,t1 ,t2 ,monos) (if (set-empty? (set-intersect
                                                            (set-subtract (free_vars t2) monos)
                                                            (active_vars (cdr constraints))))
@@ -155,16 +244,14 @@
               [`(explicit ,t ,s) (solve (cons `(== ,t ,(instantiate s)) (cdr constraints)))]))]))
 
 
-;; dict -> dict -> dict
+
 (define (subs-union subs1 subs2)
-  (let ((s (dict-map subs2
-                     (lambda (v t)
-                       (cons v (substitute subs1 t))))))
-    (dict-for-each subs1
-                   (lambda (v t)
-                     (when (dict-ref subs2 v #f)
-                       (error subs-union "Substitutions with same type vars"))
-                     (set! s (dict-set s v t)))) s))
+  (let ((s (map (lambda (v)
+                  (cons (car v) (substitute subs1 (cdr v)))) subs2)))
+    (foldl (lambda (v res)
+             (when (dict-ref subs2 (car v) #f)
+               (error subs-union "Substitutions with same type vars"))
+             (set! s (cons v s))) '() subs1) s))
 
 
 ;; Substitution Type -> Type
@@ -186,11 +273,6 @@
                                ,(for/set ([var v3])
                                   (dict-ref s var var)))]
     [`(explicit ,v1 ,v2) `(explicit ,(substitute s v1) ,(substitute s v2))]))
-
-
-;; substitution -> list(constraint) -> list(constraint)
-(define (sub_constraints s constraints)
-  (map (lambda (c) (sub_constraint s c)) constraints))
 
 
 ;; generalize: set(type var) -> type -> scheme
@@ -258,24 +340,52 @@
     (< . (-> Int Int Bool))
     (= . (-> Int Int Bool))))
 
+(define (annotate-type ty subs)
+  (match ty
+    [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
+    [else (let ([f (assoc ty subs)])
+            (if f (cdr f) ty))]))
+
+(define (annotate-expr type-expr subs)
+  (match type-expr
+    [x #:when (or (symbol? x) (number? x) (boolean? x)) type-expr]
+    [`(: ,x ,ty) `(: ,(annotate-expr x subs) ,(annotate-type ty subs))]
+    [`(lambda ,x ,b) `(lambda ,(map (curryr annotate-expr subs) x)
+                        ,(annotate-expr b subs))]
+    [`(let ,vars ,b) `(let ,(map (lambda (var)
+                                   (match-let ([`(,x ,e) var])
+                                     `(,(annotate-expr x subs)
+                                       ,(annotate-expr e subs)))) vars)
+                        ,(annotate-expr b subs))]
+    [`(,rator . ,rand) `(,(annotate-expr rator subs)
+                         ,@(map (curryr annotate-expr subs) rand))]))
+
 (define (infer e)
-  (match-define (infer-record assumptions constraints type) (infer-types e (set)))
-  ;; (displayln (list assumptions constraints type))
+  (match-define
+    (infer-record assumptions constraints type type-expr)
+    (infer-types (syntax->datum e) (set)))
+  ;;(displayln assumptions)
+  ;;(displayln constraints)
+  ;(displayln type-expr)
   ;; (print "Infer types done")
-  (list assumptions constraints type (solve (set->list constraints))))
+  (list assumptions constraints type (solve (set->list constraints)) type-expr))
 
 (define (p-infer exp)
   (reset-var-cnt)
-  (match-define (list assumptions constraints type substitutions) (infer exp))
-  (displayln (list exp ':= (substitute substitutions type)))
-  (displayln substitutions)
+  (match-define (list assumptions constraints type substitutions type-expr) (infer exp))
+  (displayln "--- Output: -----------------------------------------------------")
+  (displayln (list (syntax->datum exp) ':= (substitute substitutions type)))
+  (displayln "--- Principal type of Expression: -------------------------------")
+  (displayln (substitute substitutions type))
+  (displayln "--- Type Annotated Expression: ----------------------------------")
+  (displayln (annotate-expr type-expr substitutions))
   (displayln "-----------------------------------------------------------------"))
 
 (define (p*-infer exp)
   (reset-var-cnt)
-  (match-define (list assumptions constraints type substitutions) (infer exp))
+  (match-define (list assumptions constraints type substitutions type-expr) (infer exp))
   ;;(displayln (list assumptions constraints type substitutions))
-  (displayln (list exp ':= (substitute substitutions type)))
+  (displayln (list (syntax->datum exp) ':= (substitute substitutions type)))
   (for ([s substitutions])
     (displayln s))
   (displayln "-----------------------------------------------------------------"))
@@ -285,28 +395,31 @@
 ;; Test Cases
 ;; ========================================================================
 
-(define e1 'x)
-(define e2 '(lambda (x) x))
-(define e3 '(x 2))
-(define e4 '((lambda (x) x) 2))
-(define e5 '(let ((x 2)) x))
-(define e6 '(let ((x 2)) (+ x x)))
-(define e7 '(lambda (x) (let ((x 2)) x)))
-(define e8 '(lambda (x) (let ((x 2)) (+ x x))))
-(define e9 '(lambda (x y) (let ((x 2)) (+ x x))))
-(define e10 '(let ((x (lambda (x y) (let ((x 2)) (+ x x))))) (x 5 2)))
-(define e11 '(let ((f (lambda (x) (lambda (y) (+ x 1)))))
+(define e1 #'x)
+(define e2 #'(lambda (x) x))
+(define e3 #'(x 2))
+(define e4 #'((lambda (x) x) 2))
+(define e5 #'(let ((x (+ 5 2))) x))
+(define e6 #'(let ((x 2) (y 5)) (+ x y)))
+(define e7 #'(lambda (x) (let ((x 2)) x)))
+(define e8 #'(lambda (x) (let ((x 2)) (+ x x))))
+(define e9 #'(lambda (x y) (let ((x 2)) (+ x y))))
+(define e10 #'(let ((x (lambda (x y) (+ x y)))) (x 5 2)))
+(define e11 #'(let ((f (lambda (x) (lambda (y) (+ x 1)))))
                (let ((g (f 2))) g)))
 
 
-(p*-infer e1)
-(p*-infer e2)
-(p*-infer e3)
-(p*-infer e4)
-(p*-infer e5)
-(p*-infer e6)
-(p*-infer e7)
-(p*-infer e8)
-(p*-infer e9)
-(p*-infer e10)
-(p*-infer e11)
+(p-infer e1)
+(p-infer e2)
+(p-infer e3)
+(p-infer e4)
+(p-infer e5)
+(p-infer e6)
+(p-infer e7)
+(p-infer e8)
+(p-infer e9)
+(p-infer e10)
+(p-infer e11)
+
+
+

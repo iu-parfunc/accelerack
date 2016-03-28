@@ -102,6 +102,7 @@
   '(lambda if let : use
     generate map zipwith fold generate stencil3x3 acc-array-ref))
 
+;; AccelerackSyntax Env -> AccelerackSyntax
 (define (verify-acc-helper stx env)
   (let loop ((stx stx))
     (syntax-parse stx

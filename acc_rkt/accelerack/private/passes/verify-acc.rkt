@@ -118,12 +118,18 @@
       [(: e t:acc-type) (verify-type #'t) (loop #'e)]
 
       ;; For now only allowing identifiers, not arbitrary expressions.
+      [(use x:id)
+       (if (identifier-binding #'x)
+           #'x ;; The macro expands to this for the "regular Racket" execution.
+           (raise-syntax-error
+            'error "Unbound variable used in Accelerack 'use'" #'stx ))]
       ;; TODO - Check for identifier binding may have flaws
-      ;; Atleast catches unbound vars correctly but may work weirdly with define on accelerack stuff 
-      [(use x:id) (if (identifier-binding #'x)
-                      #'x
-                      (raise-syntax-error
-                       'error "Unbound variable used in Accelerack 'use'" #'stx ))]
+      ;; Atleast catches unbound vars correctly but may work weirdly with define on accelerack stuff
+      [(use x:id t:acc-type) (verify-type #'t)
+       (if (identifier-binding #'x)
+           #'x ;; The macro expands to this for the "regular Racket" execution.
+           (raise-syntax-error
+            'error "Unbound variable used in Accelerack 'use'" #'stx ))]
       ;;#'x] ;; FIXME!  Check that it is bound in the syntax table.
 
       ;; FIXME: use the acc-data syntax class:

@@ -38,9 +38,12 @@ scalar-type st
 type t
   = st                ; Scalar Type
   | #(t ...)          ; Tuple Type
-  | (Array n t)       ; Array Type
+  | (Array nt t)       ; Array Type
   | (-> t ... t)      ; Function Type
 
+numeric type nt
+  = n               ;; Type-level numeric literal
+  | (add1 nt)       ;; Increment type-level number
 
 n = non-negative integer
 

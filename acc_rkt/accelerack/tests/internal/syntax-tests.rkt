@@ -92,7 +92,9 @@
 (check-pred procedure? test13)
 
 (define rktarr (acc-array (1 2 3)))
-(define-acc test14 (map add1 (use rktarr)))
+(define-acc test14 (map add1 (use rktarr
+                                  ;; FIXME: (Array 1 Int)
+                                  )))
 
 (check-pred acc-array? test14)
 

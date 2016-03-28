@@ -66,6 +66,11 @@ expression e
   | (: e t)                 : Type ascription
   | (use x t)               ; (unquote) Import a normal Racket variable
 
+
+;; TODO:
+  | (while e e e)      ?? Design issues!  Or you could have sfold (sequential)
+  | (replicate ...)    ?? Design issues!
+
 let binding, lb
   = [x e] | [x : t e]
 

@@ -142,12 +142,12 @@
 (define (infer-var x)
   (let ((simple-type (dict-ref environment x #f)))
     (if simple-type
-        (infer-record (mutable-set) (mutable-set) simple-type `(: ,x ,simple-type))
+        (infer-record (mutable-set) (mutable-set) simple-type x)
         (let ([var (fresh x)])
           (infer-record (mutable-set (cons x var))
                         (mutable-set)
                         var
-                        `(: ,x ,var))))))
+                        x)))))
 
 
 
@@ -160,7 +160,7 @@
     (infer-record (mutable-set)
                   (mutable-set)
                   t
-                  `(: ,exp ,t))))
+                  exp)))
 
 
 ; [App] : Exp Environment -> InferRecord
@@ -179,7 +179,7 @@
           (set! te1 (append te1 `(,te2)))
           t2))
       (set-union! c1 (set `(== ,t1 (-> ,@argtypes ,typevar))))
-      (infer-record a1 c1 typevar `(: ,te1 ,typevar)))))
+      (infer-record a1 c1 typevar te1))))
 
 
 ; [Abs]
@@ -203,9 +203,9 @@
     ;(displayln c)
     (set-union! a2 a)
     (define ret-type `(-> ,@arg-vars ,t))
-    (infer-record a2 c ret-type `(: (lambda ,(map (lambda (x)
-                                                    `(: ,(car x) ,(cdr x)))
-                                                  arg-env) (: ,e ,t)) ,ret-type))))
+    (infer-record a2 c ret-type `(lambda ,(foldr (lambda (x res)
+                                                    (append `(,(list (car x) ': (cdr x))) res))
+                                                  '() arg-env) ,e))))
 
 
 ; [Let]
@@ -218,18 +218,22 @@
                (match-define (infer-record ares cres tres te-res) res)
                (set-union! ares a)
                (set-union! cres c)
-               (infer-record ares cres tres (append te-res `(((: ,x ,t) (: ,te ,t)))))))
+               (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))))
            (infer-record (mutable-set) (mutable-set) 'None '()) vars))
   ;;(match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
   (match-define (infer-record a2 c2 t2 te2) (infer-types body env))
+  ;(displayln body)
+  ;(displayln te2)
   ;(set-union! a1 a2)
   (set-union! c1 c2)
   (set-for-each a2 (lambda (a)
-                     (let ([aval (assoc (car a) (map cdar te1))])
+                     (let ([aval (assoc (car a) (map (lambda (var)
+                                                       (match-let ((`((,x : ,t) ,b) var))
+                                                         (list x t))) te1))])
                        (if aval
                            (set-add! c1 `(implicit ,(cdr a) ,(last aval) ,env))
                            (set-add! a1 a)))))
-  (infer-record a1 c1 t2 `(: (let ,te1 (: ,te2 ,t2)) ,t2)))
+  (infer-record a1 c1 t2 `(let ,te1 ,te2)))
 
 
 ;; Solver: list(constraint) -> subsitution
@@ -354,16 +358,18 @@
 (define (annotate-expr type-expr subs)
   (match type-expr
     [x #:when (or (symbol? x) (number? x) (boolean? x)) type-expr]
-    [`(: ,x ,ty) `(: ,(annotate-expr x subs) ,(annotate-type ty subs))]
-    [`(lambda ,x ,b) `(lambda ,(map (curryr annotate-expr subs) x)
+    [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
+    [`(lambda ,x ,b) `(lambda ,(foldr (lambda (val res)
+                                         (append (annotate-expr val subs) res)) '() x)
                         ,(annotate-expr b subs))]
-    [`(let ,vars ,b) `(let ,(map (lambda (var)
-                                   (match-let ([`(,x ,e) var])
-                                     `(,(annotate-expr x subs)
-                                       ,(annotate-expr e subs)))) vars)
+    [`(let ,vars ,b) `(let ,(foldr (lambda (var res)
+                                     (match-let ([`(,x ,e) var])
+                                       (append `((,@(annotate-expr x subs)
+                                                  ,(annotate-expr e subs))) res))) '() vars)
                         ,(annotate-expr b subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
-                         ,@(map (curryr annotate-expr subs) rand))]))
+                         ,@(map (curryr annotate-expr subs) rand))]
+    [else (error 'error type-expr)]))
 
 (define (infer e)
   (match-define
@@ -373,7 +379,8 @@
                      e)
                  (set)))
   ;;(displayln assumptions)
-  (display "CONSTRAINTS: ")(displayln constraints)
+  ;;(display "CONSTRAINTS: ")(displayln constraints)
+  (display "Type Expr: ")(displayln type-expr)
   ;(displayln type-expr)
   ;; (print "Infer types done")
   (list assumptions constraints type (solve (set->list constraints)) type-expr))
@@ -408,7 +415,7 @@
 (define e1 #'x)
 (define e2 #'(lambda (x) x))
 (define e3 #'(x 2))
-(define e4 #'((lambda (x) x) 2))
+(define e4 #'((lambda (x y) (+ x y)) 2 3))
 (define e5 #'(let ((x (+ 5 2))) x))
 (define e6 #'(let ((x 2) (y 5)) (+ x y)))
 (define e7 #'(lambda (x) (let ((x 2)) x)))
@@ -432,7 +439,7 @@
 (p-infer e10)
 (p-infer e11)
 
-(display "Feeding back through:\n")
-; (p-infer e2_)
+;;(display "Feeding back through:\n")
+;; (p-infer e2_)
 ;; Expected output:
-;;  (lambda ((: x t1)) x)
+;;  (lambda ((x:t1)) x)

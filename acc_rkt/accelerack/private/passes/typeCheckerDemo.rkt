@@ -122,6 +122,7 @@
     [`(let ,vars ,b) (infer-let e env)]
     [(? symbol?) (infer-var e)]
     [`(: ,e ,t0) (infer-asc e t0 env)]
+    [`(use ,e ,t0) (infer-use e t0 env)]
     [(? acc-scalar?) (infer-lit e)]
     [`(,rator . ,rand) (infer-app e env)]
     [else (error 'infer-types "unhandled case: ~a" e)]))
@@ -134,6 +135,10 @@
   ;;   [(~or n:number b:boolean) (infer-lit e)]
   ;;   )
 
+(define (infer-use e t0 env)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
+  (set-union! c1 (set `(== ,t1 ,t0)))
+  (infer-record a1 c1 t1 `(use ,te1 ,t0)))
 
 
 (define (infer-asc e t0 env)
@@ -435,6 +440,7 @@
 (define e11 #'(let ((f (lambda (x) (lambda (y) (+ x 1)))))
                 (let ((g (f 2))) g)))
 (define e12 #'(: (+ 5 4) Int))
+(define e13 #'(use x Int))
 
 
 ;; (define e1_ (p-infer e1))
@@ -450,6 +456,7 @@
 ;; (p-infer e10)
 ;; (p-infer e11)
 (p-infer e12)
+(p-infer e13)
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

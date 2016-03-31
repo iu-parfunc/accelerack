@@ -83,9 +83,9 @@
   #:guard (lambda (as con t te type-name)
             (cond
               [(not (set-mutable? as))
-               (error type-name "Assumptions: ~e has to be of the type mutable-set" as)]
+               (raise-syntax-error type-name "Assumptions: ~e has to be of the type mutable-set" as)]
               [(not (set-mutable? con))
-               (error type-name "Constraints: ~e has to be of the type mutable-set" con)]
+               (raise-syntax-error type-name "Constraints: ~e has to be of the type mutable-set" con)]
               [else (values as con t te)])))
 
 (define type_var? string?)
@@ -123,9 +123,10 @@
     [(? symbol?) (infer-var e)]
     [`(: ,e ,t0) (infer-asc e t0 env)]
     [`(use ,e ,t0) (infer-use e t0 env)]
+    [`(if ,cnd ,thn ,els) (infer-cond e env)]
     [(? acc-scalar?) (infer-lit e)]
     [`(,rator . ,rand) (infer-app e env)]
-    [else (error 'infer-types "unhandled case: ~a" e)]))
+    [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
   ;; (syntax-parse e
   ;;   [(lambda (x:acc-lambda-param ...) body) (infer-abs (syntax->datum e) env)]
   ;;   [(let (lb:acc-let-bind ...) body) (infer-let (syntax->datum e) env)]
@@ -134,6 +135,15 @@
   ;;   [x:identifier (infer-var e)]
   ;;   [(~or n:number b:boolean) (infer-lit e)]
   ;;   )
+
+(define (infer-cond e env)
+  (match-define `(if ,cnd ,thn ,els) e)
+  (match-define (infer-record ac cc tc tec) (infer-types cnd env))
+  (match-define (infer-record at ct tt tet) (infer-types thn env))
+  (match-define (infer-record ae ce te tee) (infer-types els env))
+  (set-union! ac at ae)
+  (set-union! cc ct ce (set `(== ,tt ,te)))
+  (infer-record ac cc tt `(if ,tec ,tet ,tee)))
 
 (define (infer-use e t0 env)
   (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
@@ -165,7 +175,7 @@
   (let ([t (match exp
              [(? number?) 'Int]
              [(? boolean?) 'Bool]
-             [else (error 'infer-lit "This literal is not supported yet: ~a " exp)])])
+             [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)])])
     (infer-record (mutable-set)
                   (mutable-set)
                   t
@@ -268,7 +278,7 @@
                   (cons (car v) (substitute subs1 (cdr v)))) subs2)))
     (foldl (lambda (v res)
              (when (dict-ref subs2 (car v) #f)
-               (error 'subs-union "Substitutions with same type vars"))
+               (raise-syntax-error 'subs-union "Substitutions with same type vars"))
              (set! s (cons v s))) '() subs1) s))
 
 
@@ -278,7 +288,7 @@
     [(type_con? type) type]
     [(type_var? type) (dict-ref s type type)]
     [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
-    [else (error 'substitute "unknown type: ~a" type)]))
+    [else (raise-syntax-error 'substitute (format "unknown type: ~a" type))]))
 
 
 ;;  substitution -> constraint -> constraint
@@ -313,7 +323,7 @@
                          (set-union (list->set (map free_vars in-types))
                                     (free_vars ret-type)))]
         [(type_con? t) (set)]
-        [else (error (format "No match clause for ~s" t))]))
+        [else (raise-syntax-error (format "Unknown type for ~s" t))]))
 
 
 ;; active variables: constraints -> set(type var)
@@ -340,14 +350,15 @@
     [(equal? t1 t2) '()]
     [(type_var? t1) (occurs-check t1 t2)]
     [(type_var? t2) (occurs-check t2 t1)]
-    [else (error (format "Can't Unify t1: ~s and t2: ~s" t1 t2))]))
+    [else (raise-syntax-error 'unify (format "Can't Unify t1: ~s and t2: ~s" t1 t2))]))
 
 ;; Var Type -> ((var . type)...)
 (define (occurs-check var type)
   (cond
     [(equal? var type) '()]
     ;This is an infinite type. Send an error back
-    [(set-member? (free_vars type) var) (error occurs-check "Occurs check failed, ~a occurs in ~a\n" var type)]
+    [(set-member? (free_vars type) var)
+     (raise-syntax-error 'occurs-check "Occurs check failed, ~a occurs in ~a\n" var type)]
     [else `(,(cons var type))]))
 
 (define environment
@@ -356,7 +367,8 @@
     (* . (-> Int Int Int))
     (/ . (-> Int Int Int))
     (< . (-> Int Int Bool))
-    (= . (-> Int Int Bool))))
+    (= . (-> Int Int Bool))
+    (eq? . (-> Int Int Bool))))
 
 (define (str->sym val)
   (match val
@@ -394,23 +406,26 @@
                      e)
                  (set)))
   ;;(displayln assumptions)
+  ;;(display "FINAL TYPE:") (displayln type)
   ;;(display "CONSTRAINTS: ")(displayln constraints)
-  (display "Type Expr: ")(displayln type-expr)
-  ;(displayln type-expr)
+  ;;(display "TYPE EXPR: ")(displayln type-expr)
+  ;;(displayln type-expr)
   ;; (print "Infer types done")
   (list assumptions constraints type (solve (set->list constraints)) type-expr))
 
 (define (p-infer exp)
   (reset-var-cnt)
   (match-define (list assumptions constraints type substitutions type-expr) (infer exp))
-  (displayln "--- Output: -----------------------------------------------------")
-  (displayln (list (syntax->datum exp) ':= (substitute substitutions type)))
+  (displayln "--- Input: ------------------------------------------------------")
+  (displayln (list (syntax->datum exp)))
+  ;;(displayln "--- Output: -----------------------------------------------------")  
+  ;;(displayln (list (syntax->datum exp) ':= (substitute substitutions type)))
   (displayln "--- Principal type of Expression: -------------------------------")
   (displayln (substitute substitutions type))
   (displayln "--- Type Annotated Expression: ----------------------------------")
   (displayln (annotate-expr type-expr substitutions))
   (displayln "-----------------------------------------------------------------")
-  (annotate-expr type-expr substitutions)
+  ;(annotate-expr type-expr substitutions)
   )
 
 (define (p*-infer exp)
@@ -441,22 +456,27 @@
                 (let ((g (f 2))) g)))
 (define e12 #'(: (+ 5 4) Int))
 (define e13 #'(use x Int))
+(define e14 #'((lambda(x) (+ (use a Int) x)) 5))
+(define e15 #'(if (eq? (use a Int) (use b Int))
+                  (+ 3 5)
+                  (- 5 3)))
 
+(define e1_ (p-infer e1))
 
-;; (define e1_ (p-infer e1))
-
-;; (define e2_ (p-infer e2))
-;; (p-infer e3)
-;; (p-infer e4)
-;; (p-infer e5)
-;; (p-infer e6)
-;; (p-infer e7)
-;; (p-infer e8)
-;; (p-infer e9)
-;; (p-infer e10)
-;; (p-infer e11)
+(define e2_ (p-infer e2))
+(p-infer e3)
+(p-infer e4)
+(p-infer e5)
+(p-infer e6)
+(p-infer e7)
+(p-infer e8)
+(p-infer e9)
+(p-infer e10)
+(p-infer e11)
 (p-infer e12)
 (p-infer e13)
+(p-infer e14)
+(p-infer e15)
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

@@ -39,6 +39,16 @@
                    (define-acc y (map (lambda(y) (+ y (use q))) (acc-array (1 2 3))))
                    (check-equal? 2 (car (acc-array->list y))))
                  ))))
+
+  ;; TODO: Using invalid KEYWORDS in accelerack expressions by
+  ;; accident should give a good error:
+#;
+  (test-case "add1 function definition"
+    "add1 function definition"
+    (define-acc (f x) (begin (printf "hello") (add1 x)))
+    (check-true (procedure? f))
+    (check-equal? 4 (f 3)))
+
  #|
 -- TODO: Test different unbound variable errors.
 
@@ -73,19 +83,24 @@
 
   (test-case "test-case 3"
              "test-case 3"
-             (define x (acc-array ((#f #f #f) (#t #t #t))))
+             (define x (acc-array ((#f #f #f)
+                                   (#t #t #t))))
              (check-equal? '((#f #f #f) (#t #t #t)) (acc-array->list x))
              (maybe-display "Test 3 Success !!!"))
 
   (test-case "test-case 4"
              "test-case 4"
-             (define x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
+             (define x (acc-array (#(2 #(2 1.1 #f))
+                                   #(1 #(3 2.2 #f))
+                                   #(4 #(16 3.3 #f)))))
              (check-equal? '(#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f))) (acc-array->list x))
              (maybe-display "Test 4 Success !!!"))
 
   (test-case "test-case 5"
              "test-case 5"
-             (define-acc x (acc-array (#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f)))))
+             (define-acc x (acc-array (#(2 #(2 1.1 #f))
+                                       #(1 #(3 2.2 #f))
+                                       #(4 #(16 3.3 #f)))))
              (check-pred acc-array? x)
              (maybe-display "Test 5 Success !!!"))
   (test-case "test-case 7"
@@ -95,7 +110,8 @@
              (maybe-display "Test 7 Success !!!"))
   (test-case "test-case 6"
              "test-case 6"
-             (define-acc x (map (lambda(x) (+ x 1)) (acc-array (1 2 3))))
+             (define-acc x (map (lambda(x) (+ x 1))
+                                (acc-array (1 2 3))))
              (check-equal? 2 (car (acc-array->list x)))
              (maybe-display "Test 6 Success !!!"))
 
@@ -123,6 +139,83 @@
              (define-acc y (fold + 0 x))
              (check-equal? (car (acc-array->list y)) 6)
              (maybe-display "Test 10 Success !!!"))
+
+  ;; Same as test 8 but on floats and with add1 function:
+  (test-case "11: map test"
+             "11: map test"
+             (define-acc x (acc-array (15.15 25.25)))
+             (define-acc y (map add1 x))
+             ; (printf "Y array: ~a, acc-array? ~a\n" y (acc-array? y))
+             (check-equal? '(16.15 26.25) (acc-array->list y))
+             (maybe-display "Test 11 Success !!!"))
+
+  (test-case "12: map in racket"
+             "12: map in racket"
+             (define x (acc-array (15.15 25.25)))
+             (define y (map add1 x))
+             ; (printf "X array: ~a, Y array: ~a\n" x y)
+             (check-equal? '(16.15 26.25) (acc-array->list y))
+             (maybe-display "Test 11 Success !!!"))
+
+  (test-case "13: map of use"
+             "13: map of use"
+             (define x (acc-array (15.15 25.25)))
+             (define-acc y (map add1 (use x)))
+             ; (printf "X array: ~a, Y array: ~a\n" x y)
+             (check-equal? '(16.15 26.25) (acc-array->list y))
+             (maybe-display "Test 11 Success !!!"))
+
+  (test-case "scalar"
+             "scalar"
+    (define-acc x 3)
+    (printf "scalar x: ~a\n" x)
+    (check-true (acc-scalar? x))
+    (check-false (acc-array? x)))
+
+  ;; WAIT TILL VERSION 0.2:
+
+#;
+  (test-case "scalar ascription"
+             "scalar ascription"
+    (define-acc x (: 3 Int))
+    (printf "scalar x: ~a\n" x)
+    (check-true (acc-scalar? x))
+    (check-false (acc-array? x))
+    ; (check-equal? )
+    )
+
+#;
+  (test-case "array ascription"
+             "array ascription"
+             (define-acc x
+               (: (acc-array ((#f #f #f)
+                              (#t #t #t)))
+                  (Array 2 Bool)))
+             (check-equal? '((#f #f #f) (#t #t #t))
+                           (acc-array->list x)))
+#;
+  (test-case "use a scalar in an array expression"
+             "use a scalar in an array expression"
+    (define-acc x 4)
+    (define-acc y (map (lambda (_) x)
+                       (acc-array (1 2 3))))
+    (check-equal? '(4 4 4)
+                  (acc-array->list y))
+    )
+
+  (test-case "identity function definition"
+             "identity function definition"
+    (define-acc (f x) x)
+    (check-true (procedure? f))
+    (check-equal? 3 (f 3)))
+
+#; ;; [2016.03.31] This is getting a totally bogus error
+  (test-case "add1 function definition"
+             "add1 function definition"
+    (define-acc (f x) (add1 x))
+    (check-true (procedure? f))
+    (check-equal? 4 (f 3)))
+
   ))
 
 

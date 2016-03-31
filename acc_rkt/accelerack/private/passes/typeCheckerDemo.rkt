@@ -121,9 +121,7 @@
     [`(lambda ,x ,b) (infer-abs e env)]
     [`(let ,vars ,b) (infer-let e env)]
     [(? symbol?) (infer-var e)]
-    [`(: ,e ,t0)
-     (match-let ([(infer-record a1 c1 t1 te1) (infer-types e env)])
-       (error "Need to handle ascription - instantiate to a type schema and unify: " t0 t1))]
+    [`(: ,e ,t0) (infer-asc e t0 env)]
     [(? acc-scalar?) (infer-lit e)]
     [`(,rator . ,rand) (infer-app e env)]
     [else (error 'infer-types "unhandled case: ~a" e)]))
@@ -136,6 +134,12 @@
   ;;   [(~or n:number b:boolean) (infer-lit e)]
   ;;   )
 
+
+
+(define (infer-asc e t0 env)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
+  (set-union! c1 (set `(== ,t1 ,t0)))
+  (infer-record a1 c1 t1 te1))
 
 ; [Var]
 ; infer-var: Variable -> InferRecord
@@ -349,11 +353,17 @@
     (< . (-> Int Int Bool))
     (= . (-> Int Int Bool))))
 
+(define (str->sym val)
+  (match val
+    [(? string?) (string->symbol val)]
+    [(? list?) (map str->sym val)]
+    [else val]))
+          
 (define (annotate-type ty subs)
   (match ty
     [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
     [else (let ([f (assoc ty subs)])
-            (if f (cdr f) ty))]))
+            (if f (str->sym (cdr f)) (str->sym ty)))]))
 
 (define (annotate-expr type-expr subs)
   (match type-expr
@@ -423,21 +433,23 @@
 (define e9 #'(lambda (x y) (let ((x 2)) (+ x y))))
 (define e10 #'(let ((x (lambda (x y) (+ x y)))) (x 5 2)))
 (define e11 #'(let ((f (lambda (x) (lambda (y) (+ x 1)))))
-               (let ((g (f 2))) g)))
+                (let ((g (f 2))) g)))
+(define e12 #'(: (+ 5 4) Int))
 
 
-(define e1_ (p-infer e1))
+;; (define e1_ (p-infer e1))
 
-(define e2_ (p-infer e2))
-(p-infer e3)
-(p-infer e4)
-(p-infer e5)
-(p-infer e6)
-(p-infer e7)
-(p-infer e8)
-(p-infer e9)
-(p-infer e10)
-(p-infer e11)
+;; (define e2_ (p-infer e2))
+;; (p-infer e3)
+;; (p-infer e4)
+;; (p-infer e5)
+;; (p-infer e6)
+;; (p-infer e7)
+;; (p-infer e8)
+;; (p-infer e9)
+;; (p-infer e10)
+;; (p-infer e11)
+(p-infer e12)
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

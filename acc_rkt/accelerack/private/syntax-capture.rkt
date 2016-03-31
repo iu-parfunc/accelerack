@@ -41,7 +41,10 @@
       ;; HACK: fix this to the second alternative after typechecking works:
       (if (is-a-lambda? bod)
           #`(define #,name  #,stripped)
-          #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped)))))
+          #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped))))
+          ;; TODO: Need support for delayed scalars:
+          ; #`(define #,name (make-acc-scalar (acc-delayed-scalar (lambda () #,stripped))))
+          )
       ;; Lets use this once type check starts working and remove the if above
       ;; (cond
       ;;   [(is-a-lambda? bod) #`(define #,name (make-acc-array #,stripped))]

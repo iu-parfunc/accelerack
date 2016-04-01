@@ -19,7 +19,7 @@
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords : Array Int Bool Double use ->)
   )
- (only-in accelerack/private/types acc-scalar?))
+ (only-in accelerack/private/types acc-scalar? acc-type?))
 
 (provide p*-infer)
 
@@ -90,6 +90,10 @@
 
 (define type_var? string?)
 (define type_con? symbol?)
+(define type_array? (lambda (x)
+                      (match x
+                        [`(Array ,n ,el) #t]
+                        [else #f])))
 (define (type_fun? type)
   (match type
     [`(-> . ,t1) #t]
@@ -125,6 +129,7 @@
     [`(use ,e ,t0) (infer-use e t0 env)]
     [`(if ,cnd ,thn ,els) (infer-cond e env)]
     [(? acc-scalar?) (infer-lit e)]
+    [`(Array ,n ,el) (infer-lit e)]
     [`(,rator . ,rand) (infer-app e env)]
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
   ;; (syntax-parse e
@@ -175,6 +180,7 @@
   (let ([t (match exp
              [(? number?) 'Int]
              [(? boolean?) 'Bool]
+             [`(Array ,n ,el) `(Array n ,@(map infer-lit el))]
              [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)])])
     (infer-record (mutable-set)
                   (mutable-set)
@@ -285,7 +291,7 @@
 ;; Substitution Type -> Type
 (define (substitute s type)
   (cond
-    [(type_con? type) type]
+    [(or (type_con? type) (type_array? type)) type]
     [(type_var? type) (dict-ref s type type)]
     [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
     [else (raise-syntax-error 'substitute (format "unknown type: ~a" type))]))
@@ -317,13 +323,13 @@
 ;; free variables: type -> set
 ;; Fetches all the variables in the input given
 (define (free_vars t)
-  (cond [(type_var? t) (set t)]
+  (cond [(or (type_array? t) (type_var? t)) (set t)]
         [(type_fun? t) (let ([in-types (drop-right (cdr t) 1)]
                              [ret-type (last t)])
                          (set-union (list->set (map free_vars in-types))
                                     (free_vars ret-type)))]
         [(type_con? t) (set)]
-        [else (raise-syntax-error (format "Unknown type for ~s" t))]))
+        [else (raise-syntax-error 'free_vars (format "Unknown type for ~s" t))]))
 
 
 ;; active variables: constraints -> set(type var)
@@ -460,6 +466,7 @@
 (define e15 #'(if (eq? (use a Int) (use b Int))
                   (+ 3 5)
                   (- 5 3)))
+(define e16 #'(: x (Array 1 #t)))
 
 (define e1_ (p-infer e1))
 
@@ -477,6 +484,7 @@
 (p-infer e13)
 (p-infer e14)
 (p-infer e15)
+(p-infer e16)
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

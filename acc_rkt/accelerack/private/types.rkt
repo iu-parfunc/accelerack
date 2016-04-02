@@ -28,7 +28,8 @@
       (and (integer? x)
            (<= (- (expt 2 63)) x (sub1 (expt 2 64))))
       (boolean? x)
-      (flonum? x)))
+      (flonum? x)
+      (vector? x)))
 
 ;; Check if 2 acc-arrays are equal
 (define (eq-acc-array? x nexp)
@@ -106,6 +107,7 @@
     ['Bool #t]
     ['Double #t]
     [`#( ,t* ...) (andmap acc-scalar-type? t*)]
+    [(? string?) #t]
     [_ #f]))
 
 (define (acc-type? t)

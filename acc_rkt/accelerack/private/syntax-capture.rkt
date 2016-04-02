@@ -39,12 +39,13 @@
       (apply-to-syn-table maybeType inferredTy name progWithTys)
       ;; Expand into the stripped version with no types:
       ;; HACK: fix this to the second alternative after typechecking works:
-      (if (is-a-lambda? bod)
-          #`(define #,name  #,stripped)
-          #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped))))
+      (cond
+        [(acc-scalar-type? inferredTy) #`(define #,name #,bod)]
+        ;; FIXME once type check works
+        [(is-a-lambda? bod) #`(define #,name  #,stripped)]
+        [else #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped))))])
           ;; TODO: Need support for delayed scalars:
           ; #`(define #,name (make-acc-scalar (acc-delayed-scalar (lambda () #,stripped))))
-          )
       ;; Lets use this once type check starts working and remove the if above
       ;; (cond
       ;;   [(is-a-lambda? bod) #`(define #,name (make-acc-array #,stripped))]
@@ -97,7 +98,9 @@
 
 
 ; --------------------------------------------------------------------------------
+;; (define-acc x (acc-array (1 2 3)))
+(define-acc x 1)
 
-(define-acc x (acc-array (1 2 3)))
 
-(display (acc-array? x))
+
+

@@ -21,7 +21,7 @@
   )
  (only-in accelerack/private/types acc-scalar? acc-type?))
 
-(provide p*-infer)
+(provide p*-infer p-infer)
 
 
 ;; Datatype definitions:
@@ -114,7 +114,8 @@
 ;; type environment
 (define (get_primitives e)
   (cond [(number? e) 'Int]
-        [(boolean? e) 'Bool]))
+        [(boolean? e) 'Bool]
+        [(vector? e) 'Vector]))
 
 
 ;; constraint collector: Output InferRecord -> (assumptions (mutable-set)
@@ -122,13 +123,13 @@
 ;;                                              type)
 (define (infer-types e env)
   (match e
+    [(? acc-scalar?) (infer-lit e)]
+    [(? symbol?) (infer-var e)]
     [`(lambda ,x ,b) (infer-abs e env)]
     [`(let ,vars ,b) (infer-let e env)]
-    [(? symbol?) (infer-var e)]
     [`(: ,e ,t0) (infer-asc e t0 env)]
     [`(use ,e ,t0) (infer-use e t0 env)]
     [`(if ,cnd ,thn ,els) (infer-cond e env)]
-    [(? acc-scalar?) (infer-lit e)]
     [`(Array ,n ,el) (infer-lit e)]
     [`(,rator . ,rand) (infer-app e env)]
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
@@ -180,6 +181,7 @@
   (let ([t (match exp
              [(? number?) 'Int]
              [(? boolean?) 'Bool]
+             [(? vector?) 'Vector]
              [`(Array ,n ,el) `(Array n ,@(map infer-lit el))]
              [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)])])
     (infer-record (mutable-set)
@@ -262,7 +264,7 @@
 
 
 ;; Solver: list(constraint) -> subsitution
-(define (solve constraints)
+(trace-define (solve constraints)
   (cond
     [(empty? constraints) '()]
     [else (let ((constraint (car constraints)))
@@ -343,7 +345,7 @@
          (set) constraints))
 
 ;; unify : type type -> ?
-(define (unify t1 t2)
+(trace-define (unify t1 t2)
   (cond
     [(and (pair? t1) (pair? t2))
      (match-let ((`(-> . ,t1-types) t1)
@@ -422,16 +424,19 @@
 (define (p-infer exp)
   (reset-var-cnt)
   (match-define (list assumptions constraints type substitutions type-expr) (infer exp))
+  (define p-type (substitute substitutions type))
+  (define an-exp (annotate-expr type-expr substitutions))
   (displayln "--- Input: ------------------------------------------------------")
   (displayln (list (syntax->datum exp)))
   ;;(displayln "--- Output: -----------------------------------------------------")  
   ;;(displayln (list (syntax->datum exp) ':= (substitute substitutions type)))
   (displayln "--- Principal type of Expression: -------------------------------")
-  (displayln (substitute substitutions type))
+  (displayln p-type)
   (displayln "--- Type Annotated Expression: ----------------------------------")
-  (displayln (annotate-expr type-expr substitutions))
+  (displayln an-exp)
   (displayln "-----------------------------------------------------------------")
   ;(annotate-expr type-expr substitutions)
+  (values p-type (datum->syntax #f an-exp))
   )
 
 (define (p*-infer exp)
@@ -468,23 +473,24 @@
                   (- 5 3)))
 (define e16 #'(: x (Array 1 #t)))
 
-(define e1_ (p-infer e1))
+;; (define e1_ (p-infer e1))
 
-(define e2_ (p-infer e2))
-(p-infer e3)
-(p-infer e4)
-(p-infer e5)
-(p-infer e6)
-(p-infer e7)
-(p-infer e8)
-(p-infer e9)
-(p-infer e10)
-(p-infer e11)
-(p-infer e12)
-(p-infer e13)
-(p-infer e14)
-(p-infer e15)
-(p-infer e16)
+;; (define e2_ (p-infer e2))
+(p-infer #'1)
+;; (p-infer e3)
+;; (p-infer e4)
+;; (p-infer e5)
+;; (p-infer e6)
+;; (p-infer e7)
+;; (p-infer e8)
+;; (p-infer e9)
+;; (p-infer e10)
+;; (p-infer e11)
+;; (p-infer e12)
+;; (p-infer e13)
+;; (p-infer e14)
+;; (p-infer e15)
+;; (p-infer e16)
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

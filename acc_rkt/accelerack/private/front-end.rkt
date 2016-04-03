@@ -9,7 +9,9 @@
  (only-in accelerack/private/executor launch-accelerack-ast)
  (only-in accelerack/private/global_utils accelerack-debug-mode?)
  syntax/parse syntax/id-table racket/dict syntax/to-string
- rackunit)
+ rackunit
+ racket/trace
+ )
 
 (provide snap-as-syntax acc-syn-table front-end-compiler snap-as-list
          extend-syn-table apply-to-syn-table lookup-acc-expr)

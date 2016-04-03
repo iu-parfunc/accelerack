@@ -8,6 +8,8 @@
          racket/dict
          (only-in accelerack/private/global_utils pass-output-chatter)
          accelerack/private/syntax
+         (for-template accelerack/private/syntax)
+         (for-syntax accelerack/private/syntax)
          accelerack/private/wrappers
          (prefix-in r: racket/base))
 
@@ -21,7 +23,7 @@
   )
  (only-in accelerack/private/types acc-scalar? acc-type?))
 
-(provide p*-infer)
+(provide p*-infer p-infer)
 
 
 ;; Datatype definitions:
@@ -114,7 +116,8 @@
 ;; type environment
 (define (get_primitives e)
   (cond [(number? e) 'Int]
-        [(boolean? e) 'Bool]))
+        [(boolean? e) 'Bool]
+        [(vector? e) 'Vector]))
 
 
 ;; constraint collector: Output InferRecord -> (assumptions (mutable-set)
@@ -132,9 +135,9 @@
     [(? acc-scalar?) (infer-lit e)]
     ;[`(Array ,n ,el) (infer-lit e)]
     [`(,rator . ,rand) (infer-app e env)]
-    [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
+    [else (raise-syntax-error 'infer-types "unhandled syntassssssx: ~a" e)]))
   ;; (syntax-parse e
-  ;;   [(lambda (x:acc-lambda-param ...) body) (infer-abs (syntax->datum e) env)]
+  ;;   [(lambda (x:acc-lambda-param ...) body) (infer-abs (syntax->da(1 2 3)tum e) env)]
   ;;   [(let (lb:acc-let-bind ...) body) (infer-let (syntax->datum e) env)]
   ;;   [(rator rand ...) (infer-app (syntax->datum e) env)]
   ;;   [(p:acc-primop val ...) (infer-var (car e))]
@@ -198,6 +201,7 @@
   (let ([t (match exp
              [(? number?) 'Int]
              [(? boolean?) 'Bool]
+             [(? vector?) 'Vector]
              [`(Array ,n ,el) `(Array n ,@(map infer-lit el))]
              [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)])])
     (infer-record (mutable-set)
@@ -399,7 +403,7 @@
     [(? string?) (string->symbol val)]
     [(? list?) (map str->sym val)]
     [else val]))
-          
+
 (define (annotate-type ty subs)
   (match ty
     [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
@@ -422,7 +426,7 @@
                          ,@(map (curryr annotate-expr subs) rand))]
     [else (error 'error type-expr)]))
 
-(define (infer e)
+(trace-define (infer e)
   (match-define
     (infer-record assumptions constraints type type-expr)
     (infer-types (if (syntax? e)
@@ -440,6 +444,8 @@
 (define (p-infer exp)
   (reset-var-cnt)
   (match-define (list assumptions constraints type substitutions type-expr) (infer exp))
+  (define p-type (substitute substitutions type))
+  (define an-exp (annotate-expr type-expr substitutions))
   (displayln "--- Input: ------------------------------------------------------")
   (displayln (syntax->datum exp))
   ;;(displayln "--- Output: -----------------------------------------------------")  
@@ -450,6 +456,7 @@
   (displayln (annotate-expr type-expr substitutions))
   (displayln "-----------------------------------------------------------------")
   ;(annotate-expr type-expr substitutions)
+  (values p-type (datum->syntax #f an-exp))
   )
 
 (define (p*-infer exp)
@@ -497,6 +504,15 @@
 ;; (p-infer e7)
 ;; (p-infer e8)
 ;; (p-infer e9)
+;; (p-infer (acc-array (1 2 3)))
+;; (p-infer #'1)
+;; (p-infer e3)
+;; (p-infer e4)
+;; (p-infer e5)
+;; (p-infer e6)
+;; (p-infer e7)
+;; (p-infer e8)
+;; (p-infer e9)
 ;; (p-infer e10)
 ;; (p-infer e11)
 ;; (p-infer e12)
@@ -510,3 +526,4 @@
 ;; (p-infer e2_)
 ;; Expected output:
 ;;  (lambda ((x:t1)) x)
+

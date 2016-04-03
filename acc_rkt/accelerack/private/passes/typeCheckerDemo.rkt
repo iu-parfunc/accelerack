@@ -92,7 +92,7 @@
 (define type_con? symbol?)
 (define type_array? (lambda (x)
                       (match x
-                        [`(Array ,n ,el) #t]
+                        [`(Array ,len ,ls) #t]
                         [else #f])))
 (define (type_fun? type)
   (match type
@@ -128,8 +128,9 @@
     [`(: ,e ,t0) (infer-asc e t0 env)]
     [`(use ,e ,t0) (infer-use e t0 env)]
     [`(if ,cnd ,thn ,els) (infer-cond e env)]
+    [`(acc-array ,ls) (infer-array e env)]
     [(? acc-scalar?) (infer-lit e)]
-    [`(Array ,n ,el) (infer-lit e)]
+    ;[`(Array ,n ,el) (infer-lit e)]
     [`(,rator . ,rand) (infer-app e env)]
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
   ;; (syntax-parse e
@@ -140,6 +141,23 @@
   ;;   [x:identifier (infer-var e)]
   ;;   [(~or n:number b:boolean) (infer-lit e)]
   ;;   )
+
+(define (infer-array e env)
+  (match-define `(acc-array ,ls) e)
+  (let ([len (length ls)]
+        [el (foldl (lambda (val res)
+                   (match-define (infer-record a1 c1 t1 te1) (infer-types val env))
+                   (match-define (infer-record a0 c0 t0 te0) res)
+                   (set-union! a0 a1)
+                   (set-union! c0 c1 (set `(== ,t1 Int)))
+                   (infer-record a0
+                                 c0
+                                 (if (eqv? t0 'None) (list t1) (cons t1 t0))
+                                 (cons te1 te0)))
+                 (infer-record (mutable-set) (mutable-set) 'None '())
+                 ls)])
+    (match-define (infer-record a2 c2 t2 te2) el)
+    (infer-record a2 c2 `(Array ,len ,t2) `(acc-array ,(reverse te2)))))
 
 (define (infer-cond e env)
   (match-define `(if ,cnd ,thn ,els) e)
@@ -423,7 +441,7 @@
   (reset-var-cnt)
   (match-define (list assumptions constraints type substitutions type-expr) (infer exp))
   (displayln "--- Input: ------------------------------------------------------")
-  (displayln (list (syntax->datum exp)))
+  (displayln (syntax->datum exp))
   ;;(displayln "--- Output: -----------------------------------------------------")  
   ;;(displayln (list (syntax->datum exp) ':= (substitute substitutions type)))
   (displayln "--- Principal type of Expression: -------------------------------")
@@ -467,24 +485,26 @@
                   (+ 3 5)
                   (- 5 3)))
 (define e16 #'(: x (Array 1 #t)))
+(define e17 #'(acc-array (1 2 3)))
 
-(define e1_ (p-infer e1))
+;; (define e1_ (p-infer e1))
 
-(define e2_ (p-infer e2))
-(p-infer e3)
-(p-infer e4)
-(p-infer e5)
-(p-infer e6)
-(p-infer e7)
-(p-infer e8)
-(p-infer e9)
-(p-infer e10)
-(p-infer e11)
-(p-infer e12)
-(p-infer e13)
-(p-infer e14)
-(p-infer e15)
-(p-infer e16)
+;; (define e2_ (p-infer e2))
+;; (p-infer e3)
+;; (p-infer e4)
+;; (p-infer e5)
+;; (p-infer e6)
+;; (p-infer e7)
+;; (p-infer e8)
+;; (p-infer e9)
+;; (p-infer e10)
+;; (p-infer e11)
+;; (p-infer e12)
+;; (p-infer e13)
+;; (p-infer e14)
+;; (p-infer e15)
+;; (p-infer e16)
+(p-infer e17)
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

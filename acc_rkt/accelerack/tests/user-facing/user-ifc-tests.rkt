@@ -88,13 +88,13 @@
              (check-equal? '((#f #f #f) (#t #t #t)) (acc-array->list x))
              (maybe-display "Test 3 Success !!!"))
 
-  (test-case "test-case 4"
-             "test-case 4"
-             (define x (acc-array (#(2 #(2 1.1 #f))
-                                   #(1 #(3 2.2 #f))
-                                   #(4 #(16 3.3 #f)))))
-             (check-equal? '(#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f))) (acc-array->list x))
-             (maybe-display "Test 4 Success !!!"))
+  ;; (test-case "test-case 4"
+  ;;            "test-case 4"
+  ;;            (define x (acc-array (#(2 #(2 1.1 #f))
+  ;;                                  #(1 #(3 2.2 #f))
+  ;;                                  #(4 #(16 3.3 #f)))))
+  ;;            (check-equal? '(#(2 #(2 1.1 #f)) #(1 #(3 2.2 #f)) #(4 #(16 3.3 #f))) (acc-array->list x))
+  ;;            (maybe-display "Test 4 Success !!!"))
 
   ;; (test-case "test-case 5"
   ;;            "test-case 5"
@@ -103,17 +103,17 @@
   ;;                                      #(4 #(16 3.3 #f)))))
   ;;            (check-pred acc-array? x)
   ;;            (maybe-display "Test 5 Success !!!"))
-  ;; (test-case "test-case 7"
-  ;;            "test-case 7"
-  ;;            (define-acc x (acc-array (1 2 3)))
-  ;;            (check-equal? 1 (car (acc-array->list x)))
-  ;;            (maybe-display "Test 7 Success !!!"))
-  ;; (test-case "test-case 6"
-  ;;            "test-case 6"
-  ;;            (define-acc x (map (lambda(x) (+ x 1))
-  ;;                               (acc-array (1 2 3))))
-  ;;            (check-equal? 2 (car (acc-array->list x)))
-  ;;            (maybe-display "Test 6 Success !!!"))
+  (test-case "test-case 7"
+             "test-case 7"
+             (define-acc x (acc-array (1 2 3)))
+             (check-equal? 1 (car (acc-array->list x)))
+             (maybe-display "Test 7 Success !!!"))
+  (test-case "test-case 6"
+             "test-case 6"
+             (define-acc x (map (lambda(x) (+ x 1))
+                                (acc-array (1 2 3))))
+             (check-equal? 2 (car (acc-array->list x)))
+             (maybe-display "Test 6 Success !!!"))
 
   ;; (test-case "test-case 8"
   ;;            "test-case 8"
@@ -123,31 +123,31 @@
   ;;            (maybe-display "Test 8 Success !!!"))
 
   ;; Test case for valid (use v t)
-  (test-case "test-case 9"
-             "test-case 9"
-             (convert-compile-time-error
-                 (let ()
-                   ;; (define-acc x (acc-array (1 2 3)))
-                   (define q 1)
-                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
-                   (check-equal? 2 (car (acc-array->list y))))))
+  ;; (test-case "test-case 9"
+  ;;            "test-case 9"
+  ;;            (convert-compile-time-error
+  ;;                (let ()
+  ;;                  ;; (define-acc x (acc-array (1 2 3)))
+  ;;                  (define q 1)
+  ;;                  (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+  ;;                  (check-equal? 2 (car (acc-array->list y))))))
 
   ;; Test cases to check forcing of deferred array in fold
-  ;; (test-case "test-case 10"
-  ;;            "test-case 10"
-  ;;            (define-acc x (acc-array (1 2 3)))
-  ;;            (define-acc y (fold + 0 x))
-  ;;            (check-equal? (car (acc-array->list y)) 6)
-  ;;            (maybe-display "Test 10 Success !!!"))
+  (test-case "test-case 10"
+             "test-case 10"
+             (define-acc x (acc-array (1 2 3)))
+             (define-acc y (fold + 0 x))
+             (check-equal? (car (acc-array->list y)) 6)
+             (maybe-display "Test 10 Success !!!"))
 
   ;; ;; Same as test 8 but on floats and with add1 function:
-  ;; (test-case "11: map test"
-  ;;            "11: map test"
-  ;;            (define-acc x (acc-array (15.15 25.25)))
-  ;;            (define-acc y (map add1 x))
-  ;;            ; (printf "Y array: ~a, acc-array? ~a\n" y (acc-array? y))
-  ;;            (check-equal? '(16.15 26.25) (acc-array->list y))
-  ;;            (maybe-display "Test 11 Success !!!"))
+  (test-case "11: map test"
+             "11: map test"
+             (define-acc x (acc-array (15.15 25.25)))
+             (define-acc y (map add1 x))
+             ; (printf "Y array: ~a, acc-array? ~a\n" y (acc-array? y))
+             (check-equal? '(16.15 26.25) (acc-array->list y))
+             (maybe-display "Test 11 Success !!!"))
 
   (test-case "12: map in racket"
              "12: map in racket"

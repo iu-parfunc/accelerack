@@ -124,6 +124,7 @@
   (match e
     [`(lambda ,x ,b) (infer-abs e env)]
     [`(let ,vars ,b) (infer-let e env)]
+    [`(map ,fun ,arr) (infer-map e env)]
     [(? symbol?) (infer-var e)]
     [`(: ,e ,t0) (infer-asc e t0 env)]
     [`(use ,e ,t0) (infer-use e t0 env)]
@@ -141,6 +142,16 @@
   ;;   [x:identifier (infer-var e)]
   ;;   [(~or n:number b:boolean) (infer-lit e)]
   ;;   )
+
+(define (infer-map e env)
+  (match-define `(map ,fun ,arr) e)
+  (match-define (infer-record a0 c0 t0 te0) (infer-types fun env))
+  (match-define (infer-record a1 c1 t1 te1) (infer-types arr env))
+  (match-define `(-> ,a ,b) t0)
+  (match-define `(Array ,n ,ty) t1)
+  (set-union! a0 a1)
+  (set-union! c0 (set `(== ,a ,ty)) c1)
+  (infer-record a0 c0 `(Array ,n ,b) `(map ,te0 ,te1)))
 
 (define (infer-array e env)
   (match-define `(acc-array ,ls) e)
@@ -328,8 +339,9 @@
 ;; Substitution Type -> Type
 (define (substitute s type)
   (cond
-    [(or (type_con? type) (type_array? type)) type]
+    [(type_con? type) type]
     [(type_var? type) (dict-ref s type type)]
+    [(type_array? type) `(,(car type) ,(cadr type) ,(substitute s (last type)))]
     [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
     [else (raise-syntax-error 'substitute (format "unknown type: ~a" type))]))
 
@@ -437,6 +449,7 @@
                                        (append `((,@(annotate-expr x subs)
                                                   ,(annotate-expr e subs))) res))) '() vars)
                         ,(annotate-expr b subs))]
+    [`(map ,fun ,arr) `(map ,(annotate-expr fun subs) ,(annotate-expr arr subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
                          ,@(map (curryr annotate-expr subs) rand))]
     [else (error 'error type-expr)]))
@@ -450,7 +463,7 @@
                  (set)))
   ;;(displayln assumptions)
   ;;(display "FINAL TYPE:") (displayln type)
-  ;;(display "CONSTRAINTS: ")(displayln constraints)
+  (display "CONSTRAINTS: ")(displayln constraints)
   ;;(display "TYPE EXPR: ")(displayln type-expr)
   ;;(displayln type-expr)
   ;; (print "Infer types done")
@@ -503,28 +516,32 @@
 (define e15 #'(if (eq? (use a Int) (use b Int))
                   (+ 3 5)
                   (- 5 3)))
-(define e16 #'(: x (Array 1 #t)))
+(define e16 #'(: x (Array 1 Bool)))
 (define e17 #'(acc-array (1 2 3)))
+(define e18 #'(map (lambda (x) x) (acc-array (1 2 3))))
 
-(define e1_ (p-infer e1))
+;; (define e1_ (p-infer e1))
 
-(define e2_ (p-infer e2))
-(p-infer e3)
-(p-infer #`#,(p-infer e4))
-(p-infer e5)
-(p-infer #`#,(p-infer e6))
-(p-infer e7)
-(p-infer e8)
-(p-infer e9)
-(p-infer #`#,(p-infer e9))
-(p-infer e10)
-(p-infer e11)
-(p-infer e12)
-(p-infer e13)
-(p-infer e14)
-(p-infer e15)
+;; (define e2_ (p-infer e2))
+;; (p-infer e3)
+;; (p-infer #`#,(p-infer e4))
+;; (p-infer e5)
+;; (p-infer #`#,(p-infer e6))
+;; (p-infer e7)
+;; (p-infer e8)
+;; (p-infer e9)
+;; (p-infer #`#,(p-infer e9))
+;; (p-infer e10)
+;; (p-infer e11)
+;; (p-infer e12)
+;; (p-infer e13)
+;; (p-infer e14)
+;; (p-infer e15)
 (p-infer e16)
 (p-infer e17)
+
+(p-infer e18)
+
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

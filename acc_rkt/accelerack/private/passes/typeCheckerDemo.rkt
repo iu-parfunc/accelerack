@@ -149,7 +149,7 @@
                    (match-define (infer-record a1 c1 t1 te1) (infer-types val env))
                    (match-define (infer-record a0 c0 t0 te0) res)
                    (set-union! a0 a1)
-                   (set-union! c0 c1 (set `(== ,t1 Int)))
+                   (set-union! c0 c1)
                    (infer-record a0
                                  c0
                                  (if (eqv? t0 'None) (list t1) (cons t1 t0))
@@ -157,7 +157,7 @@
                  (infer-record (mutable-set) (mutable-set) 'None '())
                  ls)])
     (match-define (infer-record a2 c2 t2 te2) el)
-    (infer-record a2 c2 `(Array ,len ,t2) `(acc-array ,(reverse te2)))))
+    (infer-record a2 c2 `(Array ,len ,(car t2)) `(acc-array ,(reverse te2)))))
 
 (define (infer-cond e env)
   (match-define `(if ,cnd ,thn ,els) e)

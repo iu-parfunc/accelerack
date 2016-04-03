@@ -21,7 +21,7 @@
   )
  (only-in accelerack/private/types acc-scalar? acc-type?))
 
-(provide p*-infer)
+(provide p*-infer p-infer)
 
 
 ;; Datatype definitions:
@@ -143,7 +143,7 @@
   ;;   [(~or n:number b:boolean) (infer-lit e)]
   ;;   )
 
-(define (infer-map e env)
+(trace-define (infer-map e env)
   (match-define `(map ,fun ,arr) e)
   (match-define (infer-record a0 c0 t0 te0) (infer-types fun env))
   (match-define (infer-record a1 c1 t1 te1) (infer-types arr env))
@@ -423,18 +423,20 @@
     (/ . (-> Int Int Int))
     (< . (-> Int Int Bool))
     (= . (-> Int Int Bool))
-    (eq? . (-> Int Int Bool))))
+    (eq? . (-> Int Int Bool))
+    (add1 . (-> Int Int))))
 
 (define (str->sym val)
   (match val
     [(? string?) (string->symbol val)]
     [(? list?) (map str->sym val)]
     [else val]))
-          
+
 (define (annotate-type ty subs)
   (match ty
     [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
     [else (let ([f (assoc ty subs)])
+
             (if f (str->sym (cdr f)) (str->sym ty)))]))
 
 (define (annotate-expr type-expr subs)
@@ -481,7 +483,7 @@
   (displayln "--- Type Annotated Expression: ----------------------------------")
   (displayln (annotate-expr type-expr substitutions))
   (displayln "-----------------------------------------------------------------")
-  (annotate-expr type-expr substitutions)
+  (values (substitute substitutions type) (annotate-expr type-expr substitutions))
   )
 
 (define (p*-infer exp)

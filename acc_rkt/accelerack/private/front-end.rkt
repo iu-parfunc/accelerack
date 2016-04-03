@@ -60,9 +60,10 @@
 
 
 (define (extend-syn-table name type expr)
-  (define entry (acc-syn-entry type expr))
-  (set-box! acc-syn-table
-            (dict-set (unbox acc-syn-table) name entry)))
+  (let ((expr (if (syntax? expr) expr (datum->syntax #f expr))))
+    (define entry (acc-syn-entry type expr))
+    (set-box! acc-syn-table
+              (dict-set (unbox acc-syn-table) name entry))))
 
 (define (lookup-acc-type name)
   (acc-syn-entry-type (dict-ref (unbox acc-syn-table) name)))

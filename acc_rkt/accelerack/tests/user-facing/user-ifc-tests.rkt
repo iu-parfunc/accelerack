@@ -115,22 +115,22 @@
              (check-equal? 2 (car (acc-array->list x)))
              (maybe-display "Test 6 Success !!!"))
 
-  ;; (test-case "test-case 8"
-  ;;            "test-case 8"
-  ;;            (define-acc x (acc-array (1 2 3)))
-  ;;            (define-acc y (map (lambda(x) (+ x 1)) x))
-  ;;            (check-equal? 2 (car (acc-array->list y)))
-  ;;            (maybe-display "Test 8 Success !!!"))
+  (test-case "test-case 8"
+             "test-case 8"
+             (define-acc x (acc-array (1 2 3)))
+             (define-acc y (map (lambda(x) (+ x 1)) x))
+             (check-equal? 2 (car (acc-array->list y)))
+             (maybe-display "Test 8 Success !!!"))
 
   ;; Test case for valid (use v t)
-  ;; (test-case "test-case 9"
-  ;;            "test-case 9"
-  ;;            (convert-compile-time-error
-  ;;                (let ()
-  ;;                  ;; (define-acc x (acc-array (1 2 3)))
-  ;;                  (define q 1)
-  ;;                  (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
-  ;;                  (check-equal? 2 (car (acc-array->list y))))))
+  (test-case "test-case 9"
+             "test-case 9"
+             (convert-compile-time-error
+                 (let ()
+                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define q 1)
+                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+                   (check-equal? 2 (car (acc-array->list y))))))
 
   ;; Test cases to check forcing of deferred array in fold
   (test-case "test-case 10"
@@ -157,13 +157,14 @@
              (check-equal? '(16.15 26.25) (acc-array->list y))
              (maybe-display "Test 11 Success !!!"))
 
-  ;; (test-case "13: map of use"
-  ;;            "13: map of use"
-  ;;            (define x (acc-array (15.15 25.25)))
-  ;;            (define-acc y (map add1 (use x)))
-  ;;            ; (printf "X array: ~a, Y array: ~a\n" x y)
-  ;;            (check-equal? '(16.15 26.25) (acc-array->list y))
-  ;;            (maybe-display "Test 11 Success !!!"))
+  (test-case "13: map of use"
+             "13: map of use"
+             (define x (acc-array (15.15 25.25)))
+             (define-acc y (map add1 (use x)))
+             ; (printf "X array: ~a, Y array: ~a\n" x y)
+             (check-equal? '(16.15 26.25) (acc-array->list y))
+             (maybe-display "Test 11 Success !!!"))
+
 
   (test-case "scalar"
              "scalar"

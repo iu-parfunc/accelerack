@@ -6,6 +6,7 @@
          racket/trace
          racket/set
          racket/dict
+         syntax/id-table
          (only-in accelerack/private/global_utils pass-output-chatter)
          accelerack/private/syntax
          accelerack/private/wrappers
@@ -19,8 +20,7 @@
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords : Array Int Bool Double use ->)
   )
- (only-in accelerack/private/types acc-scalar? acc-type?)
- (only-in accelerack/private/front-end lookup-acc-type))
+ (only-in accelerack/private/types acc-scalar? acc-type? acc-syn-entry-type))
 
 (provide p-infer)
 
@@ -214,7 +214,11 @@
 ; [Var]
 ; infer-var: Variable -> InferRecord
 (define (infer-var x syn-table)
-  (let ((simple-type (or (dict-ref environment x #f) (lookup-acc-type x))))
+  (let ((simple-type (or (dict-ref environment x #f)
+                         (let ([prev-acc (dict-ref (unbox syn-table) x #f)])
+                           (if prev-acc
+                               (acc-syn-entry-type prev-acc)
+                               #f)))))
     (if simple-type
         (infer-record (mutable-set) (mutable-set) simple-type x)
         (let ([var (fresh x)])
@@ -546,28 +550,28 @@
 (define e19 #'(fold (lambda (x y) (add1 y)) 0 (acc-array (1 2 3))))
 (define e20 #'(add1 5))
 
-(define e1_ (p-infer e1 '()))
+(p-infer e1 (box '()))
 
-(define e2_ (p-infer e2 '()))
-(p-infer e3 '())
-(p-infer #`#,(p-infer e4 '()) '())
-(p-infer e5 '())
-(p-infer #`#,(p-infer e6 '()) '())
-(p-infer e7 '())
-(p-infer e8 '())
-(p-infer e9 '())
-(p-infer #`#,(p-infer e9 '()) '())
-(p-infer e10 '())
-(p-infer e11 '())
-(p-infer e12 '())
-(p-infer e13 '())
-(p-infer e14 '())
-(p-infer e15 '())
-(p-infer e16 '())
-(p-infer e17 '())
-(p-infer e18 '())
-(p-infer e19 '())
-(p-infer e20 '())
+(p-infer e2 (box '()))
+(p-infer e3 (box '()))
+;;(p-infer #`#,(p-infer e4 (box '())) (box '()))
+(p-infer e5 (box '()))
+;;(p-infer #`#,(p-infer e6 '()) '())
+(p-infer e7 (box '()))
+(p-infer e8 (box '()))
+(p-infer e9 (box '()))
+;;(p-infer #`#,(p-infer e9 '()) '())
+(p-infer e10 (box '()))
+(p-infer e11 (box '()))
+(p-infer e12 (box '()))
+(p-infer e13 (box '()))
+(p-infer e14 (box '()))
+(p-infer e15 (box '()))
+(p-infer e16 (box '()))
+(p-infer e17 (box '()))
+(p-infer e18 (box '()))
+(p-infer e19 (box '()))
+(p-infer e20 (box '()))
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

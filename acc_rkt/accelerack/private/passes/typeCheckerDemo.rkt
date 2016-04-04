@@ -152,6 +152,7 @@
                                  (raise-syntax-error 'infer-fold "Function Params cant be more than 2"))]
     [else (infer-types fun env syn-table)]))
 
+;;((-> a a a) a (Array (add1 n) a) (Array n a))
 (define (infer-fold e env syn-table)
   (match-define `(fold ,fun ,res ,arr) e)
   (match-define (infer-record a0 c0 t0 te0) (val-fold-fun fun env syn-table))
@@ -164,6 +165,7 @@
   (infer-record a0 c0 `(-> ,t0 ,t1 ,t2 (Array ,(sub1 n) ,ty)) `(fold ,te0 ,te1 ,te2))
   )
 
+;;((-> a b) (Array n a) (Array n b))
 (define (infer-map e env syn-table)
   (match-define `(map ,fun ,arr) e)
   (match-define (infer-record a0 c0 t0 te0) (infer-types fun env syn-table))

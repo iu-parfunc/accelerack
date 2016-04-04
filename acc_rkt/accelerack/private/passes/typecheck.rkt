@@ -28,7 +28,7 @@
 (define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
   ;; TODO:
-  (p-infer e))
+  (p-infer e syn-table))
 
 (define (unify-types ty1 ty2)
   ;; FINISHME

@@ -13,7 +13,7 @@
           acc-array-val
           eq-acc-array?
           acc-array->list
-          acc-scalar?
+          acc-scalar? acc-element?
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-scalar-type?
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
@@ -22,13 +22,20 @@
           force-delayed-array!
           )
 
-;; Is the datum compatible with ANY accelerack scalar types?
+;; Is the Racket datum compatible with ANY accelerack scalar types?
+;; A scalar here is defined as a single numeric value.
 (define (acc-scalar? x)
   (or ; (fixnum? x) ;; FIXME: this rules out some numbers at the high ange.
       (and (integer? x)
            (<= (- (expt 2 63)) x (sub1 (expt 2 64))))
       (boolean? x)
       (flonum? x)))
+
+;; This is anything that goes inside an array.
+(define (acc-element? x)
+  (or (acc-scalar? x)
+      (and (vector? x)
+           (andmap acc-element? (vector->list x)))))
 
 ;; Check if 2 acc-arrays are equal
 (define (eq-acc-array? x nexp)

@@ -6,6 +6,7 @@
 
 (require (except-in ffi/unsafe ->)
          accelerack/private/header
+         (only-in accelerack/private/types acc-element?)
          accelerack/private/allocate
          accelerack/private/arrayutils
          accelerack/private/global_utils
@@ -17,8 +18,12 @@
  (contract-out
   [array-get (-> acc-manifest-array? exact-integer? any/c)]
   [acc-map (-> procedure? acc-manifest-array? acc-manifest-array?)]
-  [acc-zipwith (-> (-> number? number? number?) acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
-  [acc-fold (-> (->* (number?) () #:rest (listof number?) number?) number? acc-manifest-array? acc-manifest-array?)]))
+  [acc-zipwith
+   (-> (-> acc-element? acc-element? acc-element?) 
+       acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
+  [acc-fold (-> (->* (acc-element?) () #:rest (listof acc-element?) acc-element?)
+                acc-element? acc-manifest-array?
+                acc-manifest-array?)]))
 
 ;; Eventually: must take acc-manifest-array? or acc-deferred-array?
 

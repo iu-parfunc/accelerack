@@ -111,8 +111,8 @@
     ;; Supporting tuples
     [`(,x ...) (map infer-lit x)]
     [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)]))
-;; syntax -> box list -> type
-;; This only guesses a type - the final typechecker is the one which throws the actual typechecker
+
+;; Infer type for if statement
 (define (infer-cond e env syn-table)
   (match-define `(if ,cnd ,thn ,els) e)
   (match-define (infer-record ac cc tc tec) (infer-types cnd env syn-table))
@@ -122,13 +122,80 @@
   (set-union! cc ct ce (set `(== ,tt ,te)))
   (infer-record ac cc tt `(if ,tec ,tet ,tee)))
 
+(define (get-vars ls vars env)
+  (cond
+    [(< (length ls) 3) (list (append ls vars) env)]
+    [else (if (eq? ': (cadr ls))
+              (get-vars (cdddr ls)
+                        (cons (car ls) vars)
+                        (cons `(,(car ls) . ,(caddr ls)) env))
+              (get-vars (cdr ls)
+                        (cons (car ls) vars)
+                        env))]))
+
+(trace-define (infer-lambda exp env syn-table)
+  (match-define `(lambda ,args ,body) exp)
+  (let* ((arg-vals (get-vars args '() '()))
+         (arg-env (map (lambda (arg)
+                         (let ([env-val (assoc arg (last arg-vals))])
+                          (cons arg (if env-val
+                                        (cdr env-val)
+                                        (fresh "arg"))))) (car arg-vals)))
+         (arg-vars (map cdr arg-env))
+         (c (mutable-set))
+         (a2 (mutable-set)))
+
+    ;(displayln arg-env)
+    ;(displayln arg-vars)
+    (match-define (infer-record a c t e) (infer-types body (set-union env args) syn-table))
+    (set-for-each a (lambda (y)
+                      (let ((lkp (assoc (car y) arg-env)))
+                        (if lkp
+                            (set-add! c `(== ,(cdr y) ,(cdr lkp)))
+                            (set-add! a2 y)))))
+    ;(displayln c)
+    (set-union! a2 a)
+    (define ret-type `(-> ,@arg-vars ,t))
+    (infer-record a2 c ret-type `(lambda ,(foldr (lambda (x res)
+                                                    (append `(,(list (car x) ': (cdr x))) res))
+                                                 '() arg-env) ,e))
+    ))
+
+(define environment
+  '((+ . (-> Int Int Int))
+    (add1 . (-> Int Int))
+    (- . (-> Int Int Int))
+    (sub1 . (-> Int Int))
+    (* . (-> Int Int Int))
+    (/ . (-> Int Int Int))
+    (< . (-> Int Int Bool))
+    (= . (-> Int Int Bool))
+    (eq? . (-> Int Int Bool))))
+
+; [Var]
+; infer-var: Variable -> InferRecord
+(define (infer-var x syn-table)
+  (let ((simple-type (or (dict-ref environment x #f)
+                         (let ([prev-acc (dict-ref (unbox syn-table) x #f)])
+                           (if prev-acc
+                               (acc-syn-entry-type prev-acc)
+                               #f)))))
+    (if simple-type
+        (infer-record (mutable-set) (mutable-set) simple-type x)
+        (let ([var (fresh x)])
+          (infer-record (mutable-set (cons x var))
+                        (mutable-set)
+                        var
+                        x)))))
+
+;; syntax -> box list -> type
 (define (infer-types e env syn-table)
   (match e
-    ;; [`(lambda ,x ,b) (infer-abs e env syn-table)]
+    [(? symbol?) (infer-var e syn-table)]
+    [`(lambda ,x ,b) (infer-lambda e env syn-table)]
     ;; [`(let ,vars ,b) (infer-let e env syn-table)]
     ;; [`(map ,fun ,arr) (infer-map e env syn-table)]
     ;; [`(fold ,fun ,res ,arr) (infer-fold e env syn-table)]
-    ;; [(? symbol?) (infer-var e syn-table)]
     ;; [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
     ;; [`(use ,e ,t0) (infer-use e t0 env syn-table)]
     [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]
@@ -138,7 +205,7 @@
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
 
 (define (inf e)
-  (infer-types e '() '()))
+  (infer-types e '() (box '())))
 
 
 
@@ -163,6 +230,12 @@
 (check-record-t check-equal? (inf '(acc-array (1 2))) '(Array 2 Int))
 (check-record-t check-equal? (inf '(if 1 2 3)) 'Int)
 (check-record-t check-equal? (inf '(if 1 (acc-array (1 2)) (acc-array (2 3)))) '(Array 2 Int))
+;; FIXME - Record matcher should try to ignore type variable if possible - MAYBE we shouldn't just have such test cases
+(check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg1" Int))
+(check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg2" Int))
+(check-record-t check-equal? (inf '(lambda (x) x)) '(-> "arg3" "arg3"))
+
+;; TODO What should happen if 2 arrays are of different size ?????
 
 ;; (check-exn (infer-lit '(acc-array ())) '(Array 0 Int))
 ;; DUMMY

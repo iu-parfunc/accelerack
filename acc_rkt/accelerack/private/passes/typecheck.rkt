@@ -154,7 +154,7 @@
                         (cons (car ls) vars)
                         env))]))
 
-(trace-define (infer-lambda exp env syn-table)
+(define (infer-lambda exp env syn-table)
   (match-define `(lambda ,args ,body) exp)
   (let* ((arg-vals (get-vars args '() '()))
          (arg-env (map (lambda (arg)
@@ -165,10 +165,7 @@
          (arg-vars (map cdr arg-env))
          (c (mutable-set))
          (a2 (mutable-set)))
-
-    ;(displayln arg-env)
-    ;(displayln arg-vars)
-    (match-define (infer-record a c t e) (infer-types body (set-union env args) syn-table))
+    (match-define (infer-record a c t e) (infer-types body (set-union env (list->set (car arg-vals))) syn-table))
     (set-for-each a (lambda (y)
                       (let ((lkp (assoc (car y) arg-env)))
                         (if lkp
@@ -211,7 +208,7 @@
     [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
     [else (raise-syntax-error 'substitute (format "unknown type: ~a" type))]))
 ;; unify : type type -> ?
-(trace-define (unify t1 t2)
+(define (unify t1 t2)
   (cond
     [(and (pair? t1) (pair? t2))
      (match-let ((`(-> . ,t1-types) t1)
@@ -285,6 +282,37 @@
                         var
                         x)))))
 
+(define (str->sym val)
+  (match val
+    [(? string?) (string->symbol val)]
+    [(? list?) (map str->sym val)]
+    [else val]))
+          
+(define (annotate-type ty subs)
+  (match ty
+    [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
+    [else (let ([f (assoc ty subs)])
+            (if f (str->sym (cdr f)) (str->sym ty)))]))
+
+(define (annotate-expr type-expr subs)
+  (match type-expr
+    [x #:when (or (symbol? x) (number? x) (boolean? x)) type-expr]
+    [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
+    [`(lambda ,x ,b) `(lambda ,(foldr (lambda (val res)
+                                         (append (annotate-expr val subs) res)) '() x)
+                        ,(annotate-expr b subs))]
+    [`(let ,vars ,b) `(let ,(foldr (lambda (var res)
+                                     (match-let ([`(,x ,e) var])
+                                       (append `((,@(annotate-expr x subs)
+                                                  ,(annotate-expr e subs))) res))) '() vars)
+                        ,(annotate-expr b subs))]
+    [`(map ,fun ,arr) `(map ,(annotate-expr fun subs) ,(annotate-expr arr subs))]
+    [`(fold ,fun ,res ,arr) `(fold ,(annotate-expr fun subs) ,(annotate-expr res subs) ,(annotate-expr arr subs))]
+    [`(,rator . ,rand) `(,(annotate-expr rator subs)
+                         ,@(map (curryr annotate-expr subs) rand))]
+    [else (error 'error type-expr)]))
+
+
 ;; syntax -> box list -> type
 (define (infer-types e env syn-table)
   (match e
@@ -309,10 +337,11 @@
                      (syntax->datum e)
                      e)
                  (set) syn-table))
-  (list assumptions constraints type (solve (set->list constraints)) type-expr))
+  (define substitutions (solve (set->list constraints)))
+  (infer-record assumptions constraints (substitute substitutions type) (annotate-expr type-expr substitutions)))
 ;; ---------------------------- TEST RELATED funcs ----------------------------
 (define (inf e)
-  (infer-types e '() (box '())))
+  (infer-types e (set) 	(box '())))
 
 (define (inf_r e)
   (infer e (box '())))

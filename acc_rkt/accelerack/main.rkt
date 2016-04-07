@@ -21,7 +21,7 @@
 ;; for what's in the language.  This should very closely match
 ;; accelerack_grammar.txt:
 (provide acc-array acc-array? acc-array-ref acc-array->list
-         acc-scalar?
+         acc-scalar? acc-element?
 
          map fold zipwith stencil3x3 generate
 

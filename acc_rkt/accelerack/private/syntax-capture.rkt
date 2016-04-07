@@ -98,6 +98,5 @@
 
 ; --------------------------------------------------------------------------------
 
-(define-acc x (acc-array (1 2 3)))
-
-(display (acc-array? x))
+; (define-acc x (acc-array (1 2 3)))
+; (display (acc-array? x))

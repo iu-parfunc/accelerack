@@ -1,5 +1,6 @@
 #lang racket
 
+;; C types.
 ;; Define core types for Accelerack arrays and their constituient parts.
 
 (require ffi/unsafe

@@ -2,7 +2,7 @@
 
 ;; This file provides the Racket-side implementation of core Accelerate operators.
 
-;; These operations are not necessarily 
+;; These operations are not necessarily
 
 (require (except-in ffi/unsafe ->)
          accelerack/private/header
@@ -14,33 +14,34 @@
          racket/contract
          )
 
-(provide 
+(provide
  (contract-out
   [array-get (-> acc-manifest-array? exact-integer? any/c)]
   [acc-map (-> procedure? acc-manifest-array? acc-manifest-array?)]
   [acc-zipwith
-   (-> (-> acc-element? acc-element? acc-element?) 
+   (-> (-> acc-element? acc-element? acc-element?)
        acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
-  [acc-fold (-> (->* (acc-element?) () #:rest (listof acc-element?) acc-element?)
+  [acc-fold (-> ; (->* (acc-element?) () #:rest (listof acc-element?) acc-element?)
+                (->* acc-element? acc-element? acc-element?)
                 acc-element? acc-manifest-array?
                 acc-manifest-array?)]))
 
 ;; Eventually: must take acc-manifest-array? or acc-deferred-array?
 
 ;; "arraySize" in Accelerate.  Convert camel case to hyphens:
-(define (array-size arr) 
+(define (array-size arr)
   (md-array-length (shape arr)))
 
 ;; returns the length of the given acc array
-(define (acc-length arr) 
+(define (acc-length arr)
   (if (acc-manifest-array? arr) (segment-length (acc-manifest-array-data arr)) (segment-length arr)))
 
 ;; Execute the given function over the given acc array
 ;; Arguments -> input function, reference to the acc array
 ;; Return value -> reference to result array
 
-(define (acc-map fn arr)  
-  ;; The acc-manifest-array is not mutable for end users, but for this library implementation 
+(define (acc-map fn arr)
+  ;; The acc-manifest-array is not mutable for end users, but for this library implementation
   ;; we leverage a mutable representation internally.
   (letrec ([len (array-size arr)]
            [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
@@ -56,8 +57,8 @@
           temp))))
 
 ;; Set the value at given position in an acc array
-;; Arguments -> reference to the acc array, offset, the value to set 
-;; Return value -> void 
+;; Arguments -> reference to the acc array, offset, the value to set
+;; Return value -> void
 
 (define (array-set!! arr-ref offset value)
   (let ([type (mapType ((ctype-scheme->c scalar) (get-ctype value)))]
@@ -65,23 +66,23 @@
     (ptr-set! data type offset value)))
 
 ;; Get the value at given position in an acc array
-;; Arguments -> reference to the acc array, offset 
+;; Arguments -> reference to the acc array, offset
 ;; Return value -> value at given position
 
 (define (array-get arr-ref offset)
   (let ([type (mapType (type arr-ref))]
         [data (if (acc-manifest-array? arr-ref) (segment-data (acc-manifest-array-data arr-ref)) (segment-data arr-ref))])
     (ptr-ref data type offset)))
-                         
+
 ;; Execute the given function over the given acc tuple data
-;; Arguments -> reference to result acc array ,reference to the input acc array, input function  
+;; Arguments -> reference to result acc array ,reference to the input acc array, input function
 ;; Return value -> void
 
 (define (tuple-array-set!! arr-ref input-arr fn)
   (let ([acc-tuple ((ctype-scheme->c scalar) 'acc-payload-ptr)]
         [acc-int ((ctype-scheme->c scalar) 'c-int)]
         [acc-double ((ctype-scheme->c scalar) 'c-double)])
-       (cond 
+       (cond
          [(equal? (type input-arr) acc-tuple) (let ([len (acc-length input-arr)])
                                                    (for ([i (in-range 0 len)])
                                                         (tuple-array-set!!
@@ -149,8 +150,9 @@
 
 
 (define (acc-fold func def arr)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr)) (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
-           [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))] 
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
+                      (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
+           [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))]
            [temp (alloc-unit shape* type*)]
            [len (array-size temp)]
            [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])

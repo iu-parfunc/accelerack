@@ -11,7 +11,7 @@
          )
 
 (provide map
-         (contract-out [fold (-> procedure? acc-scalar? acc-array? acc-array?)])
+         fold
          zipwith stencil3x3 generate
          acc-array-ref)
 
@@ -31,7 +31,6 @@
   (cond
     [(acc-array? x)
      (make-acc-array (acc-fold f def (force-delayed-array! x)))]
-    [(acc-array? x) (error 'fold "deferred array not handled yet!!")]
     ; [else (r:fold f def x)]
     [else (error 'fold "FINISHME: define list version of fold")]
     ))

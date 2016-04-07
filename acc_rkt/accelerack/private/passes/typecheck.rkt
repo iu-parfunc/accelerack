@@ -69,6 +69,27 @@
                      (symbol->string var)
                      (if (syntax? var) (symbol->string (syntax->datum var)) var))
                  (number->string var-cnt)))
+;; free variables: type -> set
+;; Fetches all the variables in the input given
+(define (free_vars t)
+  (cond [(or (type_array? t) (type_var? t)) (set t)]
+        [(type_fun? t) (let ([in-types (drop-right (cdr t) 1)]
+                             [ret-type (last t)])
+                         (set-union (list->set (map free_vars in-types))
+                                    (free_vars ret-type)))]
+        [(type_con? t) (set)]
+        [else (raise-syntax-error 'free_vars (format "Unknown type for ~s" t))]))
+
+
+;; active variables: constraints -> set(type var)
+(define (active_vars constraints)
+  ;(print constraints)
+  (foldl (lambda (constraint res)
+           (match constraint
+             [`(== ,v1 ,v2) (set-union (free_vars v1) (free_vars v2) res)]
+             [`(implicit ,v1 ,v2 ,v3) (set-union (free_vars v1) (set-intersect v3 (free_vars v2)) res)]
+             [`(explicit ,v1 ,v2) (set-union (free_vars v1) (free_vars v2) res)]))
+         (set) constraints))
 ;; ---------------- Struct Record ----------------------------
 (struct infer-record ([assumptions #:mutable]
                       [contraints #:mutable]
@@ -172,6 +193,82 @@
     (= . (-> Int Int Bool))
     (eq? . (-> Int Int Bool))))
 
+;; ------------------------ SOLVER and UNIFYIER related stuff ------------------------
+;; Var Type -> ((var . type)...)
+(define (occurs-check var type)
+  (cond
+    [(equal? var type) '()]
+    ;This is an infinite type. Send an error back
+    [(set-member? (free_vars type) var)
+     (raise-syntax-error 'occurs-check "Occurs check failed, ~a occurs in ~a\n" var type)]
+    [else `(,(cons var type))]))
+;; Substitution Type -> Type
+(define (substitute s type)
+  (cond
+    [(type_con? type) type]
+    [(type_var? type) (dict-ref s type type)]
+    [(type_array? type) `(,(car type) ,(cadr type) ,(substitute s (last type)))]
+    [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
+    [else (raise-syntax-error 'substitute (format "unknown type: ~a" type))]))
+;; unify : type type -> ?
+(trace-define (unify t1 t2)
+  (cond
+    [(and (pair? t1) (pair? t2))
+     (match-let ((`(-> . ,t1-types) t1)
+                 (`(-> . ,t2-types) t2))
+       (if (not (eq? (length t1-types) (length t2-types)))
+           (error "Types ~a and ~a are incompatible" t1 t2)
+           (foldl (lambda (p1 p2 s)
+                    (set-union (unify (substitute s p1) (substitute s p2)) s))
+                  '() t1-types t2-types)))]
+    [(equal? t1 t2) '()]
+    [(type_var? t1) (occurs-check t1 t2)]
+    [(type_var? t2) (occurs-check t2 t1)]
+    [else (raise-syntax-error 'unify (format "Can't Unify t1: ~s and t2: ~s" t1 t2))]))
+
+(define (subs-union subs1 subs2)
+  (let ((s (map (lambda (v)
+                  (cons (car v) (substitute subs1 (cdr v)))) subs2)))
+    (foldl (lambda (v res)
+             (when (dict-ref subs2 (car v) #f)
+               (raise-syntax-error 'subs-union "Substitutions with same type vars"))
+             (set! s (cons v s))) '() subs1) s))
+;;  substitution -> constraint -> constraint
+(define (sub_constraint s constraint)
+  (match constraint
+    [`(== ,v1 ,v2) `(== ,(substitute s v1) ,(substitute s v2))]
+    [`(implicit ,v1 ,v2 ,v3) `(implicit
+                               ,(substitute s v1)
+                               ,(substitute s v2)
+                               ,(for/set ([var v3])
+                                  (dict-ref s var var)))]
+    [`(explicit ,v1 ,v2) `(explicit ,(substitute s v1) ,(substitute s v2))]))
+
+;; generalize: set(type var) -> type -> scheme
+(define (generalize monos type)
+  (list 'scheme (set-subtract (free_vars type) monos) type))
+
+;; instantiate: scheme -> type
+(define (instantiate scheme)
+  (match-define `(,_ ,qs ,type) scheme)
+  (substitute (for/list ([q qs]) (cons q (fresh "I"))) type))
+
+(define (solve constraints)
+  (cond
+    [(empty? constraints) '()]
+    [else (let ((constraint (car constraints)))
+            (match constraint
+              [`(== ,t1 ,t2) (let ((s (unify t1 t2)))
+                               (subs-union (solve (map (curry sub_constraint s) (cdr constraints))) s))]
+              [`(implicit ,t1 ,t2 ,monos) (if (set-empty? (set-intersect
+                                                           (set-subtract (free_vars t2) monos)
+                                                           (active_vars (cdr constraints))))
+                                              (solve (cons `(explicit ,t1 ,(generalize monos t2))
+                                                           (cdr constraints)))
+                                              (solve (append (cdr constraints) `(,constraint))))]
+              [`(explicit ,t ,s) (solve (cons `(== ,t ,(instantiate s)) (cdr constraints)))]))]))
+
+;; ------------------------ END SOLVER STUFF ----------------------------
 ; [Var]
 ; infer-var: Variable -> InferRecord
 (define (infer-var x syn-table)
@@ -204,8 +301,21 @@
     ;; [`(,rator . ,rand) (infer-app e env syn-table)]
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
 
+
+(define (infer e syn-table)
+  (match-define
+    (infer-record assumptions constraints type type-expr)
+    (infer-types (if (syntax? e)
+                     (syntax->datum e)
+                     e)
+                 (set) syn-table))
+  (list assumptions constraints type (solve (set->list constraints)) type-expr))
+;; ---------------------------- TEST RELATED funcs ----------------------------
 (define (inf e)
   (infer-types e '() (box '())))
+
+(define (inf_r e)
+  (infer e (box '())))
 
 
 
@@ -223,6 +333,8 @@
 (define (check-record-t f record mtch)
   (match-define (infer-record a b type k) record)
   (f type mtch))
+(define (check-ls-t f ls mtch)
+  (f (list-ref ls 2) mtch))
 
 ;; Lets check some infer-records now
 (check-record-t check-equal? (inf '9) 'Int)
@@ -233,7 +345,12 @@
 ;; FIXME - Record matcher should try to ignore type variable if possible - MAYBE we shouldn't just have such test cases
 (check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg1" Int))
 (check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg2" Int))
-(check-record-t check-equal? (inf '(lambda (x) x)) '(-> "arg3" "arg3"))
+
+
+
+
+
+(check-record-t check-equal? (inf_r '(lambda (x) x)) '(-> "arg3" "arg3"))
 
 ;; TODO What should happen if 2 arrays are of different size ?????
 

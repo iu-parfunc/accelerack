@@ -14,6 +14,7 @@
           eq-acc-array?
           acc-array->list
           acc-scalar?
+          acc-int?
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-scalar-type?
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
@@ -25,12 +26,14 @@
 ;; Is the datum compatible with ANY accelerack scalar types?
 (define (acc-scalar? x)
   (or ; (fixnum? x) ;; FIXME: this rules out some numbers at the high ange.
-      (and (integer? x)
-           (<= (- (expt 2 63)) x (sub1 (expt 2 64))))
-      (boolean? x)
-      (flonum? x)
-      (vector? x)))
+   (acc-int? x)
+   (boolean? x)
+   (flonum? x)
+   (vector? x)))
 
+(define (acc-int? x)
+  (and (integer? x)
+       (<= (- (expt 2 63)) x (sub1 (expt 2 64)))))
 ;; Check if 2 acc-arrays are equal
 (define (eq-acc-array? x nexp)
   (cond

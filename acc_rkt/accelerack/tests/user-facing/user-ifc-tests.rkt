@@ -165,16 +165,18 @@
              (check-equal? '(16.15 26.25) (acc-array->list y))
              (maybe-display "Test 11 Success !!!"))
 
+  ;; WAIT TILL A LATER VERSION:
+
+  ; TODO: Scalar support
+  #;
   (test-case "scalar"
              "scalar"
     (define-acc x 3)
     (printf "scalar x: ~a\n" x)
     (check-true (acc-scalar? x))
     (check-false (acc-array? x)))
-
-  ;; WAIT TILL VERSION 0.2:
-
-#;
+ 
+  #;
   (test-case "scalar ascription"
              "scalar ascription"
     (define-acc x (: 3 Int))

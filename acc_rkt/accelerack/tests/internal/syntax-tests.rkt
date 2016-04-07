@@ -2,10 +2,10 @@
 
 (require rackunit
          ;; See NOTE below:
-         (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
-                  acc-array?
-                  Int Bool Double use)
-         accelerack/private/syntax-capture
+         (only-in accelerack acc-array acc-array-ref fold map zipwith generate 
+                  acc-array?)
+         (only-in accelerack/private/keywords Int Bool Double : -> use)
+         (only-in accelerack/private/syntax-capture define-acc)
          (only-in accelerack/private/types acc-delayed-array?)
          )
 

@@ -25,11 +25,12 @@
 
          map fold zipwith stencil3x3 generate
 
-         define-acc run-gpu
-         Int Bool Double
-
+         ;; Not exposing types yet for this initial version:
+         ;; define-acc run-gpu
+         ;; Int Bool Double
+         ;; -> : use
+         
          ;; Not reexporting from base:
          ;; vector vector-ref + * - ...
-	 ;; if let lambda
-         -> : use
+	 ;; if let lambda         
          )

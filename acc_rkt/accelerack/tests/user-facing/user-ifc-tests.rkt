@@ -3,6 +3,9 @@
 ;; These should contain end-to-end tests of the functionality the end
 ;; user can access.
 (require accelerack)  ;; Thus this module is really all we need.
+(require accelerack/private/syntax-capture
+         accelerack/private/types
+         ) ;; TEMPORARY
 
 (require rackunit
          rackunit/text-ui

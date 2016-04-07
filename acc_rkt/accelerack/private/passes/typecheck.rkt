@@ -16,6 +16,7 @@
 (require (for-syntax racket/base
                      syntax/parse)
          ; syntax/parse
+         racket/trace
          syntax/to-string
          rackunit rackunit/text-ui
          ;; accelerack/private/passes/typeCheckerDemo
@@ -112,7 +113,16 @@
     [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)]))
 ;; syntax -> box list -> type
 ;; This only guesses a type - the final typechecker is the one which throws the actual typechecker
-(define (infer e env syn-table)
+(define (infer-cond e env syn-table)
+  (match-define `(if ,cnd ,thn ,els) e)
+  (match-define (infer-record ac cc tc tec) (infer-types cnd env syn-table))
+  (match-define (infer-record at ct tt tet) (infer-types thn env syn-table))
+  (match-define (infer-record ae ce te tee) (infer-types els env syn-table))
+  (set-union! ac at ae)
+  (set-union! cc ct ce (set `(== ,tt ,te)))
+  (infer-record ac cc tt `(if ,tec ,tet ,tee)))
+
+(define (infer-types e env syn-table)
   (match e
     ;; [`(lambda ,x ,b) (infer-abs e env syn-table)]
     ;; [`(let ,vars ,b) (infer-let e env syn-table)]
@@ -121,13 +131,14 @@
     ;; [(? symbol?) (infer-var e syn-table)]
     ;; [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
     ;; [`(use ,e ,t0) (infer-use e t0 env syn-table)]
-    ;; [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]
-    [(? acc-scalar?) (infer-record (mutable-set) (mutable-set) (infer-lit exp) exp)]
-    ;[`(Array ,n ,el) (infer-lit e)]
+    [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]
+    [`(acc-array ,ls) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
+    [(? acc-scalar?) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
     ;; [`(,rator . ,rand) (infer-app e env syn-table)]
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
 
-
+(define (inf e)
+  (infer-types e '() '()))
 
 
 
@@ -141,6 +152,17 @@
 (check-equal? (infer-lit '(acc-array (1.1 2.1 3.1))) '(Array 3 Double))
 (check-equal? (infer-lit '(acc-array ((1 2) (2 3) (2 2)))) '(Array 3 (Int Int)))
 (check-equal? (infer-lit '(acc-array ((1 2.1) (2 3.22) (2 2.33)))) '(Array 3 (Int Double)))
+
+(define (check-record-t f record mtch)
+  (match-define (infer-record a b type k) record)
+  (f type mtch))
+
+;; Lets check some infer-records now
+(check-record-t check-equal? (inf '9) 'Int)
+(check-record-t check-equal? (inf '#t) 'Bool)
+(check-record-t check-equal? (inf '(acc-array (1 2))) '(Array 2 Int))
+(check-record-t check-equal? (inf '(if 1 2 3)) 'Int)
+(check-record-t check-equal? (inf '(if 1 (acc-array (1 2)) (acc-array (2 3)))) '(Array 2 Int))
 
 ;; (check-exn (infer-lit '(acc-array ())) '(Array 0 Int))
 ;; DUMMY

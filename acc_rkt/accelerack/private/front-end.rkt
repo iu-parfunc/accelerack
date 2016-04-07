@@ -45,13 +45,15 @@
   ;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
   (values stripped main-type with-types))
 
+;; Mutates the syn table, extending it.
 (define (apply-to-syn-table maybeType inferredTy name progWithTys)
   (define finalTy (if maybeType
                       (if (unify-types inferredTy maybeType)
                           (syntax->datum maybeType)
                           ;; TODO: can report a more detailed unification error:
-                          (raise-syntax-error   name "inferred type of binding (~a) did not match declared type"
-                                                inferredTy  maybeType))
+                          (raise-syntax-error
+                           name "inferred type of binding (~a) did not match declared type"
+                           inferredTy  maybeType))
                       inferredTy))
   (extend-syn-table name finalTy progWithTys)
   finalTy)
@@ -70,3 +72,4 @@
   (acc-syn-entry-expr (dict-ref (unbox acc-syn-table) name)))
 
 
+(printf " [DEBUG] Front-end module evaluating for side effects.\n")

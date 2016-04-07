@@ -32,4 +32,8 @@
          ;; vector vector-ref + * - ...
 	 ;; if let lambda
          -> : use
+
+         ;; TEMPORARY: export for macro expansion:
+         ; apply-to-syn-table
+
          )

@@ -15,6 +15,7 @@
          accelerack/private/types
          ; accelerack/private/racket_ops
          (only-in accelerack/private/syntax acc-array :)
+         (only-in accelerack/private/front-end apply-to-syn-table snap-as-list)
          (for-syntax racket/base
                      syntax/parse syntax/id-table racket/dict
                      (only-in accelerack/private/syntax acc-array)
@@ -35,16 +36,29 @@
       [else #f]))
 
   (define (go name maybeType bod)
+    (printf "Expanding define-acc for ~a, syn-table: ~a\n" (syntax->datum name)
+            (map syntax->datum (map car (snap-as-list))))
     (let-values ([(stripped inferredTy progWithTys) (front-end-compiler bod)])
       (apply-to-syn-table maybeType inferredTy name progWithTys)
+      (let ((extend-table #`(apply-to-syn-table #,maybeType #,inferredTy
+                                                #' #,name #' #,progWithTys)))
+        ; (printf "Generated code for runtime: ~a\n" (syntax->datum extend-table))
       ;; Expand into the stripped version with no types:
       ;; HACK: fix this to the second alternative after typechecking works:
       (if (is-a-lambda? bod)
-          #`(define #,name  #,stripped)
-          #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped))))
+          #`(define #,name
+              (begin #,extend-table
+                     (printf " [DEBUG] Table extended at runtime! ~a\n"
+                             (map syntax->datum (map car (snap-as-list))))
+                     #,stripped))
+          #`(define #,name
+              (begin #,extend-table
+                     (printf " [DEBUG] Table extended at runtime! ~a\n"
+                             (map syntax->datum (map car (snap-as-list))))
+                     (make-acc-array (acc-delayed-array (lambda () #,stripped)))))
           ;; TODO: Need support for delayed scalars:
           ; #`(define #,name (make-acc-scalar (acc-delayed-scalar (lambda () #,stripped))))
-          )
+          ))
       ;; Lets use this once type check starts working and remove the if above
       ;; (cond
       ;;   [(is-a-lambda? bod) #`(define #,name (make-acc-array #,stripped))]
@@ -98,6 +112,6 @@
 
 ; --------------------------------------------------------------------------------
 
-(define-acc x (acc-array (1 2 3)))
+; (define-acc test-binding-from-syntax-capture (acc-array (1 2 3)))
 
-(display (acc-array? x))
+; (display (acc-array? test-binding-from-syntax-capture))

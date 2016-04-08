@@ -133,6 +133,29 @@
     [`(,x ...) (map infer-lit x)]
     [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)]))
 
+
+;;((-> a b) (Array n a) (Array n b))
+(define (infer-map e env syn-table)
+  (match-define `(map ,fun ,arr) e)
+  (match-define (infer-record a0 c0 t0 te0) (infer-types fun env syn-table))
+  (match-define (infer-record a1 c1 t1 te1) (infer-types arr env syn-table))
+  (match-define `(-> ,a ,b) t0)
+  (match-define `(Array ,n ,ty) t1)
+  (set-union! a0 a1)
+  (set-union! c0 (set `(== ,a ,ty)) c1)
+  (infer-record a0 c0 `(-> ,t0 ,t1 (Array ,n ,b)) `(map ,te0 ,te1)))
+
+(define (infer-use e t0 env syn-table)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env syn-table))
+  (set-union! c1 (set `(== ,t1 ,t0)))
+  (infer-record a1 c1 t1 `(use ,te1 ,t0)))
+
+
+(define (infer-asc e t0 env syn-table)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env syn-table))
+  (set-union! c1 (set `(== ,t1 ,t0)))
+  (infer-record a1 c1 t1 te1))
+
 ;; Infer type for if statement
 (define (infer-cond e env syn-table)
   (match-define `(if ,cnd ,thn ,els) e)
@@ -374,10 +397,10 @@
     [(? symbol?) (infer-var e syn-table)]
     [`(lambda ,x ,b) (infer-lambda e env syn-table)]
     [`(let ,vars ,b) (infer-let e env syn-table)]
-    ;; [`(map ,fun ,arr) (infer-map e env syn-table)]
+    [`(map ,fun ,arr) (infer-map e env syn-table)]
     ;; [`(fold ,fun ,res ,arr) (infer-fold e env syn-table)]
-    ;; [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
-    ;; [`(use ,e ,t0) (infer-use e t0 env syn-table)]
+    [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
+    [`(use ,e ,t0) (infer-use e t0 env syn-table)]
     [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]
     [`(acc-array ,ls) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
     [(? acc-scalar?) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
@@ -435,6 +458,10 @@
 (check-record-t check-equal?(inf_r '(let ((x (+ 5 2))) x)) 'Int)
 (check-record-t check-equal?(inf_r '(let ((x 2) (y 5)) (+ x y))) 'Int)
 (check-record-t check-equal?(inf_r '(let ((x (lambda (x y) (+ x y)))) (x 5 2))) 'Int)
+(check-record-t check-equal?(inf_r '(: x (Array 1 Bool))) '(Array 1 Bool))
+(check-record-t check-equal?(inf_r '((lambda (x) (+ (use a Int) x)) 5)) 'Int)
+(check-record-t check-equal?(inf_r '(map (lambda (x) x) (acc-array (1 2 3)))) '(-> (-> Int Int) (Array 3 Int) (Array 3 Int)))
+
 
 ;; TODO What should happen if 2 arrays are of different size ?????
 

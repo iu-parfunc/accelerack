@@ -59,7 +59,7 @@
                               (acc-array (10 10 10 10)))
                      ))
 
-;; (acc-array->list test02)
+;; (acc-array->sexp test02)
 ;; (run-eval test02)
 
 (define-acc test03 (vector-ref (vector 1 2 3) 0))

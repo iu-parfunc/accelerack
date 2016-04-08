@@ -7,4 +7,4 @@
 ; FIXME: FAILING TEST
 ; (define-acc z (map (lambda(x) (+ x 1)) x))
 
-;; (check-equal? 2 (car (acc-array->list z)))
+;; (check-equal? 2 (car (acc-array->sexp z)))

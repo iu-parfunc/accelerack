@@ -21,4 +21,4 @@
 ;;     (-> (Array (add1 d) (Num t))
 ;;         (Array d        (Num t))))
 
-(check-equal? 2 (car (acc-array->list y)))
+(check-equal? 2 (car (acc-array->sexp y)))

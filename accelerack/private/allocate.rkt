@@ -14,7 +14,7 @@
     [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
     [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
     [read-data (-> segment? (or/c null? pair?))]
-    [read-data* (-> acc-manifest-array? pair?)]
+    [read-data* (-> acc-manifest-array? any/c)]
     [get-type (-> acc-manifest-array? integer?)]
     [get-shape (-> acc-manifest-array? (or/c null? pair?))]
     [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
@@ -117,7 +117,9 @@
            [data (read-data data-ptr)]
            [shape (read-data shape-ptr)])
           (if (equal? type 'scalar-payload)
-              (list->md-array data shape)
+              (if (null? shape)
+                  (car (list->md-array data shape))
+                  (list->md-array data shape))
               (list->vector* (zip data) shape)))) ;; (read-data-helper data)
 
 

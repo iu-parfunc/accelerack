@@ -74,7 +74,7 @@
   (test-case "test-case 1"
              "test-case 1"
              (letrec ([cptr (array () _int 24)])
-                     (check-equal? '(24) (read-data* cptr)))
+                     (check-equal? '24 (read-data* cptr)))
              (maybe-display "Test 1 Success !!!"))
 
   (test-case "test-case 2"
@@ -193,7 +193,7 @@
 
   (test-case "test-case 12"
              "test-case 12"
-             (letrec ([cptr (array () _int 99)]
+             (letrec ([cptr (array (1) _int (99))]
                       [temp (acc-map add1 cptr)])
                      (check-equal? (read-data* temp) (map add1 (read-data* cptr))))
              (maybe-display "Test 12 Success !!!"))

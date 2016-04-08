@@ -26,7 +26,7 @@
                    ;; (define-acc x (acc-array (1 2 3)))
                    (define q 1)
                    (define-acc y (map (lambda(y) (+ z (use q))) (acc-array (1 2 3))))
-                   (check-equal? 2 (car (acc-array->list y))))
+                   (check-equal? 2 (car (acc-array->sexp y))))
                  ))))
   (test-case "test-case 2"
              "test-case 2"
@@ -37,7 +37,7 @@
                  (let ()
                    ;; (define-acc x (acc-array (1 2 3)))
                    (define-acc y (map (lambda(y) (+ y (use q))) (acc-array (1 2 3))))
-                   (check-equal? 2 (car (acc-array->list y))))
+                   (check-equal? 2 (car (acc-array->sexp y))))
                  ))))
 
   ;; TODO: Using invalid KEYWORDS in accelerack expressions by
@@ -71,18 +71,18 @@
 
   (test-case "plain-racket: literal1"
              (define x (acc-array 15))
-             (check-equal? '(15) (acc-array->list x))
+             (check-equal? '15 (acc-array->sexp x))
              (maybe-display "Test 1 Success !!!"))
 
   (test-case "plain-racket: literal2"
              (define x (acc-array (15.15 25.25)))
-             (check-equal? '(15.15 25.25) (acc-array->list x))
+             (check-equal? '(15.15 25.25) (acc-array->sexp x))
              (maybe-display "Test 2 Success !!!"))
 
   (test-case "plain-racket: literal3"
              (define x (acc-array ((#f #f #f)
                                    (#t #t #t))))
-             (check-equal? '((#f #f #f) (#t #t #t)) (acc-array->list x))
+             (check-equal? '((#f #f #f) (#t #t #t)) (acc-array->sexp x))
              (maybe-display "Test 3 Success !!!"))
 
   (test-case "plain-racket: literal4"
@@ -91,9 +91,19 @@
                                    #(4 #(16 3.3 #f)))))
              (check-equal? '(#(2 #(2 1.1 #f))
                              #(1 #(3 2.2 #f))
-                             #(4 #(16 3.3 #f))) (acc-array->list x))
+                             #(4 #(16 3.3 #f))) (acc-array->sexp x))
              (maybe-display "Test 4 Success !!!"))
 
+  (test-case "plain-racket: literal5"
+             (define x (acc-array 1))
+             (check-equal? (acc-array->sexp x) '1)
+             (maybe-display "Test 5 Success !!!"))
+  
+  (test-case "plain-racket: literal6"
+             (define x (acc-array (1 2)))
+             (check-equal? (acc-array->sexp x) '(1 2))
+             (maybe-display "Test 6 Success !!!"))
+  
   (test-case "acc: literal5"
              (define-acc x (acc-array (#(2 #(2 1.1 #f))
                                        #(1 #(3 2.2 #f))
@@ -102,30 +112,30 @@
   
   (test-case "acc: literal7"
              (define-acc x (acc-array (1 2 3)))
-             (check-equal? 1 (car (acc-array->list x))))
+             (check-equal? 1 (car (acc-array->sexp x))))
   
   (test-case "acc: map1"
              (define-acc x (map (lambda(x) (+ x 1))
                                 (acc-array (1 2 3))))
-             (check-equal? 2 (car (acc-array->list x))))
+             (check-equal? 2 (car (acc-array->sexp x))))
 
   (test-case "acc: map2, separate def"
              (define-acc x (acc-array (1 2 3)))
              (define-acc y (map (lambda(x) (+ x 1)) x))
-             (check-equal? 2 (car (acc-array->list y)))
+             (check-equal? 2 (car (acc-array->sexp y)))
              (maybe-display "Test 8 Success !!!"))
 
   (test-case "acc: map + fold"
              (define-acc x (acc-array (1 2 3)))
              (define-acc y (map (lambda(x) (+ x 1)) x))
              (define-acc z (fold + 0 y))
-             (check-equal? 9 (car (acc-array->list z))))
+             (check-equal? 9 (car (acc-array->sexp z))))
   
   (test-case "plain-racket: map + fold"
              (define x (acc-array (1 2 3)))
              (define y (map (lambda(x) (+ x 1)) x))
              (define z (fold + 0 y))
-             (check-equal? 9 (car (acc-array->list z))))
+             (check-equal? 9 (car (acc-array->sexp z))))
 
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
@@ -134,32 +144,32 @@
                    ;; (define-acc x (acc-array (1 2 3)))
                    (define q 1)
                    (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
-                   (check-equal? 2 (car (acc-array->list y))))))
+                   (check-equal? 2 (car (acc-array->sexp y))))))
 
   ;; Test cases to check forcing of deferred array in fold
   (test-case "test-case 10"
              (define-acc x (acc-array (1 2 3)))
              (define-acc y (fold + 0 x))
-             (check-equal? (car (acc-array->list y)) 6))
+             (check-equal? (car (acc-array->sexp y)) 6))
 
   ;; Same as test 8 but on floats and with add1 function:
   (test-case "11: map test"
              (define-acc x (acc-array (15.15 25.25)))
              (define-acc y (map add1 x))
              ; (printf "Y array: ~a, acc-array? ~a\n" y (acc-array? y))
-             (check-equal? '(16.15 26.25) (acc-array->list y)))
+             (check-equal? '(16.15 26.25) (acc-array->sexp y)))
 
   (test-case "12: map in racket"
              (define x (acc-array (15.15 25.25)))
              (define y (map add1 x))
              ; (printf "X array: ~a, Y array: ~a\n" x y)
-             (check-equal? '(16.15 26.25) (acc-array->list y)))
+             (check-equal? '(16.15 26.25) (acc-array->sexp y)))
 
   (test-case "13: map of use"
              (define x (acc-array (15.15 25.25)))
              (define-acc y (map add1 (use x)))
              ; (printf "X array: ~a, Y array: ~a\n" x y)
-             (check-equal? '(16.15 26.25) (acc-array->list y)))
+             (check-equal? '(16.15 26.25) (acc-array->sexp y)))
 
   ;; WAIT TILL A LATER VERSION:
 
@@ -190,7 +200,7 @@
                               (#t #t #t)))
                   (Array 2 Bool)))
              (check-equal? '((#f #f #f) (#t #t #t))
-                           (acc-array->list x)))
+                           (acc-array->sexp x)))
 #;
   (test-case "use a scalar in an array expression"
              "use a scalar in an array expression"
@@ -198,7 +208,7 @@
     (define-acc y (map (lambda (_) x)
                        (acc-array (1 2 3))))
     (check-equal? '(4 4 4)
-                  (acc-array->list y))
+                  (acc-array->sexp y))
     )
 
   (test-case "identity function definition"

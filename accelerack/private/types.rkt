@@ -12,7 +12,7 @@
           make-acc-array
           acc-array-val
           eq-acc-array?
-          acc-array->list
+          acc-array->sexp
           acc-scalar? acc-element?
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-scalar-type?
@@ -44,7 +44,7 @@
     ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
     ;; TODO - This doesn't work
     ;; ((acc-delayed-array? ))
-    ((acc-array? x) (equal? (acc-array->list x) (acc-array->list nexp)))
+    ((acc-array? x) (equal? (acc-array->sexp x) (acc-array->sexp nexp)))
     ;; Throw error if you can't find reason
     (else #f)))
 
@@ -67,13 +67,13 @@
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
 ;; I think this is resolved.
-(define (acc-array->list x)
+(define (acc-array->sexp x)
   (if (acc-array? x)
       (if (acc-manifest-array? (acc-array-val x))
           (read-data* (acc-array-val x))
           ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
           (read-data* (force-delayed-array! x)))
-      (error 'acc-array->list "works only on acc-array"))) ;;(read-data* x)))
+      (error 'acc-array->sexp "works only on acc-array"))) ;;(read-data* x)))
 
 ;; The data-type for Racket-side arrays, which may be either
 ;; manifest or delayed.

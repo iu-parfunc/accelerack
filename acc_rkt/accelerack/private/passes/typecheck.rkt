@@ -139,10 +139,13 @@
   (match-define `(map ,fun ,arr) e)
   (match-define (infer-record a0 c0 t0 te0) (infer-types fun env syn-table))
   (match-define (infer-record a1 c1 t1 te1) (infer-types arr env syn-table))
-  (match-define `(-> ,a ,b) t0)
+  (match t0
+     [`(-> ,a ,b) (void)]
+     [else (raise-syntax-error 'infer-map (format "The first parameter of map should be a function : ~a" fun))])
   (match t1
      [`(Array ,n ,ty) (void)]
-     [else (raise-syntax-error 'infer-map (format "Invalid array format : ~a" t1))])
+     [else (raise-syntax-error 'infer-map (format "Invalid array format : ~a. Should be an acc-array." arr))])
+  (match-define `(-> ,a ,b) t0)
   (match-define `(Array ,n ,ty) t1)
   (set-union! a0 a1)
   (set-union! c0 (set `(== ,a ,ty)) c1)

@@ -143,6 +143,60 @@
   (set-union! cc ct ce (set `(== ,tt ,te)))
   (infer-record ac cc tt `(if ,tec ,tet ,tee)))
 
+; [App] : Exp Environment -> InferRecord
+(define (infer-app exp env syn-table)
+  (let ((e1 (car exp))
+        (args (cdr exp))
+        (typevar (fresh "app")))
+    (match-define (infer-record a1 c1 t1 te1) (infer-types e1 env syn-table))
+    (let ([te1 `(,te1)])
+      (define argtypes
+        (for/list [(arg args)]
+          (match-define (infer-record a2 c2 t2 te2) (infer-types arg env syn-table))
+          ;(set-add! a1 typevar)
+          (set-union! a1 a2)
+          (set-union! c1 c2)
+          (set! te1 (append te1 `(,te2)))
+          t2))
+      (set-union! c1 (set `(== ,t1 (-> ,@argtypes ,typevar))))
+      (infer-record a1 c1 typevar te1))))
+
+; [Let]
+(define (infer-let exp env syn-table)
+  (match-define `(let ,vars ,body) exp)
+  (match-define (infer-record a1 c1 t1 te1)
+    (foldl (lambda (var res)
+             (match var
+               [`(,x ,e1)
+                (match-define (infer-record a c t te) (infer-types e1 env syn-table))
+                (match-define (infer-record ares cres tres te-res) res)
+                (set-union! ares a)
+                (set-union! cres c)
+                (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]
+               [`(,x : ,t0 ,e1)
+                (match-define (infer-record a c t te) (infer-types e1 env syn-table))
+                (match-define (infer-record ares cres tres te-res) res)
+                (set-union! ares a)
+                (set-union! cres c (set `(== ,t0 ,t)))
+                (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]))
+           (infer-record (mutable-set) (mutable-set) 'None '()) vars))
+  ;;(match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
+  (match-define (infer-record a2 c2 t2 te2) (infer-types body env syn-table))
+  ;(displayln body)
+  ;(displayln te2)
+  ;(set-union! a1 a2)
+  (set-union! c1 c2)
+  (set-for-each a2 (lambda (a)
+                     (let ([aval (assoc (car a) (map (lambda (var)
+                                                       (match-let ((`((,x : ,t) ,b) var))
+                                                         (list x t))) te1))])
+                       (if aval
+                           (set-add! c1 `(implicit ,(cdr a) ,(last aval) ,env))
+                           (set-add! a1 a)))))
+  (infer-record a1 c1 t2 `(let ,te1 ,te2)))
+
+
+
 (define (get-vars ls vars env)
   (cond
     [(< (length ls) 3) (list (append ls vars) env)]
@@ -153,6 +207,7 @@
               (get-vars (cdr ls)
                         (cons (car ls) vars)
                         env))]))
+
 
 (define (infer-lambda exp env syn-table)
   (match-define `(lambda ,args ,body) exp)
@@ -318,7 +373,7 @@
   (match e
     [(? symbol?) (infer-var e syn-table)]
     [`(lambda ,x ,b) (infer-lambda e env syn-table)]
-    ;; [`(let ,vars ,b) (infer-let e env syn-table)]
+    [`(let ,vars ,b) (infer-let e env syn-table)]
     ;; [`(map ,fun ,arr) (infer-map e env syn-table)]
     ;; [`(fold ,fun ,res ,arr) (infer-fold e env syn-table)]
     ;; [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
@@ -326,7 +381,7 @@
     [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]
     [`(acc-array ,ls) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
     [(? acc-scalar?) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
-    ;; [`(,rator . ,rand) (infer-app e env syn-table)]
+    [`(,rator . ,rand) (infer-app e env syn-table)]
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
 
 
@@ -376,10 +431,10 @@
 (check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg2" Int))
 
 
-
-
-
 (check-record-t check-equal? (inf_r '(lambda (x) x)) '(-> "arg3" "arg3"))
+(check-record-t check-equal?(inf_r '(let ((x (+ 5 2))) x)) 'Int)
+(check-record-t check-equal?(inf_r '(let ((x 2) (y 5)) (+ x y))) 'Int)
+(check-record-t check-equal?(inf_r '(let ((x (lambda (x y) (+ x y)))) (x 5 2))) 'Int)
 
 ;; TODO What should happen if 2 arrays are of different size ?????
 

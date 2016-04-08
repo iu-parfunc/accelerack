@@ -128,7 +128,7 @@
                                              (map infer-lit (cdr ls)))))
                             (if type
                                 `(Array ,(length ls) ,type)
-                                (raise-syntax-error 'infer-lit "All-vars of Acc-array should be of same type: ~a " exp))))]
+                                (raise-syntax-error 'infer-lit (format "All-vars of Acc-array should be of same type: ~a " exp)))))]
     ;; Supporting tuples
     [`(,x ...) (map infer-lit x)]
     [else (raise-syntax-error 'infer-lit "This literal is not supported yet: ~a " exp)]))
@@ -140,6 +140,9 @@
   (match-define (infer-record a0 c0 t0 te0) (infer-types fun env syn-table))
   (match-define (infer-record a1 c1 t1 te1) (infer-types arr env syn-table))
   (match-define `(-> ,a ,b) t0)
+  (match t1
+     [`(Array ,n ,ty) (void)]
+     [else (raise-syntax-error 'infer-map (format "Invalid array format : ~a" t1))])
   (match-define `(Array ,n ,ty) t1)
   (set-union! a0 a1)
   (set-union! c0 (set `(== ,a ,ty)) c1)
@@ -461,7 +464,7 @@
 (check-record-t check-equal?(inf_r '(: x (Array 1 Bool))) '(Array 1 Bool))
 (check-record-t check-equal?(inf_r '((lambda (x) (+ (use a Int) x)) 5)) 'Int)
 (check-record-t check-equal?(inf_r '(map (lambda (x) x) (acc-array (1 2 3)))) '(-> (-> Int Int) (Array 3 Int) (Array 3 Int)))
-
+(check-record-t check-equal? (inf_r '(map (lambda (x) x) 1)) 'Error)
 
 ;; TODO What should happen if 2 arrays are of different size ?????
 

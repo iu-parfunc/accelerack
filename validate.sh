@@ -18,5 +18,5 @@ cd $TOP/acc_c/
 cd $TOP/acc_hs/
 ./validate.sh
 
-cd $TOP/acc_rkt/
+cd $TOP/accelerack/
 ./validate.sh

@@ -48,7 +48,7 @@
 ;; Import the acc type definitions from the c header file to maintain consistent naming with haskell
 #;
 (begin
-  (define-runtime-path acc_types "../../../acc_c/acc_types.h")
+  (define-runtime-path acc_types "../../acc_c/acc_types.h")
   (define ACC_TYPES (c-defs (path->string acc_types)))
   (define-values (C_INT
                   C_DOUBLE

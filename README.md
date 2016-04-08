@@ -10,9 +10,6 @@ C Bindings for Accelerate, Racket Frontend to Accelerate
 
 ## Directory organization
 
- * acc_hs  holds Haskell-side code
- * acc_rkt holds Racket-side
- * test directory holds common tests,
-  - test subdirectories hold language-a and feature-specific tests.
-
+ * `acc_hs/`     -- Haskell code supporting the library
+ * `accelerack/` -- the main Racket library exposed to users
 

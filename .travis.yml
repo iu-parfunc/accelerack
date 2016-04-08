@@ -16,11 +16,11 @@ before_install:
 
 install:
   - pwd
-  - cd acc_c   && ./.prevalidate.sh && cd ..
-  - cd acc_hs  && ./.prevalidate.sh && cd ..
-  - cd acc_rkt && ./.prevalidate.sh && cd ..
+  - cd acc_c      && ./.prevalidate.sh && cd ..
+  - cd acc_hs     && ./.prevalidate.sh && cd ..
+  - cd accelerack && ./.prevalidate.sh && cd ..
 
 script:
   - pwd
-  - cd acc_hs  && ./.mainvalidate.sh && cd ..
-  - cd acc_rkt && ./.mainvalidate.sh && cd ..
+  - cd acc_hs     && ./.mainvalidate.sh && cd ..
+  - cd accelerack && ./.mainvalidate.sh && cd ..

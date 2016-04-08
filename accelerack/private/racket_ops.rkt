@@ -21,8 +21,7 @@
   [acc-zipwith
    (-> (-> acc-element? acc-element? acc-element?)
        acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
-  [acc-fold (-> ; (->* (acc-element?) () #:rest (listof acc-element?) acc-element?)
-                (->* acc-element? acc-element? acc-element?)
+  [acc-fold (-> (-> acc-element? acc-element? acc-element?)
                 acc-element? acc-manifest-array?
                 acc-manifest-array?)]))
 

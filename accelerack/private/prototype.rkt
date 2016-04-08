@@ -41,20 +41,20 @@
 
 ;; TODO - The calls to functions in libacclib need to be replaced by calls to haskell functions
 
-(define-runtime-path libacc "../../../acc_c/libacc.so")
+(define-runtime-path libacc "../../acc_c/libacc.so")
 (define libacclib (ffi-lib libacc))
 (define-ffi-definer define-libintegrator libacclib)
 (define-libintegrator rkt_handler (_fun _acc-manifest-array-pointer _string -> _void))
 
-(define-runtime-path librachs "../../../build/librachs.so")
+(define-runtime-path librachs "../../build/librachs.so")
 (define lib-hs (ffi-lib librachs))
 (define-ffi-definer define-hs lib-hs)
 
-(define-runtime-path libsxp "../../../build/libsxp.so")
+(define-runtime-path libsxp "../../build/libsxp.so")
 (define lib-sxp (ffi-lib libsxp))
 (define-ffi-definer define-sxp lib-sxp)
 
-(define-runtime-path librts "../../../acc_c/librts.so")
+(define-runtime-path librts "../../acc_c/librts.so")
 (define lib-rts (ffi-lib librts))
 (define-ffi-definer define-rts lib-rts)
 

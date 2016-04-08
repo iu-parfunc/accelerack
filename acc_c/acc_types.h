@@ -1,6 +1,6 @@
 
 /**********************************************************************
-* C header file that defines the acc types used by acc_rkt and acc_hs *
+* C header file that defines the acc types used by /accelerack and /acc_hs *
 ***********************************************************************/
 
 #define C_INT 0

@@ -3,9 +3,9 @@
 (define collection 'multi)
 
 (define compile-omit-paths
-  (list "acc_hs/*"
-        "acc_c/*"
-        "acc_rkt/tests_disabled/*"
+  (list "acc_hs"
+        "acc_c"
+;        "accelerack/tests_disabled"
         "info.rkt"))
 
 (define test-omit-paths compile-omit-paths)

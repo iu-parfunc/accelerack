@@ -365,7 +365,7 @@
     [(? string?) (string->symbol val)]
     [(? list?) (map str->sym val)]
     [else val]))
-          
+
 (define (annotate-type ty subs)
   (match ty
     [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
@@ -447,6 +447,7 @@
 (check-record-t check-equal? (inf '9) 'Int)
 (check-record-t check-equal? (inf '#t) 'Bool)
 (check-record-t check-equal? (inf '(acc-array (1 2))) '(Array 2 Int))
+(check-record-t check-equal? (inf '(acc-array ((1 2) (2 2)))) '(Array 2 (Int Int)))
 (check-record-t check-equal? (inf '(if 1 2 3)) 'Int)
 (check-record-t check-equal? (inf '(if 1 (acc-array (1 2)) (acc-array (2 3)))) '(Array 2 Int))
 ;; FIXME - Record matcher should try to ignore type variable if possible - MAYBE we shouldn't just have such test cases
@@ -455,13 +456,13 @@
 
 
 (check-record-t check-equal? (inf_r '(lambda (x) x)) '(-> "arg3" "arg3"))
-(check-record-t check-equal?(inf_r '(let ((x (+ 5 2))) x)) 'Int)
-(check-record-t check-equal?(inf_r '(let ((x 2) (y 5)) (+ x y))) 'Int)
-(check-record-t check-equal?(inf_r '(let ((x (lambda (x y) (+ x y)))) (x 5 2))) 'Int)
-(check-record-t check-equal?(inf_r '(: x (Array 1 Bool))) '(Array 1 Bool))
-(check-record-t check-equal?(inf_r '((lambda (x) (+ (use a Int) x)) 5)) 'Int)
-(check-record-t check-equal?(inf_r '(map (lambda (x) x) (acc-array (1 2 3)))) '(-> (-> Int Int) (Array 3 Int) (Array 3 Int)))
-
+(check-record-t check-equal? (inf_r '(let ((x (+ 5 2))) x)) 'Int)
+(check-record-t check-equal? (inf_r '(let ((x 2) (y 5)) (+ x y))) 'Int)
+(check-record-t check-equal? (inf_r '(let ((x (lambda (x y) (+ x y)))) (x 5 2))) 'Int)
+(check-record-t check-equal? (inf_r '(: x (Array 1 Bool))) '(Array 1 Bool))
+(check-record-t check-equal? (inf_r '((lambda (x) (+ (use a Int) x)) 5)) 'Int)
+(check-record-t check-equal? (inf_r '(map (lambda (x) x) (acc-array (1 2 3)))) '(-> (-> Int Int) (Array 3 Int) (Array 3 Int)))
+;; (check-record-t check-equal? (inf_r '(map (lambda (x) 1) 1)) '(-> (-> Int Int) (Array 3 Int) (Array 3 Int)))
 
 ;; TODO What should happen if 2 arrays are of different size ?????
 

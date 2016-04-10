@@ -267,7 +267,7 @@
                            #'(letrec-values ([(dummy type*) (values '() (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type data))
                                                                             (error 'acc-fold "fold cannot be used on tuples") (mapType (type data))))]
                                              [(dummy* shape*) (values '() (if (null? (shape data)) '(1) (reverse (cdr (reverse (shape data))))))]
-                                             [(dummy** res-ptr) (values '() (alloc-unit shape* type*))]
+                                             [(dummy** res-ptr) (values '() (make-empty-manifest-array shape* type*))]
                                              [(dummy*** data*) (values '() (if (acc-array? data) (acc-array-val data) data))]
                                              [(dummy**** shape**) (values '() (reverse (read-data (acc-manifest-array-shape data*))))]
                                              [(dummy***** shape***) (values '() (generatePayload shape** _int))]

@@ -46,7 +46,7 @@
            [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
                         (get-tuple-type (unzip (vector->list* (read-data* arr))) (shape arr))
                       (mapType (type arr)))]
-           [temp (alloc-unit (shape arr) type*)])
+           [temp (make-empty-manifest-array (shape arr) type*)])
     ;; (assert (acc-manifest-array? temp))
     (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
         (begin (tuple-array-set!! (acc-manifest-array-data temp) (acc-manifest-array-data arr) fn) temp)
@@ -112,7 +112,7 @@
 (define (acc-zipwith-dev fn arr1 arr2)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (find-shape (shape arr1) (shape arr2) '())]
-           [temp* (alloc-unit shape* type*)]
+           [temp* (make-empty-manifest-array shape* type*)]
            [len (array-size temp*)]
            [new-arr1 (list->manifest-array type* shape* (reshape shape* (read-data* arr1)))]
            [new-arr2 (list->manifest-array type* shape* (reshape shape* (read-data* arr2)))])
@@ -130,7 +130,7 @@
 (define (acc-zipwith fn arr1 arr2)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
-           [temp* (alloc-unit shape* type*)]
+           [temp* (make-empty-manifest-array shape* type*)]
            [len (array-size temp*)])
           (begin
             (for ([i (in-range 0 len)])
@@ -152,7 +152,7 @@
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
                       (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
            [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))]
-           [temp (alloc-unit shape* type*)]
+           [temp (make-empty-manifest-array shape* type*)]
            [len (array-size temp)]
            [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])
           (begin

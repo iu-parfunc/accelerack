@@ -19,7 +19,7 @@
                   (or/c number? boolean? list?) ;; data
                   acc-manifest-array?)]
    [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
-   [alloc-unit (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
+   [make-empty-manifest-array (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
    [read-data  (-> segment? (or/c null? pair?))]
    [read-data* (-> acc-manifest-array? any/c)]
    [get-type (-> acc-manifest-array? integer?)]
@@ -154,11 +154,11 @@
     ((equal? _bool type) #f)))
 
 
-;; Helper function for alloc-unit.
+;; Helper function for make-empty-manifest-array.
 ;; Arguments: (shape, type, payload)
 ;; Return value: list initialized with unit values
 
-(define (alloc-unit* shape type payload)
+(define (make-empty-manifest-array* shape type payload)
   (cond
     ((null? shape) payload)
     ((zero? (car shape))
@@ -166,8 +166,8 @@
                        '()
                        (cons (sub1 (car (cdr shape)))
                              (cdr (cdr shape))))])
-       (alloc-unit* shape* payload (list payload))))
-    (else (alloc-unit* (cons (sub1 (car shape)) (cdr shape))
+       (make-empty-manifest-array* shape* payload (list payload))))
+    (else (make-empty-manifest-array* (cons (sub1 (car shape)) (cdr shape))
                        type (cons type payload)))))
 
 
@@ -175,14 +175,14 @@
 ;; Arguments: (shape, type)
 ;; Return value: list with racket pointer and c pointer to result structure
 
-(define (alloc-unit shape type)
+(define (make-empty-manifest-array shape type)
   (letrec ([type-data (if (ctype? type) (getUnit-scalar type) (getUnit-tuple type))]
            [type* (if (ctype? type)
                       ((ctype-scheme->c scalar) 'scalar-payload)
                       ((ctype-scheme->c scalar) 'tuple-payload))]
            [shape* (if (null? shape) '(1) shape)]
            [shape** (generatePayload shape* _int)]
-           [init-data (car (alloc-unit* (reverse shape*) type-data '()))]
+           [init-data (car (make-empty-manifest-array* (reverse shape*) type-data '()))]
            [data (if (ctype? type)
                      (generatePayload (flatten init-data) type)
                      (generatePayload (unzip init-data) type))])
@@ -215,7 +215,7 @@
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type input-arr))
                       (get-tuple-type (unzip (vector->list* (read-data* input-arr))) (get-shape input-arr))
                       (mapType (get-type input-arr)))]
-           [temp (alloc-unit (get-shape input-arr) type*)])
+           [temp (make-empty-manifest-array (get-shape input-arr) type*)])
           temp))
 
 ;; returns the type of the given acc array

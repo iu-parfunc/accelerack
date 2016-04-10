@@ -13,8 +13,8 @@
   (check-equal? '(2 3) (get-shape x))
   (check-equal? '((1 2 3) (4 5 6)) (read-data* x)))
 
-(test-case "alloc-unit 1"
-  (define y (alloc-unit '(2 3) _int))
+(test-case "make-empty-manifest-array 1"
+  (define y (make-empty-manifest-array '(2 3) _int))
   (check-equal? 0 (get-type y))
   (check-equal? '(2 3) (get-shape y))
   (check-equal? '((0 0 0) (0 0 0)) (read-data* y)))

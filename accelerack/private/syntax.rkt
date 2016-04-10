@@ -107,7 +107,7 @@
   (match data
     ((list (list x ...) ...) (r:map process-data x))
     (`(,x ...) (r:map process-data x))
-    (`,x (if (or (pair? x) (vector? x)) (vector->list* x) x))))
+    (`,x (if (vector? x) (vector->list* x) x))))
 
 (define-syntax (array stx)
   (syntax-case stx ()

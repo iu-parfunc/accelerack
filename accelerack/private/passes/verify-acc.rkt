@@ -60,8 +60,8 @@
   #:description "an Accelerack type"
   #:literals (-> Array)
   (pattern (-> opera:acc-type ...))
-  (pattern (Array n:integer elt:acc-scalar-type))
-  (pattern t:acc-scalar-type))
+  (pattern (Array n:integer elt:acc-element-type))
+  (pattern t:acc-element-type))
 
 (define-syntax-class acc-lambda-param
   #:description "an Accelerack lambda parameter with optional type"

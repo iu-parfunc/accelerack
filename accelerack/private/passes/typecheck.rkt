@@ -137,12 +137,12 @@
 
   (define primop? (literal-set->predicate primop-lit))
 
-  (define-syntax-class acc-scalar-type
+  (define-syntax-class acc-element-type
     #:literal-sets (scalar-type-lit)
     (pattern _int)
     (pattern _bool)
     (pattern _double)
-    (pattern (_tuple t:acc-scalar-type ...)))
+    (pattern (_tuple t:acc-element-type ...)))
 
 ;  (define-syntax-class acc-scalar
 ;    #:attributes (type)
@@ -154,7 +154,7 @@
     (pattern (-> _:acc-type _:acc-type))
     (pattern (_tuple _:acc-type ...))
     (pattern (_array _:exact-nonnegative-integer _:acc-type))
-    (pattern _:acc-scalar-type))
+    (pattern _:acc-element-type))
 
   (define-syntax-class acc-primop
     (pattern p #:when #'(primop? p)))

@@ -31,7 +31,7 @@
          ; acc-primop-identifier?
 
          acc-scalar-lits
-         acc-scalar-type
+         acc-element-type
          )
 (provide (all-from-out accelerack/private/keywords))
 
@@ -86,10 +86,10 @@
   #:description "a primitive function supported by Accelerack (such as +, -, *, map, etc)"
   (pattern p:id #:when (acc-primop-identifier? #'p)))
 
-(define-syntax-class acc-scalar-type
-  #:description "a type for scalar (non-array) data"
+(define-syntax-class acc-element-type
+  #:description "a type for element data that can go inside an array"
   (pattern p:id #:when (acc-scalar-identifier? #'p))
-  (pattern #(t:acc-scalar-type ...)))
+  (pattern #(t:acc-element-type ...)))
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.
@@ -113,29 +113,29 @@
   (syntax-case stx ()
 
     [(array (shape ...) #(type ...) (data ...))
-                           #'(letrec ([data* (process-data (syntax->datum (syntax (data ...))))]
-                                      [type* (r:map map-type  (list type ...))]
-                                      [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) data*))])
-                                     (if (car ret)
-                                         (acc-alloc type* (syntax->datum (syntax (shape ...))) data*)
-                                         (error 'verify-accelerack (cadr ret))))]
+     #'(letrec ([data* (process-data (syntax->datum (syntax (data ...))))]
+                [type* (r:map map-type  (list type ...))]
+                [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) data*))])
+         (if (car ret)
+             (acc-alloc type* (syntax->datum (syntax (shape ...))) data*)
+             (error 'verify-accelerack (cadr ret))))]
     [(array (shape ...) #(type ...) data)
-                           #'(let ([type* (r:map map-type (list type ...))]
-                                   [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) (flatten data)))])
-                                  (if (car ret)
-                                      (acc-alloc type* (syntax->datum (syntax (shape ...))) data)
-                                      (error 'verify-accelerack (cadr ret))))]
+     #'(let ([type* (r:map map-type (list type ...))]
+             [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) (flatten data)))])
+         (if (car ret)
+             (acc-alloc type* (syntax->datum (syntax (shape ...))) data)
+             (error 'verify-accelerack (cadr ret))))]
     [(array (shape ...) type (data ...))  #'(ctype? type)
-                           #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
-                                      (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
-                                     (if (car ret)
-                                         (acc-alloc type (syntax->datum (syntax (shape ...))) data*)
-                                         (error 'verify-accelerack (cadr ret))))]
+     #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
+                (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
+         (if (car ret)
+             (acc-alloc type (syntax->datum (syntax (shape ...))) data*)
+             (error 'verify-accelerack (cadr ret))))]
     [(array (shape ...) type data)  #'(ctype? type)
-                           #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
-                                  (if (car ret)
-                                      (acc-alloc type (syntax->datum (syntax (shape ...))) data)
-                                      (error 'verify-accelerack (cadr ret))))]))
+     #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
+         (if (car ret)
+             (acc-alloc type (syntax->datum (syntax (shape ...))) data)
+             (error 'verify-accelerack (cadr ret))))]))
 
 (define map-type
   (lambda (x)

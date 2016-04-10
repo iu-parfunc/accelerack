@@ -15,15 +15,15 @@
           acc-array->sexp
           acc-scalar? acc-element?
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
-          acc-type? acc-scalar-type?
+          acc-type? acc-element-type?
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
           ;; we should get rid of delayed scalars!
           acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
           force-delayed-array!
           )
 
-;; Is the Racket datum compatible with ANY accelerack scalar types?
-;; A scalar here is defined as a single numeric value.
+;; Is a given Racket datum compatible with ANY accelerack scalar types?
+;; A scalar here is defined as a single numeric or boolean value.
 (define (acc-scalar? x)
   (or ; (fixnum? x) ;; FIXME: this rules out some numbers at the high ange.
       (and (integer? x)
@@ -107,20 +107,21 @@
   #:transparent)
 
 ;; The SExp representation for an Accelerack type.
-(define (acc-scalar-type? t)
+(define (acc-element-type? t)
   (match t
     ['Int #t]
     ['Bool #t]
     ['Double #t]
-    [`#( ,t* ...) (andmap acc-scalar-type? t*)]
+    [`#( ,t* ...) (andmap acc-element-type? t*)]
     [_ #f]))
 
+;; Tests if a value is a valid SExpression encoding an Accelerack type.
 (define (acc-type? t)
   (match t
-    [`(Array ,n ,elt) (and (fixnum? n) (acc-scalar-type? elt))]
+    [`(Array ,n ,elt) (and (fixnum? n) (acc-element-type? elt))]
     [`#( ,t* ...)     (andmap acc-type? t*)]
     [`(-> ,t* ...)    (andmap acc-type? t*)]
-    [t (acc-scalar-type? t)]))
+    [t (acc-element-type? t)]))
 
 ;; The datatype for delayed arrays that are not yet computed by either
 ;; Racket/Accelerack or Haskell/Accelerate.

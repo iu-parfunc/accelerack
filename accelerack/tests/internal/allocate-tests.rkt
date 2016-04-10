@@ -6,8 +6,8 @@
   rackunit
   )
 
-(test-case "acc-alloc 1"
-  (define x (acc-alloc _int '(2 3) '(1 2 3 4 5 6)))
+(test-case "list->manifest-array 1"
+  (define x (list->manifest-array _int '(2 3) '(1 2 3 4 5 6)))
   ;; Huh?  This looks bogus!
   (check-equal? 0 (get-type x))  
   (check-equal? '(2 3) (get-shape x))

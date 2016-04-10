@@ -14,7 +14,7 @@
 (provide
  (contract-out
    ;; TODO: improve contracts:
-   [acc-alloc (-> (or/c ctype? pair?)   ;; type
+   [list->manifest-array (-> (or/c ctype? pair?)   ;; type
                   (or/c null? pair?)    ;; shape
                   (or/c number? boolean? list?) ;; data
                   acc-manifest-array?)]
@@ -154,9 +154,9 @@
     ((equal? _bool type) #f)))
 
 
-;; Allocates a result structure
-;; Arguments -> (shape, type, payload)
-;; Return value -> list initialized with unit values
+;; Helper function for alloc-unit.
+;; Arguments: (shape, type, payload)
+;; Return value: list initialized with unit values
 
 (define (alloc-unit* shape type payload)
   (cond
@@ -171,9 +171,9 @@
                        type (cons type payload)))))
 
 
-;; Get a pointer to result structure
-;; Arguments -> (shape, type)
-;; Return value -> list with racket pointer and c pointer to result structure
+;; Allocates a manifest array and fills it with default values.
+;; Arguments: (shape, type)
+;; Return value: list with racket pointer and c pointer to result structure
 
 (define (alloc-unit shape type)
   (letrec ([type-data (if (ctype? type) (getUnit-scalar type) (getUnit-tuple type))]
@@ -192,7 +192,7 @@
 ;; Arguments -> (type, shape,  payload, expression)
 ;; Return value -> pointer to allocated memory location
 
-(define (acc-alloc _type _shape _data)
+(define (list->manifest-array _type _shape _data)
     (letrec
       ([type (if (ctype? _type)
                  ((ctype-scheme->c scalar) 'scalar-payload)

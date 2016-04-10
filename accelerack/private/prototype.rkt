@@ -186,14 +186,18 @@
     (else (get-data-list (cdr data-ls)))))
 
 (define (build-sexp func opr . data)
-  (letrec-values ([(dummy data-ls*) (values '() (remove-duplicates (get-data-list data)))]
-                  [(dummy* data*) (values '() (if (and (not (null? data)) (memv #t (r:map pair? data)))
-                                                  (remove-duplicates (get-data-ptrs data))
-                                                  data))]
-                  [(inc id-list) (build-id-list data data-ls* 0)]
-                  [(dummy** data**) (values '() (filter (lambda (x) (or (acc-manifest-array? x) (cpointer? x))) data*))]
-                  [(dummy*** acc-payload) (values '() (acc-alloc _acc-manifest-array-pointer (list (length data**)) (r:map (lambda (x) (if (acc-array? x) (acc-array-val x) x)) data**)))])
-                 (values (append (list (if (procedure? func) (procedure->symbol func) func) (if (procedure? opr) (procedure->symbol opr) opr)) id-list) acc-payload)))
+  (letrec-values
+      ([(dummy data-ls*) (values '() (remove-duplicates (get-data-list data)))]
+       [(dummy* data*) (values '() (if (and (not (null? data)) (memv #t (r:map pair? data)))
+                                       (remove-duplicates (get-data-ptrs data))
+                                       data))]
+       [(inc id-list) (build-id-list data data-ls* 0)]
+       [(dummy** data**) (values '() (filter (lambda (x) (or (acc-manifest-array? x) (cpointer? x))) data*))]
+       [(dummy*** acc-payload) (values '()
+                                       (list->manifest-array _acc-manifest-array-pointer (list (length data**)) (r:map (lambda (x) (if (acc-array? x) (acc-array-val x) x)) data**)))])
+    (values (append (list (if (procedure? func) (procedure->symbol func) func)
+                          (if (procedure? opr) (procedure->symbol opr) opr))
+                    id-list) acc-payload)))
 
 (define (convert-ptr x)
   (if (acc-manifest-array? x) (make-acc-array x) x))

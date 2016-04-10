@@ -114,8 +114,8 @@
            [shape* (find-shape (shape arr1) (shape arr2) '())]
            [temp* (alloc-unit shape* type*)]
            [len (array-size temp*)]
-           [new-arr1 (acc-alloc type* shape* (reshape shape* (read-data* arr1)))]
-           [new-arr2 (acc-alloc type* shape* (reshape shape* (read-data* arr2)))])
+           [new-arr1 (list->manifest-array type* shape* (reshape shape* (read-data* arr1)))]
+           [new-arr2 (list->manifest-array type* shape* (reshape shape* (read-data* arr2)))])
           (begin
             (for ([i (in-range 0 len)])
               (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))

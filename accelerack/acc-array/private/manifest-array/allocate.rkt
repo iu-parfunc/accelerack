@@ -22,7 +22,8 @@
                   (or/c number? boolean? list?) ;; data
                   acc-manifest-array?)]
    [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
-   [make-empty-manifest-array (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
+   [make-empty-manifest-array
+    (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
    [read-data  (-> segment? (or/c null? pair?))]
    [read-data* (-> acc-manifest-array? any/c)]
 
@@ -44,17 +45,24 @@
 
 (define (generatePayload-helper data payload-c)
   (cond
-    ((null? data) (make-segment (length payload-c)
-                                 ((ctype-scheme->c scalar) 'acc-payload-ptr)
-                                 (cvector-ptr (list->cvector payload-c _segment-pointer))))
-    ((pair? (caar data)) (letrec ([payload*-c (generatePayload-helper (car data) '())])
-                                 (generatePayload-helper (cdr data) (append-end payload*-c payload-c))))
-    (else (let ([payload* (list->cvector (car data) (symbol->ctype (get-ctype (caar data))))])
-               (generatePayload-helper (cdr data)
-                                       (append-end (make-segment (length (car data)) ((ctype-scheme->c scalar) (get-ctype (caar data)))
-                                                                 (cvector-ptr payload*))
-                                                    payload-c))))))
-
+    ((null? data)
+     (make-segment
+      (length payload-c)
+      ((ctype-scheme->c scalar) 'acc-payload-ptr)
+      (cvector-ptr (list->cvector payload-c _segment-pointer))))
+    ((pair? (caar data))
+     (letrec ([payload*-c (generatePayload-helper (car data) '())])
+       (generatePayload-helper (cdr data)
+                               (append-end payload*-c payload-c))))
+    (else (let ([payload* (list->cvector
+                           (car data)
+                           (symbol->ctype (get-ctype (caar data))))])
+            (generatePayload-helper
+             (cdr data)
+             (append-end (make-segment (length (car data))
+                                       ((ctype-scheme->c scalar) (get-ctype (caar data)))
+                                       (cvector-ptr payload*))
+                         payload-c))))))
 
 ;; Stores the payload information into segment structure
 ;; Arguments -> (list containing the payload, type, initial empty list)
@@ -102,24 +110,36 @@
   (letrec ([len (segment-length cptr)]
            [cptr* (segment-data cptr)]
            [type (mapType (segment-type cptr))]
-           [data (if (equal? type 'empty-type) '() (ptr-ref* cptr* type 0 len))])
-          (if (and (ctype? type) (not (equal? _segment-pointer type)))
-              data
-              (read-data-helper data))))
+           [data (if (equal? type 'empty-type)
+                     '() (ptr-ref* cptr* type 0 len))])
+    (if (and (ctype? type) (not (equal? _segment-pointer type)))
+        data
+        (read-data-helper data))))
 
-(define (segment-flatref seg type ind)
+(define (segment-flatref seg type ind)  
   (cond
-    [(eq? type 'tuple-payload)
-     (error 'segment-flatref "FINISHME: tuple case")]
-    [(ctype? type)
-     (ptr-ref (segment-data seg) type ind)]
-    [else (error 'segment-flatref "unexpected type argument: ~a" type)]
-  ))
+    [; (or (equal? type _int) (equal? type _double) (equal? type _bool))
+     (ctype? (mapType (segment-type seg)))
+     ; (ctype? type)
+     (ptr-ref (segment-data seg)
+              (mapType (segment-type seg)) ind)]
+;    [(eq? type 'scalar-payload) (error "what the heck is this")]
+    [(or (eq? type 'tuple-payload) (eq? type 'scalar-payload))     
+     (error (format "Results of ptr-ref*, type ~a ctype? ~a:\n ~a\n"
+                    (mapType (segment-type seg))
+                    (ctype? (mapType (segment-type seg)))
+                    (ptr-ref* (segment-data seg)
+                              (mapType (segment-type seg))
+                              0 (segment-length seg))))
+     ]
+    [else (error 'acc-manifest-array-data
+                 "unexpected type inside segment: ~a" type)]))
 
 (define (list->vector** ls)
   (cond
     ((null? ls) '())
-    ((pair? (car ls)) (cons (list->vector (list->vector** (car ls))) (list->vector** (cdr ls))))
+    ((pair? (car ls)) (cons (list->vector (list->vector** (car ls)))
+                            (list->vector** (cdr ls))))
     (else (cons (car ls) (list->vector** (cdr ls))))))
 
 (define (list->vector* ls shape)
@@ -151,16 +171,8 @@
 ;; index into its "row-major" repesentation.
 (define (acc-manifest-array-flatref arr ind)
   (letrec ([type (mapType (acc-manifest-array-type arr))]
-           [seg  (acc-manifest-array-data arr)]
-           )
-    (cond
-      [(or (equal? type _int) (equal? type _double) (equal? type _bool))
-       (segment-flatref (segment-data seg) type ind)]
-      [(eq? type 'tuple-payload)
-       '...
-       ]
-      [else (error 'acc-manifest-array-data
-                   "unexpected type inside segment: ~a" type)])))
+           [seg  (acc-manifest-array-data arr)])
+    (segment-flatref seg type ind)))
 
 ;; Get a list corresponding to given type
 ;; Arguments -> type
@@ -198,8 +210,9 @@
                        (cons (sub1 (car (cdr shape)))
                              (cdr (cdr shape))))])
        (make-empty-manifest-array* shape* payload (list payload))))
-    (else (make-empty-manifest-array* (cons (sub1 (car shape)) (cdr shape))
-                       type (cons type payload)))))
+    (else (make-empty-manifest-array*
+           (cons (sub1 (car shape)) (cdr shape))
+           type (cons type payload)))))
 
 
 ;; Allocates a manifest array and fills it with default values.
@@ -243,16 +256,22 @@
   (read-data (acc-manifest-array-shape arr)))
 
 (define (get-result-array input-arr)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type input-arr))
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr)
+                              (get-type input-arr))
                       (get-tuple-type (unzip (vector->list* (read-data* input-arr)))
                                       (get-shape input-arr))
                       (mapType (get-type input-arr)))]
            [temp (make-empty-manifest-array (get-shape input-arr) type*)])
           temp))
 
+;; RRN: Get rid of functions that are unnecessarily overloaded over
+;; segment or acc-manifest-array.  That's sloppy:
+
 ;; returns the type of the given acc array
 (define (type arr)
-  (if (acc-manifest-array? arr) (segment-type (acc-manifest-array-data arr)) (segment-type arr)))
+  (if (acc-manifest-array? arr)
+      (segment-type (acc-manifest-array-data arr))
+      (segment-type arr)))
 
 ;; returns the shape of the given acc array
 (define (shape arr)

@@ -20,3 +20,9 @@
   (check-equal? 0 (get-type y))
   (check-equal? '(2 3) (get-shape y))
   (check-equal? '((0 0 0) (0 0 0)) (read-data* y)))
+
+
+(test-case "acc-manifest-array-flatmap"
+  (define y (make-empty-manifest-array '(2 3) _int))
+  (check-equal? (acc-manifest-array-flatref y 1) 0)
+  )

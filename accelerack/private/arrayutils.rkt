@@ -191,6 +191,7 @@
 ;; Arguments -> scalar enum [int value]
 ;; Return value -> ctype
 
+;; RENAME: decodeTypeEnum
 (define (mapType type)
   (cond
     ((equal? type 0) _int)
@@ -202,7 +203,7 @@
     ((equal? type 6) _acc-manifest-array-pointer)
     ((equal? type 7) _gcpointer)
     ((equal? type 8) 'rkt-payload-ptr )
-    (else 'empty_type)))
+    (else (error 'mapType "invalid accelerack type enumeration: ~a" type))))
 
 
 ;; Map the actual type to scalar enum values

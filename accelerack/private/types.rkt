@@ -10,20 +10,28 @@
  ; racket/trace
  )
 
-(provide  acc-array?
-          make-acc-array
-          acc-array-val
-          acc-array=?
-          acc-array->sexp
-          acc-scalar? acc-element?
-          acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
-          acc-type? acc-element-type?
-          acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
-          force-delayed-array!          
+(provide ;; Complete Arrays:
+         acc-array? make-acc-array
+         acc-array-val
+         acc-array=?
+         acc-array->sexp
+         force-acc-array! 
+         
+         ;; Lower-level pieces:
+         acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
+         
+         ;; Elements
+         acc-scalar? acc-element?
 
-          ;; delayed scalars are not fully implemented yet [2016.04.11]:
-          acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
-          )
+         ;; Syntax
+         acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
+
+         ;; Types
+         acc-type? acc-element-type?
+
+         ;; delayed scalars are not fully implemented yet [2016.04.11]:
+         acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
+         )
 
 ;; Is a given Racket datum compatible with ANY accelerack scalar types?
 ;; A scalar here is defined as a single numeric or boolean value.
@@ -52,9 +60,10 @@
     (else #f)))
 
 
-;; Resolves a acc-array with delayed array , resolves it and overwrites it and return value
-;; acc-array? -> acc-manifest-array?
-(define (force-delayed-array! x)
+;; Resolves an acc-array containing a delayed payload.  
+;; Overwrites the acc-array's contents.
+;; Returns the resulting acc-manifest-array?
+(define (force-acc-array! x)
   (cond
     [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
      (acc-array-val x)]
@@ -66,7 +75,7 @@
             (fval (acc-array-val (val))))
        (set-acc-array-val! x fval)
        fval)]
-    [else (error 'force-delayed-array! "Expected an acc-array, got ~a" x)]))
+    [else (error 'force-acc-array! "Expected an acc-array, got ~a" x)]))
 
 ;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
 ;; I think this is resolved.
@@ -75,7 +84,7 @@
       (if (acc-manifest-array? (acc-array-val x))
           (read-data* (acc-array-val x))
           ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
-          (read-data* (force-delayed-array! x)))
+          (read-data* (force-acc-array! x)))
       (error 'acc-array->sexp "works only on acc-array"))) ;;(read-data* x)))
 
 ;; The data-type for Racket-side arrays, which may be either

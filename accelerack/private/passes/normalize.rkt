@@ -215,30 +215,31 @@
                  #t
                  (error 'is-normalized "unexpected expression: ~a\n" x))
              )) ns))
-;; Check if eval and actual result is equal
-(check-true (eval-and-check test3))
-(check-true (eval-and-check test4))
-(check-true (eval-and-check test4a))
-(check-true (eval-and-check test4b))
-(check-true (eval-and-check test4c))
-(check-true (eval-and-check test5))
-(check-true (eval-and-check test6))
-(check-true (eval-and-check test7))
-(check-true (eval-and-check test9))
+
+(test-case "Run eval-and-check tests"
+  ;; Check if eval and actual result is equal
+  (check-true (eval-and-check test3))
+  (check-true (eval-and-check test4))
+  (check-true (eval-and-check test4a))
+  (check-true (eval-and-check test4b))
+  (check-true (eval-and-check test4c))
+  (check-true (eval-and-check test5))
+  (check-true (eval-and-check test6))
+  (check-true (eval-and-check test7))
+  (check-true (eval-and-check test9)))
 
 
+(test-case "Check that normalize yields is-normalized? expressions"
+  ;; Validate output of normalize to
+  ;; Passing tests:
+  (for-each (lambda(x)
+              (check-pred is-normalized? x))
+            (map (lambda(x) (normalize x '()))
+                 (list test3 test4 test4a test4b test4c
+                       test5 test6 test7 test8 test9))))
+  
 
-
-
-;; Validate output of normalize to
-;; Passing tests:
-(for-each (lambda(x)
-            (check-pred is-normalized? x))
-          (map (lambda(x) (normalize x '()))
-               (list test3 test4 test4a test4b test4c
-                     test5 test6 test7 test8 test9)))
-
-
+#;
 ;; Known failures, FIXME FIXME!
 ;; Add some invalid cases
 (for-each (lambda (t)

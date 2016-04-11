@@ -19,7 +19,7 @@
          acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
 
          ;; Types
-         acc-type? acc-element-type?
+         acc-type? acc-scalar-type? acc-element-type?
 
          ;; delayed scalars are not fully implemented yet [2016.04.11]:
          acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
@@ -64,14 +64,19 @@
             (values t e))
   #:transparent)
 
-;; The SExp representation for an Accelerack type.
-(define (acc-element-type? t)
+;; The SExp representation for an Accelerack scalar type.
+(define (acc-scalar-type? t)
   (match t
     ['Int #t]
     ['Bool #t]
     ['Double #t]
-    [`#( ,t* ...) (andmap acc-element-type? t*)]
     [_ #f]))
+
+;; The SExp representation for an Accelerack element type.
+(define (acc-element-type? t)
+  (match t
+    [`#( ,t* ...) (andmap acc-element-type? t*)]
+    [else (acc-scalar-type? t)]))
 
 ;; Tests if a value is a valid SExpression encoding an Accelerack type.
 (define (acc-type? t)

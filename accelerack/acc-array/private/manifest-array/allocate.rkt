@@ -15,7 +15,8 @@
  (contract-out
    ;; Manifest arrays:
   
-   ;; TODO: improve contracts:  
+   ;; TODO: improve contracts:
+   ;; HIDE any of this junk that isn't used.
    [list->manifest-array (-> (or/c ctype? pair?)   ;; type
                   (or/c null? pair?)    ;; shape
                   (or/c number? boolean? list?) ;; data
@@ -32,8 +33,8 @@
    [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
    [type (-> (or/c acc-manifest-array? segment?) integer?)]
    [shape (-> acc-manifest-array? (or/c null? pair?))])
-
- acc-manifest-array-flatref
+ 
+ acc-manifest-array-flatref ;; No contract for performance.
  )
 
 
@@ -149,11 +150,17 @@
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
 (define (acc-manifest-array-flatref arr ind)
-  (error 'acc-array-ref "FINISHME: acc-array-manifest-flatref unimplemented")
   (letrec ([type (mapType (acc-manifest-array-type arr))]
-           [data-ptr      (acc-manifest-array-data arr)]
+           [seg  (acc-manifest-array-data arr)]
            )
-    (segment-flatref data-ptr type ind)))
+    (cond
+      [(or (equal? type _int) (equal? type _double) (equal? type _bool))
+       (segment-flatref (segment-data seg) type ind)]
+      [(eq? type 'tuple-payload)
+       '...
+       ]
+      [else (error 'acc-manifest-array-data
+                   "unexpected type inside segment: ~a" type)])))
 
 ;; Get a list corresponding to given type
 ;; Arguments -> type

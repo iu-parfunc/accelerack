@@ -12,13 +12,23 @@
          accelerack/acc-array
          )
 
-(provide map
-         fold
-         zipwith stencil3x3 generate
-
+(provide ;; Our two combinators with name collisions:
+         map fold         
+         
+         ;; These have no name conflict, but still need to be wrapped:
+         (contract-out
+          [zipwith (-> (-> acc-element? acc-element? acc-element?)
+                       acc-array? acc-array? acc-array?)]
+          [stencil3x3 (-> (-> acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element?)
+                          stencil-boundary? acc-array?
+                          acc-array?)])
+          generate
+         
          ;; Reexported:
-         acc-array-ref
-         acc-array-flatref
+         acc-array-ref acc-array-flatref
          )
 
 ;; The contract for this map is complicated.
@@ -42,14 +52,10 @@
     ))
 
 (define (zipwith f x y)
-  (cond
-    [(and (acc-array? x) (acc-array? y))
-     (make-acc-array (acc-zipwith f (force-acc-array! x) (force-acc-array! y)))]
-    [else (error 'fold "FINISHME: zipwith: handle non-manifest case")]
-    ))
+  (make-acc-array (acc-zipwith f (force-acc-array! x) (force-acc-array! y))))
 
-(define (stencil3x3 f x y)
-  (error 'stencil3x3 "FINISHME: stencil3x3 unimplemented"))
+(define (stencil3x3 f b x)
+  (make-acc-array (acc-stencil3x3 f b (force-acc-array! x))))
 
 (define (generate f . dims)
   (error 'generate "FINISHME: generate unimplemented"))

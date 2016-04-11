@@ -23,6 +23,10 @@
 
          ;; delayed scalars are not fully implemented yet [2016.04.11]:
          acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
+
+         ;; Boundary values for stencils
+         stencil-boundary?
+         
          )
 
 ;; Is a given Racket datum compatible with ANY accelerack scalar types?
@@ -40,6 +44,14 @@
       (and (vector? x)
            (andmap acc-element? (vector->list x)))))
 
+
+(define (stencil-boundary? x)
+  (match x
+    ['Clamp   #t]
+    ['Mirror  #t]
+    ['Wrap    #t]
+    [`(Constant ,v) (acc-scalar? v)]
+    [else #f]))
 
 ;; An entry in the syntax table.  It provides everything Accelerack
 ;; needs to know about a symbol bound with define-acc.

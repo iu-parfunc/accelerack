@@ -1,12 +1,11 @@
 #lang racket
 
 ;; This file provides the Racket-side implementation of core Accelerate operators.
-
-;; These operations are not necessarily
+;; They operate exclusively over MANIFEST data.
 
 (require (except-in ffi/unsafe ->)
          accelerack/acc-array/private/manifest-array/structs
-         (only-in accelerack/private/types acc-element?)
+         (only-in accelerack/private/types acc-element? stencil-boundary?)
          accelerack/acc-array/private/manifest-array/allocate
          accelerack/acc-array/private/arrayutils
          accelerack/private/paven_old/global_utils
@@ -16,17 +15,73 @@
 
 (provide
  (contract-out
-  [array-get (-> acc-manifest-array? exact-integer? any/c)]
-  [acc-map (-> procedure? acc-manifest-array? acc-manifest-array?)]
-  [acc-zipwith
-   (-> (-> acc-element? acc-element? acc-element?)
-       acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
-  [acc-fold (-> (-> acc-element? acc-element? acc-element?)
+  ;; POLICY: We should have no contracts or only O(1) contracts from this file.
+  ;; We don't want to layer bigger and bigger contracts around per-element functions.
+  ;; We may do more aggressive enforcement at the "wrappers.rkt" layer.
+  ;; --------------------------------------------------------------------------------
+  [acc-map  (-> procedure? acc-manifest-array? acc-manifest-array?)]
+  [acc-fold (-> procedure? ; (-> acc-element? acc-element? acc-element?)
                 acc-element? acc-manifest-array?
                 acc-manifest-array?)]
-  ))
+  [acc-zipwith
+   (-> procedure? acc-manifest-array? acc-manifest-array? acc-manifest-array?)] 
+  [acc-stencil3x3 (-> procedure? stencil-boundary? acc-manifest-array?
+                      acc-manifest-array?)]
+ 
+  ;; TODO: acc-stencil3x3
+ 
+  [array-get (-> acc-manifest-array? exact-integer? any/c)] ;; Remove me.
+ ))
 
-;; Eventually: must take acc-manifest-array? or acc-deferred-array?
+;; Utilities: these look broken/wrong -RRN [2016.04.11]
+;; --------------------------------------------------------------------------------
+
+;; Set the value at given position in an acc array
+;; Arguments -> reference to the acc array, offset, the value to set
+;; Return value -> void
+
+(define (array-set!! arr-ref offset value)
+  (let ([type (mapType ((ctype-scheme->c scalar) (get-ctype value)))]
+        [data (if (acc-manifest-array? arr-ref)
+                  (segment-data (acc-manifest-array-data arr-ref))
+                  (segment-data arr-ref))])
+    (ptr-set! data type offset value)))
+
+;; Get the value at given position in an acc array
+;; Arguments -> reference to the acc array, offset
+;; Return value -> value at given position
+
+;; FIXME : this doesn't work for tuples!!!
+(define (array-get arr-ref offset)
+  (let ([type (mapType (type arr-ref))]
+        [data (if (acc-manifest-array? arr-ref)
+                  (segment-data (acc-manifest-array-data arr-ref))
+                  (segment-data arr-ref))])
+    (ptr-ref data type offset)))
+
+;; Execute the given function over the given acc tuple data
+;; Arguments -> reference to result acc array ,reference to the input acc array, input function
+;; Return value -> void
+
+(define (tuple-array-set!! arr-ref input-arr fn)
+  (let ([acc-tuple ((ctype-scheme->c scalar) 'acc-payload-ptr)]
+        [acc-int ((ctype-scheme->c scalar) 'c-int)]
+        [acc-double ((ctype-scheme->c scalar) 'c-double)])
+       (cond
+         [(equal? (type input-arr) acc-tuple)
+          (let ([len (acc-length input-arr)])
+            (for ([i (in-range 0 len)])
+              (tuple-array-set!!
+               (ptr-ref (segment-data arr-ref) _segment-pointer i)
+               (ptr-ref (segment-data input-arr) _segment-pointer i)
+               fn)))]
+         [(or (equal? (type input-arr) acc-int)
+              (equal? (type input-arr) acc-double))
+          (let ([len (acc-length input-arr)])
+            (for ([i (in-range 0 len)])
+              (array-set!! arr-ref i (fn (array-get input-arr i)))))])))
+
+;; --------------------------------------------------------------------------------
 
 ;; "arraySize" in Accelerate.  Convert camel case to hyphens:
 (define (array-size arr)
@@ -50,104 +105,18 @@
            [temp (make-empty-manifest-array (shape arr) type*)])
     ;; (assert (acc-manifest-array? temp))
     (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-        (begin (tuple-array-set!! (acc-manifest-array-data temp) (acc-manifest-array-data arr) fn) temp)
+        (begin (tuple-array-set!! (acc-manifest-array-data temp)
+                                  (acc-manifest-array-data arr) fn) temp)
         (begin
           (for ([i (in-range 0 len)])
             (array-set!! temp i (fn (array-get arr i))))
           temp))))
 
-;; Set the value at given position in an acc array
-;; Arguments -> reference to the acc array, offset, the value to set
-;; Return value -> void
-
-(define (array-set!! arr-ref offset value)
-  (let ([type (mapType ((ctype-scheme->c scalar) (get-ctype value)))]
-        [data (if (acc-manifest-array? arr-ref) (segment-data (acc-manifest-array-data arr-ref)) (segment-data arr-ref))])
-    (ptr-set! data type offset value)))
-
-;; Get the value at given position in an acc array
-;; Arguments -> reference to the acc array, offset
-;; Return value -> value at given position
-
-(define (array-get arr-ref offset)
-  (let ([type (mapType (type arr-ref))]
-        [data (if (acc-manifest-array? arr-ref) (segment-data (acc-manifest-array-data arr-ref)) (segment-data arr-ref))])
-    (ptr-ref data type offset)))
-
-;; Execute the given function over the given acc tuple data
-;; Arguments -> reference to result acc array ,reference to the input acc array, input function
-;; Return value -> void
-
-(define (tuple-array-set!! arr-ref input-arr fn)
-  (let ([acc-tuple ((ctype-scheme->c scalar) 'acc-payload-ptr)]
-        [acc-int ((ctype-scheme->c scalar) 'c-int)]
-        [acc-double ((ctype-scheme->c scalar) 'c-double)])
-       (cond
-         [(equal? (type input-arr) acc-tuple) (let ([len (acc-length input-arr)])
-                                                   (for ([i (in-range 0 len)])
-                                                        (tuple-array-set!!
-                                                          (ptr-ref (segment-data arr-ref) _segment-pointer i)
-                                                          (ptr-ref (segment-data input-arr) _segment-pointer i)
-                                                          fn)))]
-         [(or (equal? (type input-arr) acc-int)
-              (equal? (type input-arr) acc-double)) (let ([len (acc-length input-arr)])
-                                                         (for ([i (in-range 0 len)])
-                                                              (array-set!! arr-ref i (fn (array-get input-arr i)))))])))
 
 
-;; Find the length of the row in a payload
-;; Arguments -> shape
-;; Return value -> length
 
-(define (row-length shape)
-  (cond
-    ((equal? 1 (length shape)) (car shape))
-    ((null? (cadr shape)) (car shape))
-    (else (row-length (cdr shape)))))
-
-
-;; Accelerate zipwith (development) function
-;; Arguments -> binary function, reference to array 1,reference to array 2
-;; Return value -> result array
-
-(define (acc-zipwith-dev fn arr1 arr2)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
-           [shape* (find-shape (shape arr1) (shape arr2) '())]
-           [temp* (make-empty-manifest-array shape* type*)]
-           [len (array-size temp*)]
-           [new-arr1 (list->manifest-array type* shape* (reshape shape* (read-data* arr1)))]
-           [new-arr2 (list->manifest-array type* shape* (reshape shape* (read-data* arr2)))])
-          (begin
-            (for ([i (in-range 0 len)])
-              (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))
-            temp*)))
-
-(define (reshape shp ls)
-  (cond
-    ((null? shp) ls)
-    ((equal? (length ls) (car shp)) (map (lambda (x) (reshape (cdr shp) x)) ls))
-    (else (map (lambda (x) (reshape (cdr shp) x)) (take ls (car shp))))))
-
-(define (acc-zipwith fn arr1 arr2)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
-           [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
-           [temp* (make-empty-manifest-array shape* type*)]
-           [len (array-size temp*)])
-          (begin
-            (for ([i (in-range 0 len)])
-              (array-set!! temp* i (fn (array-get arr1 i) (array-get arr2 i))))
-            temp*)))
-
-(define (add-ls ls)
-  (cond
-    ((null? ls) 0)
-    (else (+ (car ls) (add-ls (cdr ls))))))
-
-(define (mult-ls ls)
-  (cond
-    ((null? ls) 0)
-    (else (+ (car ls) (mult-ls (cdr ls))))))
-
+;; Fold:
+;; --------------------------------------------------------------------------------
 
 (define (acc-fold func def arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
@@ -167,7 +136,63 @@
             (array-set!! res i (apply-func func def arr j (+ j rlen)))
             (acc-fold-helper func def arr res len rlen (add1 i) (+ j rlen))))))
 
+;; Find the length of the row in a payload
+;; Arguments -> shape
+;; Return value -> length
+
+(define (row-length shape)
+  (cond
+    ((equal? 1 (length shape)) (car shape))
+    ((null? (cadr shape)) (car shape))
+    (else (row-length (cdr shape)))))
+
 (define (apply-func func def arr i j)
   (cond
     ((equal? i j) def)
     (else (func (array-get arr i) (apply-func func def arr (add1 i) j)))))
+
+
+;; ZipWith:
+;; --------------------------------------------------------------------------------
+
+(define (acc-zipwith fn arr1 arr2)
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
+           [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
+           [temp* (make-empty-manifest-array shape* type*)]
+           [len (array-size temp*)])
+          (begin
+            (for ([i (in-range 0 len)])
+              (array-set!! temp* i (fn (array-get arr1 i) (array-get arr2 i))))
+            temp*)))
+
+;; Accelerate zipwith (development) function
+;; Arguments -> binary function, reference to array 1,reference to array 2
+;; Return value -> result array
+
+(define (acc-zipwith-dev fn arr1 arr2)
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1))
+                      (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1))
+                      (mapType (type arr1)))]
+           [shape* (find-shape (shape arr1) (shape arr2) '())]
+           [temp* (make-empty-manifest-array shape* type*)]
+           [len (array-size temp*)]
+           [new-arr1 (list->manifest-array type* shape* (reshape shape* (read-data* arr1)))]
+           [new-arr2 (list->manifest-array type* shape* (reshape shape* (read-data* arr2)))])
+          (begin
+            (for ([i (in-range 0 len)])
+              (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))
+            temp*)))
+
+(define (reshape shp ls)
+  (cond
+    ((null? shp) ls)
+    ((equal? (length ls) (car shp)) (map (lambda (x) (reshape (cdr shp) x)) ls))
+    (else (map (lambda (x) (reshape (cdr shp) x)) (take ls (car shp))))))
+
+
+;; Stencils:
+;; --------------------------------------------------------------------------------
+
+;; TODO
+(define (acc-stencil3x3 f b arr)
+  (error 'stencil3x3 "FINISHME: acc-stencil3x3 unimplemented"))

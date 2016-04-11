@@ -9,10 +9,10 @@
 (require rackunit
          rackunit/text-ui
          racket/match
-         accelerack/private/header
+         accelerack/acc-array/private/manifest-array/structs
          accelerack/private/wrappers
          accelerack/private/types
-         accelerack/private/allocate)
+         accelerack/acc-array/private/manifest-array/allocate)
 
 (provide (contract-out
           (normalize (-> list? any/c list?)))
@@ -205,10 +205,10 @@
 (define (eval-and-check exp)
   (eval `(begin
            (require accelerack)
-           (require accelerack/private/header)
+           (require accelerack/acc-array/private/manifest-array/structs)
            (require accelerack/private/wrappers)
            (require accelerack/private/types)
-           (require accelerack/private/allocate)
+           (require accelerack/acc-array/private/manifest-array/allocate)
            (let ((x ,exp)
                  (nexp ,(normalize exp '())))
              (if (acc-array=? x nexp)

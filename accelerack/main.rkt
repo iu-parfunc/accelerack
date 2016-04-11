@@ -15,6 +15,8 @@
 
          accelerack/private/executor
          accelerack/private/syntax-capture
+
+         accelerack/acc-array
          )
 
 ;; RRN: Here we provide an explicit export list as a final gate-keeper

@@ -10,6 +10,7 @@
           read-data* acc-manifest-array-flatref)
  (only-in accelerack/acc-array/private/manifest-array/structs
           acc-manifest-array?)
+ accelerack/acc-array/private
  accelerack/acc-array/private/delayed
  accelerack/acc-array/private/arrayutils
  )
@@ -26,9 +27,6 @@
 
  ;; Second, mutable interface, which is usually not exposed to end users:
  ;; acc-array-set! acc-array-flatset!
- 
- ;; Third, private interface to the insides of acc-arrays:
- make-acc-array acc-array-val
  )
 
 
@@ -81,25 +79,4 @@
 ;; index into its "row-major" repesentation.
 (define (acc-array-flatref arr ind)
   (acc-manifest-array-flatref (acc-array-val arr) ind))
-
-;; The data-type for Racket-side arrays, which may be either
-;; manifest or delayed.
-(define-struct acc-array
-  (val) ;; Eventually, hide acc-array-val & make-acc-array from user!
-  #:guard (lambda (v _)
-            (unless (or (acc-delayed-array? v) (acc-manifest-array? v))
-              (raise-argument-error 'acc-array "acc-array?" v))
-            v)
-  #:methods gen:custom-write
-  [(define (write-proc v prt mode)
-     ((if mode write print)
-      (let ((arr (acc-array-val v)))
-        (if (acc-delayed-array? arr)
-            (list 'acc-array "<DELAYED ARRAY>")
-            (list 'acc-array (read-data* arr))))
-      prt))]
-  #:transparent ;; Temporary!  For debugging.
-  #:mutable
-  #:omit-define-syntaxes)
-
 

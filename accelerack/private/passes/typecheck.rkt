@@ -17,7 +17,7 @@
                      syntax/parse)
          ; syntax/parse
          syntax/to-string
-         (only-in accelerack/private/global_utils pass-output-chatter)
+         (only-in accelerack/private/utils pass-output-chatter)
          )
 
 ;; The full type-checking pass.

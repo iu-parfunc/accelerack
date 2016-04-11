@@ -11,11 +11,12 @@
 
 (require (except-in accelerack ->))
 
-(require accelerack/private/header ;; C data reps.
+(require accelerack/acc-array/private/manifest-array/structs ;; C data reps.
          (only-in accelerack/private/syntax   array)
-         (only-in accelerack/private/allocate get-result-array read-data*)
+         (only-in accelerack/acc-array/private/manifest-array/allocate
+                  get-result-array read-data*)
          accelerack/private/racket_ops
-         (only-in accelerack/private/global_utils add sub mult)
+         (only-in accelerack/private/paven_old/global_utils add sub mult)
          )
 
 

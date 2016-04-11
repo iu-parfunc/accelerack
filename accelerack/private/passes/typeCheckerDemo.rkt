@@ -6,7 +6,7 @@
          racket/trace
          racket/set
          racket/dict
-         (only-in accelerack/private/global_utils pass-output-chatter)
+         (only-in accelerack/private/utils pass-output-chatter)
          accelerack/private/syntax
          accelerack/private/wrappers
          (prefix-in r: racket/base))

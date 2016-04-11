@@ -6,10 +6,10 @@
 (require ffi/unsafe
          ffi/unsafe/define
 	 racket/runtime-path
-         accelerack/private/allocate
+         accelerack/acc-array/private/manifest-array/allocate
          accelerack/private/arrayutils
          accelerack/private/racket_ops
-         accelerack/private/header
+         accelerack/acc-array/private/manifest-array/structs
          accelerack/private/wrappers
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base) ;syntax/parse

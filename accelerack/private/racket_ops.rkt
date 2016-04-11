@@ -5,11 +5,11 @@
 ;; These operations are not necessarily
 
 (require (except-in ffi/unsafe ->)
-         accelerack/private/header
+         accelerack/acc-array/private/manifest-array/structs
          (only-in accelerack/private/types acc-element?)
-         accelerack/private/allocate
-         accelerack/private/arrayutils
-         accelerack/private/global_utils
+         accelerack/acc-array/private/manifest-array/allocate
+         accelerack/acc-array/private/arrayutils
+         accelerack/private/paven_old/global_utils
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          racket/contract
          )

@@ -5,14 +5,15 @@
 
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          accelerack/private/parse
-         accelerack/private/allocate
-         accelerack/private/arrayutils
-         accelerack/private/global_utils
+         accelerack/acc-array/private/manifest-array/allocate
+         accelerack/acc-array/private/arrayutils
+         (only-in accelerack/private/paven_old/global_utils
+                  vector->list*) 
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
 
          syntax/parse
-         (only-in accelerack/private/types make-acc-array)
+         (only-in accelerack/acc-array/private make-acc-array)
          (for-template racket/base)
          (for-template (only-in racket/contract ->))
 

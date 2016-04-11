@@ -23,7 +23,7 @@
                      accelerack/private/types
 		     accelerack/private/front-end
                      (only-in accelerack/private/executor launch-accelerack-ast)
-                     (only-in accelerack/private/global_utils accelerack-debug-mode?)
+                     (only-in accelerack/private/utils accelerack-debug-mode?)
                      rackunit
                      ))
 

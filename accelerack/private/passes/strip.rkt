@@ -9,7 +9,7 @@
           [strip-ast (-> syntax? list?)]
           ))
 
-(require (only-in accelerack/private/global_utils pass-output-chatter))
+(require (only-in accelerack/private/utils pass-output-chatter))
 
 ;; Simple.  Just a placeholder.
 (define (strip-ast a)

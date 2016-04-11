@@ -7,7 +7,7 @@
  accelerack/private/passes/typecheck
  accelerack/private/types
  (only-in accelerack/private/executor launch-accelerack-ast)
- (only-in accelerack/private/global_utils accelerack-debug-mode?)
+ (only-in accelerack/private/utils accelerack-debug-mode?)
  syntax/parse syntax/id-table racket/dict syntax/to-string
  rackunit)
 

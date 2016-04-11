@@ -6,7 +6,7 @@
 
 (require rackunit
          rackunit/text-ui
-         (only-in accelerack/private/global_utils accelerack-debug-mode?)
+         (only-in accelerack/private/utils accelerack-debug-mode?)
          syntax/macro-testing
          )
 

@@ -12,11 +12,12 @@
 (require accelerack)
 (require (only-in accelerack/private/prototype cmap)
          (only-in accelerack/private/syntax array)
-         (only-in accelerack/private/allocate read-data* read-data)
-         (only-in accelerack/private/global_utils vector->list*)
-         (only-in accelerack/private/header acc-manifest-array-data)
+         (only-in accelerack/acc-array/private/manifest-array/allocate read-data* read-data)
+         (only-in accelerack/private/paven_old/global_utils vector->list*)
+         (only-in accelerack/acc-array/private/manifest-array/structs
+                  acc-manifest-array-data)
          accelerack/private/racket_ops
-         (only-in accelerack/private/global_utils accelerack-debug-mode?)
+         (only-in accelerack/private/utils accelerack-debug-mode?)
          )
 
 ; (require "test-utils.rkt")

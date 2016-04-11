@@ -4,7 +4,7 @@
 
 (require
   ffi/unsafe
-  accelerack/private/allocate
+  accelerack/acc-array/private/manifest-array/allocate
   rackunit
   )
 

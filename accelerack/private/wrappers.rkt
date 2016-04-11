@@ -8,6 +8,8 @@
          ;(for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
          accelerack/private/types
+         (only-in accelerack/acc-array/private make-acc-array)
+         accelerack/acc-array
          )
 
 (provide map

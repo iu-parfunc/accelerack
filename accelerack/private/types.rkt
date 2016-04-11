@@ -5,8 +5,10 @@
 ;; which is exported from accelerack/acc-array
 
 (require
- (only-in accelerack/private/allocate read-data* acc-manifest-array-flatref)
- (only-in accelerack/private/header acc-manifest-array?)
+ (only-in accelerack/acc-array/private/manifest-array/allocate
+          read-data* acc-manifest-array-flatref)
+ (only-in accelerack/acc-array/private/manifest-array/structs
+          acc-manifest-array?)
  )
 
 (provide                  

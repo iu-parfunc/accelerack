@@ -1,26 +1,15 @@
 #lang racket
 
-;; Struct definitions used throughout the code base.
-;; Most importantly, this is where the main acc-array datatype
-;; and core operations are defined.
+;; Type definitions (structs) used throughout the code base.
+;; This includes most things EXCEPT the main acc-array datatype,
+;; which is exported from accelerack/acc-array
 
 (require
  (only-in accelerack/private/allocate read-data* acc-manifest-array-flatref)
  (only-in accelerack/private/header acc-manifest-array?)
- ; racket/trace
  )
 
-(provide ;; Complete Arrays:
-         acc-array? make-acc-array
-         acc-array-val
-         acc-array-ref acc-array-flatref
-         acc-array=?
-         acc-array->sexp
-         (contract-out [force-acc-array! (-> acc-array? acc-manifest-array?)])
-         
-         ;; Lower-level pieces:
-         acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
-         
+(provide                  
          ;; Elements
          acc-scalar? acc-element?
 
@@ -49,76 +38,6 @@
       (and (vector? x)
            (andmap acc-element? (vector->list x)))))
 
-;; Check if 2 acc-arrays are equal
-(define (acc-array=? x nexp)
-  (cond
-    ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
-    ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
-    ;; TODO - This doesn't work
-    ;; ((acc-delayed-array? ))
-    ((acc-array? x) (equal? (acc-array->sexp x) (acc-array->sexp nexp)))
-    ;; Throw error if you can't find reason
-    (else #f)))
-
-
-;; Resolves an acc-array containing a delayed payload.  
-;; Overwrites the acc-array's contents.
-;; Returns the resulting acc-manifest-array?
-(define (force-acc-array! x)
-  (cond
-    [(and (acc-array? x) (acc-manifest-array? (acc-array-val x)))
-     (acc-array-val x)]
-    [(and (acc-array? x) (acc-delayed-array? (acc-array-val x)))
-     (let* ((v (acc-array-val x))
-            (val (acc-delayed-array-thunk v))
-            ;; val is of type () -> acc-array?
-            ;; FIXME: change the convention to have the thunk return acc-manifest-array?
-            (fval (acc-array-val (val))))
-       (set-acc-array-val! x fval)
-       fval)]
-    [else (error 'force-acc-array! "Expected an acc-array, got ~a" x)]))
-
-;; RRN: This should go away.  There's only one notion of a Racket-side acc-array:
-;; I think this is resolved.
-(define (acc-array->sexp x)
-  (if (acc-array? x)
-      (if (acc-manifest-array? (acc-array-val x))
-          (read-data* (acc-array-val x))
-          ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
-          (read-data* (force-acc-array! x)))
-      (error 'acc-array->sexp "works only on acc-array"))) ;;(read-data* x)))
-
-;; Retrieve an element of an N-dimensional using an N-dimensional reference.
-(define (acc-array-ref arr . inds)  
-  (error 'acc-array-ref "FINISHME: acc-array-ref unimplemented")
-  ; (let ((shape ...))
-  ;  (acc-manifest-array-flatref (acc-array-val arr) ind))
-  )
-
-;; Retrieve an element of an N-dimensional array using a 1-dimensional
-;; index into its "row-major" repesentation.
-(define (acc-array-flatref arr ind)
-  (acc-manifest-array-flatref (acc-array-val arr) ind))
-
-;; The data-type for Racket-side arrays, which may be either
-;; manifest or delayed.
-(define-struct acc-array
-  (val) ;; Eventually, hide acc-array-val & make-acc-array from user!
-  #:guard (lambda (v _)
-            (unless (or (acc-delayed-array? v) (acc-manifest-array? v))
-              (raise-argument-error 'acc-array "acc-array?" v))
-            v)
-  #:methods gen:custom-write
-  [(define (write-proc v prt mode)
-     ((if mode write print)
-      (let ((arr (acc-array-val v)))
-        (if (acc-delayed-array? arr)
-            (list 'acc-array "<DELAYED ARRAY>")
-            (list 'acc-array (read-data* arr))))
-      prt))]
-  #:transparent ;; Temporary!  For debugging.
-  #:mutable
-  #:omit-define-syntaxes)
 
 ;; An entry in the syntax table.  It provides everything Accelerack
 ;; needs to know about a symbol bound with define-acc.
@@ -148,17 +67,6 @@
     [`(-> ,t* ...)    (andmap acc-type? t*)]
     [t (acc-element-type? t)]))
 
-;; The datatype for delayed arrays that are not yet computed by either
-;; Racket/Accelerack or Haskell/Accelerate.
-;;
-;; TODO: If we eventually want to make (define x (acc y)) equivalent to (define-acc x y)
-;; then we will need to store the captured syntax in here also, because we will not
-;; have top-level bindings entered in the table.
-(struct acc-delayed-array (thunk)
-  #:guard (lambda (th _)
-            (unless (procedure? th)
-              (raise-argument-error 'acc-delayed-array "procedure?" th))
-            th))
 
 ;; The same idea, but for scalar data.
 ;;
@@ -176,9 +84,3 @@
 (struct acc-portable-package (sexp array-table)
 
   )
-
-
-;; (display "Is Acc-array :  ")
-;; (define  x (make-acc-array (acc-delayed-array (lambda(x) 1))))
-;; (display (acc-array? x))
-;; (display "\n")

@@ -5,9 +5,9 @@
 
 (require (except-in ffi/unsafe ->)
          ffi/unsafe/cvector
-         accelerack/private/header
-         accelerack/private/arrayutils
-         accelerack/private/global_utils
+         accelerack/acc-array/private/manifest-array/structs
+         accelerack/acc-array/private/arrayutils
+         (only-in accelerack/private/paven_old/global_utils vector->list*)
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
@@ -237,7 +237,8 @@
 
 (define (get-result-array input-arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (get-type input-arr))
-                      (get-tuple-type (unzip (vector->list* (read-data* input-arr))) (get-shape input-arr))
+                      (get-tuple-type (unzip (vector->list* (read-data* input-arr)))
+                                      (get-shape input-arr))
                       (mapType (get-type input-arr)))]
            [temp (make-empty-manifest-array (get-shape input-arr) type*)])
           temp))

@@ -14,7 +14,9 @@
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          (for-syntax racket/base) ;syntax/parse
          (prefix-in r: racket/base)
+
          accelerack/private/types
+         (only-in accelerack/acc-array acc-array? acc-array-val make-acc-array)
          )
 
 (provide acc

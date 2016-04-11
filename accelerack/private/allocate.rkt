@@ -97,7 +97,6 @@
 ;; Read data from given memory location
 ;; Arguments -> segment pointer
 ;; Return value -> list with data read from given memory location
-
 (define (read-data cptr)
   (letrec ([len (segment-length cptr)]
            [cptr* (segment-data cptr)]
@@ -106,6 +105,15 @@
           (if (and (ctype? type) (not (equal? _segment-pointer type)))
               data
               (read-data-helper data))))
+
+(define (segment-flatref seg type ind)
+  (cond
+    [(eq? type 'tuple-payload)
+     (error 'segment-flatref "FINISHME: tuple case")]
+    [(ctype? type)
+     (ptr-ref (segment-data seg) type ind)]
+    [else (error 'segment-flatref "unexpected type argument: ~a" type)]
+  ))
 
 (define (list->vector** ls)
   (cond
@@ -140,21 +148,12 @@
 
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
-
 (define (acc-manifest-array-flatref arr ind)
   (error 'acc-array-ref "FINISHME: acc-array-manifest-flatref unimplemented")
-  #;
-  (letrec ([type (mapType (acc-manifest-array-type cptr))]
-           [data-ptr (acc-manifest-array-data cptr)]
-           [shape-ptr (acc-manifest-array-shape cptr)]
-           [data  (read-data data-ptr)]
-           [shape (read-data shape-ptr)])
-          (if (equal? type 'scalar-payload)
-              (if (null? shape)
-                  (car (list->md-array data shape))
-                  (list->md-array data shape))
-              (list->vector* (zip data) shape)))
-  )
+  (letrec ([type (mapType (acc-manifest-array-type arr))]
+           [data-ptr      (acc-manifest-array-data arr)]
+           )
+    (segment-flatref data-ptr type ind)))
 
 ;; Get a list corresponding to given type
 ;; Arguments -> type

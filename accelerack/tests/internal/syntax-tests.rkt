@@ -6,9 +6,8 @@
                   acc-array?
                   Int Bool Double use)
          accelerack/private/syntax-capture
-         (only-in accelerack/private/types acc-delayed-array?)
+         (only-in accelerack/acc-array/private/delayed acc-delayed-array?)
          )
-
 
 (printf "Running syntax tests that use define-acc\n")
 

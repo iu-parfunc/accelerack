@@ -10,7 +10,7 @@
          rackunit/text-ui)
 
 (require accelerack)
-(require (only-in accelerack/private/prototype cmap)
+(require (only-in accelerack/private/paven_old/prototype cmap)
          (only-in accelerack/private/syntax array)
          (only-in accelerack/acc-array/private/manifest-array/allocate read-data* read-data)
          (only-in accelerack/private/paven_old/global_utils vector->list*)

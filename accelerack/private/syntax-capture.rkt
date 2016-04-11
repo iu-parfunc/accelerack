@@ -15,6 +15,8 @@
          accelerack/private/types
          ; accelerack/private/racket_ops
          (only-in accelerack/private/syntax acc-array :)
+         (only-in accelerack/acc-array/private make-acc-array)
+         accelerack/acc-array/private/delayed
          (for-syntax racket/base
                      syntax/parse syntax/id-table racket/dict
                      (only-in accelerack/private/syntax acc-array)

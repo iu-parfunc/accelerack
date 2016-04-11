@@ -5,6 +5,7 @@
 (provide
  ;; delayed scalars are not fully implemented yet [2016.04.11]:
  acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
+ acc-delayed-array
  )
 
 ;; The datatype for delayed arrays that are not yet computed by either

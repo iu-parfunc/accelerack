@@ -7,7 +7,7 @@
          ffi/unsafe/define
 	 racket/runtime-path
          accelerack/acc-array/private/manifest-array/allocate
-         accelerack/private/arrayutils
+         accelerack/acc-array/private/arrayutils
          accelerack/private/racket_ops
          accelerack/acc-array/private/manifest-array/structs
          accelerack/private/wrappers
@@ -16,7 +16,8 @@
          (prefix-in r: racket/base)
 
          accelerack/private/types
-         (only-in accelerack/acc-array acc-array? acc-array-val make-acc-array)
+         (only-in accelerack/acc-array/private
+                  acc-array? acc-array-val make-acc-array)
          )
 
 (provide acc

@@ -13,7 +13,9 @@
 
 (provide
  (contract-out
-   ;; TODO: improve contracts:
+   ;; Manifest arrays:
+  
+   ;; TODO: improve contracts:  
    [list->manifest-array (-> (or/c ctype? pair?)   ;; type
                   (or/c null? pair?)    ;; shape
                   (or/c number? boolean? list?) ;; data
@@ -22,11 +24,17 @@
    [make-empty-manifest-array (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
    [read-data  (-> segment? (or/c null? pair?))]
    [read-data* (-> acc-manifest-array? any/c)]
+
+   ;; Segments:
+   
    [get-type (-> acc-manifest-array? integer?)]
    [get-shape (-> acc-manifest-array? (or/c null? pair?))]
    [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
    [type (-> (or/c acc-manifest-array? segment?) integer?)]
-   [shape (-> acc-manifest-array? (or/c null? pair?))]))
+   [shape (-> acc-manifest-array? (or/c null? pair?))])
+
+ acc-manifest-array-flatref
+ )
 
 
 ;; Helper to generatePayload function
@@ -130,6 +138,23 @@
                   (list->md-array data shape))
               (list->vector* (zip data) shape)))) ;; (read-data-helper data)
 
+;; Retrieve an element of an N-dimensional array using a 1-dimensional
+;; index into its "row-major" repesentation.
+
+(define (acc-manifest-array-flatref arr ind)
+  (error 'acc-array-ref "FINISHME: acc-array-manifest-flatref unimplemented")
+  #;
+  (letrec ([type (mapType (acc-manifest-array-type cptr))]
+           [data-ptr (acc-manifest-array-data cptr)]
+           [shape-ptr (acc-manifest-array-shape cptr)]
+           [data  (read-data data-ptr)]
+           [shape (read-data shape-ptr)])
+          (if (equal? type 'scalar-payload)
+              (if (null? shape)
+                  (car (list->md-array data shape))
+                  (list->md-array data shape))
+              (list->vector* (zip data) shape)))
+  )
 
 ;; Get a list corresponding to given type
 ;; Arguments -> type

@@ -5,7 +5,7 @@
 ;; and core operations are defined.
 
 (require
- (only-in accelerack/private/allocate read-data*)
+ (only-in accelerack/private/allocate read-data* acc-manifest-array-flatref)
  (only-in accelerack/private/header acc-manifest-array?)
  ; racket/trace
  )
@@ -13,9 +13,10 @@
 (provide ;; Complete Arrays:
          acc-array? make-acc-array
          acc-array-val
+         acc-array-ref acc-array-flatref
          acc-array=?
          acc-array->sexp
-         force-acc-array! 
+         (contract-out [force-acc-array! (-> acc-array? acc-manifest-array?)])
          
          ;; Lower-level pieces:
          acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
@@ -86,6 +87,18 @@
           ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
           (read-data* (force-acc-array! x)))
       (error 'acc-array->sexp "works only on acc-array"))) ;;(read-data* x)))
+
+;; Retrieve an element of an N-dimensional using an N-dimensional reference.
+(define (acc-array-ref arr . inds)  
+  (error 'acc-array-ref "FINISHME: acc-array-ref unimplemented")
+  ; (let ((shape ...))
+  ;  (acc-manifest-array-flatref (acc-array-val arr) ind))
+  )
+
+;; Retrieve an element of an N-dimensional array using a 1-dimensional
+;; index into its "row-major" repesentation.
+(define (acc-array-flatref arr ind)
+  (acc-manifest-array-flatref (acc-array-val arr) ind))
 
 ;; The data-type for Racket-side arrays, which may be either
 ;; manifest or delayed.

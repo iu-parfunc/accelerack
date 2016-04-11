@@ -13,7 +13,11 @@
 (provide map
          fold
          zipwith stencil3x3 generate
-         acc-array-ref)
+
+         ;; Reexported:
+         acc-array-ref
+         acc-array-flatref
+         )
 
 ;; The contract for this map is complicated.
 ;; Either, it works like this:
@@ -48,5 +52,3 @@
 (define (generate f . dims)
   (error 'generate "FINISHME: generate unimplemented"))
 
-(define (acc-array-ref arr . inds)
-  (error 'acc-array-ref "FINISHME: acc-array-ref unimplemented"))

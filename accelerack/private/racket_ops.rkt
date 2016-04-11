@@ -23,7 +23,8 @@
        acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
   [acc-fold (-> (-> acc-element? acc-element? acc-element?)
                 acc-element? acc-manifest-array?
-                acc-manifest-array?)]))
+                acc-manifest-array?)]
+  ))
 
 ;; Eventually: must take acc-manifest-array? or acc-deferred-array?
 

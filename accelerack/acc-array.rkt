@@ -71,12 +71,11 @@
 ;; Retrieve an element of an N-dimensional using an N-dimensional reference.
 (define (acc-array-ref arr . inds)  
   (error 'acc-array-ref "FINISHME: acc-array-ref unimplemented")
-  ; (let ((shape ...))
-  ;  (acc-manifest-array-flatref (acc-array-val arr) ind))
+;  (apply acc-manifest-array-ref (force-acc-array! arr) inds)
   )
 
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
 (define (acc-array-flatref arr ind)
-  (acc-manifest-array-flatref (acc-array-val arr) ind))
+  (acc-manifest-array-flatref (force-acc-array! arr) ind))
 

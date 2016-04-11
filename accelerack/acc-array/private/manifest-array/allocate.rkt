@@ -7,6 +7,8 @@
          ffi/unsafe/cvector
          accelerack/acc-array/private/manifest-array/structs
          accelerack/acc-array/private/arrayutils
+
+         (only-in accelerack/private/types acc-element?)
          (only-in accelerack/private/paven_old/global_utils vector->list*)
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
@@ -33,10 +35,12 @@
    [get-shape (-> acc-manifest-array? (or/c null? pair?))]
    [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
    [type (-> (or/c acc-manifest-array? segment?) integer?)]
-   [shape (-> acc-manifest-array? (or/c null? pair?))])
+   [shape (-> acc-manifest-array? (or/c null? pair?))]
  
- acc-manifest-array-flatref ;; No contract for performance.
- )
+   [acc-manifest-array-flatref
+    (-> acc-manifest-array? exact-nonnegative-integer?
+        acc-element?)]
+ ))
 
 
 ;; Helper to generatePayload function
@@ -121,8 +125,11 @@
     [; (or (equal? type _int) (equal? type _double) (equal? type _bool))
      (ctype? (mapType (segment-type seg)))
      ; (ctype? type)
-     (ptr-ref (segment-data seg)
-              (mapType (segment-type seg)) ind)]
+     (if (< ind (segment-length seg))
+         (ptr-ref (segment-data seg)
+                  (mapType (segment-type seg)) ind)
+         (error (format "flatref: out of bounds access to array, index ~a, but array length is ~a"
+                        ind (segment-length seg))))]
 ;    [(eq? type 'scalar-payload) (error "what the heck is this")]
     [(or (eq? type 'tuple-payload) (eq? type 'scalar-payload))     
      (error (format "Results of ptr-ref*, type ~a ctype? ~a:\n ~a\n"

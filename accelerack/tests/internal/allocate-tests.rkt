@@ -1,5 +1,7 @@
 #lang racket
 
+;; tests corresponding to allocate.rkt
+
 (require
   ffi/unsafe
   accelerack/private/allocate

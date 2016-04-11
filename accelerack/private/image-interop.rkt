@@ -24,6 +24,7 @@
 ;         net/url
          )
 
+#;
 (define (image->list image)
   (define w (image-width image))
   (define h (image-height image))
@@ -43,8 +44,6 @@
               (bytes-ref bytes (+ i 3))
               (bytes-ref bytes i))
        )]))
-
-
 
 (define (image->acc-array image)
   (define w (image-width image))
@@ -77,10 +76,10 @@
   ;(define x (bitmap/url "http://racket-lang.org/logo-and-text.png"))
   ; (define x (bitmap/url "http://cf.ydcdn.net/1.0.1.50/images/wiktionary/eng-wik-lambda-2.jpg"))
   (define x (circle 5 "solid" "red"))
-  (define y (image->list x))
+  ; (define y (image->color-list x))
   (define z (image->acc-array x))
   (list 
-   (length y)
+   ; (length y)
   ))
 
 ; (test)

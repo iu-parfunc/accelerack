@@ -103,6 +103,25 @@
              (define x (acc-array (1 2)))
              (check-equal? (acc-array->sexp x) '(1 2))
              (maybe-display "Test 6 Success !!!"))
+
+  (test-case "plain-racket: acc-array=?"
+             (define x (acc-array (#(2 #(2 1.1 #f))
+                                   #(1 #(3 2.2 #f))
+                                   #(4 #(16 3.3 #f)))))
+             (define y (acc-array (#(2 #(2 1.1 #t))
+                                   #(1 #(3 2.2 #f))
+                                   #(4 #(16 3.3 #f)))))
+             (define z (acc-array (#(2 #(2 1.1 #f)))))
+             (check-true (acc-array=? x x))
+             (check-true (acc-array=? y y))
+             (check-true (acc-array=? z z))
+             (check-false (acc-array=? x y))             
+             (check-false (acc-array=? x z))
+             (check-false (acc-array=? y z))
+             (check-false (acc-array=? y x))             
+             (check-false (acc-array=? z x))
+             (check-false (acc-array=? z y)))
+  
   
   (test-case "acc: literal5"
              (define-acc x (acc-array (#(2 #(2 1.1 #f))
@@ -113,6 +132,7 @@
   (test-case "acc: literal7"
              (define-acc x (acc-array (1 2 3)))
              (check-equal? 1 (car (acc-array->sexp x))))
+
   
   (test-case "acc: map1"
              (define-acc x (map (lambda(x) (+ x 1))

@@ -211,7 +211,7 @@
            (require accelerack/private/allocate)
            (let ((x ,exp)
                  (nexp ,(normalize exp '())))
-             (if (eq-acc-array? x nexp)
+             (if (acc-array=? x nexp)
                  #t
                  (error 'is-normalized "unexpected expression: ~a\n" x))
              )) ns))

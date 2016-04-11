@@ -1,6 +1,8 @@
 #lang racket
 
 ;; Struct definitions used throughout the code base.
+;; Most importantly, this is where the main acc-array datatype
+;; and core operations are defined.
 
 (require
  (only-in accelerack/private/allocate read-data*)
@@ -11,15 +13,16 @@
 (provide  acc-array?
           make-acc-array
           acc-array-val
-          eq-acc-array?
+          acc-array=?
           acc-array->sexp
           acc-scalar? acc-element?
           acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
           acc-type? acc-element-type?
           acc-delayed-array?  acc-delayed-array  acc-delayed-array-thunk
-          ;; we should get rid of delayed scalars!
+          force-delayed-array!          
+
+          ;; delayed scalars are not fully implemented yet [2016.04.11]:
           acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
-          force-delayed-array!
           )
 
 ;; Is a given Racket datum compatible with ANY accelerack scalar types?
@@ -38,7 +41,7 @@
            (andmap acc-element? (vector->list x)))))
 
 ;; Check if 2 acc-arrays are equal
-(define (eq-acc-array? x nexp)
+(define (acc-array=? x nexp)
   (cond
     ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
     ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))

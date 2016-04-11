@@ -35,14 +35,18 @@
 (define-cstruct _segment
    ([length _int]
     [type _int]
-    [data _gcpointer]))
+    [data _gcpointer])
+   ;; Don't let the GC move it:
+   #:malloc-mode 'atomic-interior)
 
 ;; This is the Racket-side notion of a manifest array.
 ;; C structure to store accelerate arrays information (one logical array)
 (define-cstruct _acc-manifest-array
   ([type _int]
    [shape _segment-pointer]
-   [data _segment-pointer]))
+   [data _segment-pointer])
+  ;; Don't let the GC move it:
+  #:malloc-mode 'atomic-interior)
 
 
 ;; Import the acc type definitions from the c header file to maintain consistent naming with haskell

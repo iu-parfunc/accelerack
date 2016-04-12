@@ -168,6 +168,18 @@
              ; (check-equal? '#(11 22 33) (acc-array-ref x)) ;; FINISHME
              )
 
+  (test-case "plain-racket:: map, change type"
+    (define x (map (lambda(x) (>= x 20))
+                   (acc-array (10 20 30))))
+    (check-equal? (acc-array->sexp x) '(#f #t #t)))
+
+  #;
+  (test-case "plain-racket: zipwith"
+             (define x (acc-array (2 2 2 2)))
+             (define y (map (lambda(x) (+ x 1)) x))
+             (define z (zipwith + x y))
+             (check-equal? (acc-array->sexp z) '(6 6 6 6)))
+
   (test-case "acc: map1"
              (define-acc x (map (lambda(x) (+ x 1))
                                 (acc-array (1 2 3))))

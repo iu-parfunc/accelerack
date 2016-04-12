@@ -6,7 +6,8 @@
 
 
 (require accelerack/acc-array
-         (only-in accelerack/private/types acc-element? stencil-boundary?))
+         (only-in accelerack/private/types acc-element?
+                  acc-element->type stencil-boundary?))
 
 ;; TODO: REMOVE ANY DEPENDENCE ON NON-PUBLIC ARRAY INTERFACES:
 (require (except-in ffi/unsafe ->)
@@ -106,12 +107,17 @@
   ;; we leverage a mutable representation internally.
   (let* ([len  (manifest-array-size arr)]
          [ty   (manifest-array-type arr)]
-         [shp  (manifest-array-shape arr)]
-         [new (make-empty-manifest-array (vector->list shp) ty)])
-    (for ((i (range len)))
-      (manifest-array-flatset! new i
-         (fn (manifest-array-flatref arr i))))
-    new))
+         [shp  (manifest-array-shape arr)])
+    (if (= len 0)
+        arr
+        (let* ([elm0 (fn (manifest-array-flatref arr 0))]
+               [tyout (acc-element->type elm0)]
+               [new (make-empty-manifest-array (vector->list shp) tyout)])
+          (manifest-array-flatset! new 0 elm0)
+          (for ((i (range 1 len)))
+            (manifest-array-flatset! new i
+                                     (fn (manifest-array-flatref arr i))))
+          new))))
 
 ;; Fold:
 ;; --------------------------------------------------------------------------------
@@ -152,6 +158,12 @@
 
 ;; ZipWith:
 ;; --------------------------------------------------------------------------------
+
+
+#;
+(define (zipwith fn a1 a2)
+  )
+
 
 (define (acc-zipwith fn arr1 arr2)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr1))) (shape arr1)) (mapType (type arr1)))]

@@ -9,11 +9,12 @@
           acc-manifest-array?)
  )
 
-(provide                  
+(provide
          ;; Elements
          acc-scalar? acc-int? acc-element?
          acc-sexp-data? acc-sexp-data-shallow?
-         
+         acc-element->type
+
          ;; Syntax
          acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
 
@@ -26,7 +27,7 @@
          ;; Boundary values for stencils
          stencil-boundary?
          acc-shape?
-         
+
          )
 
 ;; Is a given Racket datum compatible with ANY accelerack scalar types?
@@ -42,6 +43,14 @@
   (and (integer? x)
        (<= (- (expt 2 63)) x (sub1 (expt 2 64)))))
 
+(define (acc-element->type x)
+  (cond
+    [(acc-int? x) 'Int]
+    [(boolean? x) 'Bool]
+    [(flonum? x)  'Double]
+    [(vector? x) (vector-map acc-element->type x)]
+    [else (error 'acc-element->type "this is not an array element: ~a" x)]))
+
 ;; This is anything that goes inside an array.
 (define (acc-element? x)
   (or (acc-scalar? x)
@@ -49,7 +58,7 @@
            (andmap acc-element? (vector->list x)))))
 
 ;; O(1) Something which is plausibly SExp data representing Accelerack arrays or elements.
-(define acc-sexp-data-shallow? 
+(define acc-sexp-data-shallow?
   (or/c pair? number? boolean? null? vector?))
 
 ;; O(N) Something which is SExp data representing Accelerack arrays or elements.

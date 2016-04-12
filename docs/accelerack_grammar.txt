@@ -82,6 +82,7 @@ lambda param, lp
 primops p
   = add1 sub1 + * - /
     sqrt ...
+    < > <= >= equal?
 
 TODO: finish this list.
 

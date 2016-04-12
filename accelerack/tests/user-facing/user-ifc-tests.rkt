@@ -14,6 +14,7 @@
   (when (accelerack-debug-mode?)
     (fprintf (current-error-port) "~a\n" msg)))
 
+;; ================================================================================
 (define user-ifc-invalid-test_cases (test-suite
   "invalid test cases"
   (test-case "test-case 1"
@@ -66,6 +67,8 @@
   ;; TODO: (use v t) where the value doesn't match the type at runtime.
   ))
 
+
+;; ================================================================================
 (define user-ifc-valid-test_cases (test-suite
   "valid test cases"
 
@@ -98,7 +101,7 @@
              (define x (acc-array 1))
              (check-equal? (acc-array->sexp x) '1)
              (maybe-display "Test 5 Success !!!"))
-  
+
   (test-case "plain-racket: literal6"
              (define x (acc-array (1 2)))
              (check-equal? (acc-array->sexp x) '(1 2))
@@ -107,7 +110,7 @@
   (test-case "plain-racket: print 0D array of tuple ref"
              (define x (acc-array #(11 22 33)))
              (with-output-to-string (lambda () (display x))))
-  
+
   (test-case "plain-racket: acc-array=?"
              (define x (acc-array (#(2 #(2 1.1 #f))
                                    #(1 #(3 2.2 #f))
@@ -119,26 +122,26 @@
              (check-true (acc-array=? x x))
              (check-true (acc-array=? y y))
              (check-true (acc-array=? z z))
-             (check-false (acc-array=? x y))             
+             (check-false (acc-array=? x y))
              (check-false (acc-array=? x z))
              (check-false (acc-array=? y z))
-             (check-false (acc-array=? y x))             
+             (check-false (acc-array=? y x))
              (check-false (acc-array=? z x))
              (check-false (acc-array=? z y)))
-  
-  
+
+
   (test-case "acc: literal5"
              (define-acc x (acc-array (#(2 #(2 1.1 #f))
                                        #(1 #(3 2.2 #f))
                                        #(4 #(16 3.3 #f)))))
              (check-pred acc-array? x))
-  
+
   (test-case "acc: literal7"
              (define-acc x (acc-array (1 2 3)))
              (check-equal? 1 (car (acc-array->sexp x))))
 
   (test-case "plain-racket: array ref"
-             (define x (acc-array (11 22 33)))    
+             (define x (acc-array (11 22 33)))
              (check-equal? 11 (acc-array-flatref x 0))
              (check-equal? 22 (acc-array-flatref x 1))
              (check-equal? 33 (acc-array-flatref x 2))
@@ -158,16 +161,13 @@
                         (lambda () (acc-array-flatref x 1))
                         "array ref past end"))
 
-#;
   (test-case "plain-racket: 0D array of tuple ref"
              (define x (acc-array #(11 22 33)))
-             ; (check-equal? 0 (acc-array-dimension x))
-             ; (check-equal? '#(11 22 33) (acc-array-flatref x 0))
-             ; (check-equal? '#(11 22 33) (acc-array-ref x))
-             ;(printf "TEMP: ~a\n" x)
-             (void) ;; FINISHME
+             (check-equal? 0 (acc-array-dimension x))
+             (check-equal? '#(11 22 33) (acc-array-flatref x 0))
+             ; (check-equal? '#(11 22 33) (acc-array-ref x)) ;; FINISHME
              )
-  
+
   (test-case "acc: map1"
              (define-acc x (map (lambda(x) (+ x 1))
                                 (acc-array (1 2 3))))
@@ -184,7 +184,7 @@
              (define-acc y (map (lambda(x) (+ x 1)) x))
              (define-acc z (fold + 0 y))
              (check-equal? (acc-array->sexp z) 9))
-  
+
   (test-case "plain-racket: map + fold"
              (define x (acc-array (1 2 3)))
              (define y (map (lambda(x) (+ x 1)) x))
@@ -235,7 +235,7 @@
     (printf "scalar x: ~a\n" x)
     (check-true (acc-scalar? x))
     (check-false (acc-array? x)))
- 
+
   #;
   (test-case "scalar ascription"
              "scalar ascription"

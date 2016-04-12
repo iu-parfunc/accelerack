@@ -34,10 +34,12 @@
   [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
 
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
+
+  ;; Private:
+  ; [segment->sexp  (-> segment? acc-sexp-data-shallow?)]
   
   ;; DEPRECATED / rename or remove:
-  [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
-  [read-data  (-> segment? acc-sexp-data-shallow?)]
+  [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]  
   [get-type (-> acc-manifest-array? integer?)]
   [type (-> (or/c acc-manifest-array? segment?) integer?)]
  ))
@@ -104,7 +106,7 @@
      (cvector-ptr payload))))
 
 
-;; Helper to read-data function
+;; Helper to segment->sexp function
 ;; Arguments -> list containing segment pointers
 ;; Return value -> list with data read from memory pointed by segment pointers
 
@@ -132,7 +134,7 @@
 ;; Read data from given memory location
 ;; Arguments -> segment pointer
 ;; Return value -> list with data read from given memory location
-(define (read-data cptr)
+(define (segment->sexp cptr)
   (letrec ([len (segment-length cptr)]
            [cptr* (segment-data cptr)]
            [type (mapType (segment-type cptr))]
@@ -188,8 +190,8 @@
   (letrec ([type (mapType (acc-manifest-array-type cptr))]
            [data-ptr  (acc-manifest-array-data cptr)]
            [shape-ptr (acc-manifest-array-shape cptr)]
-           [data  (read-data data-ptr)]
-           [shape (read-data shape-ptr)])
+           [data  (segment->sexp data-ptr)]
+           [shape (segment->sexp shape-ptr)])
     (if (equal? type 'scalar-payload)
         (if (null? shape)
             (car (list->md-array data shape))
@@ -305,10 +307,10 @@
 
 ;; returns the shape of the given acc array
 (define (manifest-array-shape arr)
-  (list->vector (read-data (acc-manifest-array-shape arr))))
+  (list->vector (segment->sexp (acc-manifest-array-shape arr))))
 
 (define (manifest-array-size arr)
-  (let ((ls (read-data (acc-manifest-array-shape arr))))
+  (let ((ls (segment->sexp (acc-manifest-array-shape arr))))
     ;; Note: This is 1 if list is null.
     (apply * ls)))
 

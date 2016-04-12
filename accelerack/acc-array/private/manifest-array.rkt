@@ -32,6 +32,8 @@
   [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
   [manifest-array-flatref (-> acc-manifest-array? exact-nonnegative-integer?
                               acc-element?)]
+  [manifest-array-flatset! (-> acc-manifest-array? exact-nonnegative-integer?
+                               acc-element? void?)]
   
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
   [manifest-array-type  (-> acc-manifest-array? acc-type?)]
@@ -162,6 +164,25 @@
     [else (error 'acc-manifest-array-data
                  "unexpected type inside segment: ~a" type)]))
 
+(define (segment-flatset! seg ind val)
+  (define type (mapType (segment-type seg)))
+  (cond
+    ;; FIXME: need good scalar type pred here:
+    [(or (equal? type _int) (equal? type _double) (equal? type _bool))
+     (if (< ind (segment-length seg))
+         (ptr-set! (segment-data seg) type ind val)
+         (error (format "flatref: out of bounds access to array, index ~a, but array length is ~a"
+                        ind (segment-length seg))))]
+;    [(eq? type 'scalar-payload) (error "what the heck is this needed for?")]
+    [(smells-like-interior-node? type)
+     (let ((segs (ptr-ref* (segment-data seg)
+                           type 0 (segment-length seg))))
+       (list->vector
+        (map (lambda (s) (segment-flatset! s ind val))
+             segs)))]
+    [else (error 'acc-manifest-array-data
+                 "unexpected type inside segment: ~a" type)]))
+
 (define (list->vector** ls)
   (cond
     ((null? ls) '())
@@ -200,6 +221,13 @@
   (letrec ([type (mapType (acc-manifest-array-type arr))]
            [seg  (acc-manifest-array-data arr)])
     (segment-flatref seg ind)))
+
+;; Set an element of an N-dimensional array using a 1-dimensional
+;; index into its "row-major" repesentation.
+(define (manifest-array-flatset! arr ind val)
+  (letrec ([type (mapType (acc-manifest-array-type arr))]
+           [seg  (acc-manifest-array-data arr)])
+    (segment-flatset! seg ind val)))
 
 ;; Get a list corresponding to given type
 ;; Arguments -> type

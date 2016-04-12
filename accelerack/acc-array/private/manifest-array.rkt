@@ -107,43 +107,6 @@
      (cvector-ptr payload))))
 
 
-;; Helper to segment->sexp function
-;; Arguments -> list containing segment pointers
-;; Return value -> list with data read from memory pointed by segment pointers
-
-(define (read-data-helper ls)
-  (cond
-    ((null? ls) '())
-    ((let ([element (ptr-ref (segment-data (car ls)) (mapType (segment-type (car ls))))])
-          (and (not (boolean? element))
-               (cpointer? element)))
-     (cons (read-data-helper
-             (ptr-ref*
-               (segment-data (car ls))
-               (mapType (segment-type (car ls)))
-               0
-               (segment-length (car ls))))
-           (read-data-helper (cdr ls))))
-     (else (cons (ptr-ref*
-                  (segment-data (car ls))
-                  (mapType (segment-type (car ls)))
-                  0
-                  (segment-length (car ls)))
-                (read-data-helper (cdr ls))))))
-
-
-;  segment->sexp: (-> segment? acc-sexp-data-shallow?)
-;; Read data from a segment or tree of segments.
-(define (segment->sexp cptr)
-  (letrec ([len (segment-length cptr)]
-           [cptr* (segment-data cptr)]
-           [type (mapType (segment-type cptr))]
-           [data (if (equal? type 'empty-type)
-                     '() (ptr-ref* cptr* type 0 len))])
-    (if (and (ctype? type) (not (equal? _segment-pointer type)))
-        data
-        (read-data-helper data))))
-
 ;; Retrieve an acc-element? from a tree of segments, using linear indexing.
 (define (segment-flatref seg ind)
   (define type (mapType (segment-type seg)))
@@ -204,10 +167,14 @@
 ;; Convert the tree structured (unzipped) manifest array
 ;; into a fully-zipped, nested-list S-Expression.
 (define (manifest-array->sexp a)
+  (define len (manifest-array-size a))
   (reshape-list (vector->list (manifest-array-shape a))
-                (for/list ((i (manifest-array-size a)))
-                  (manifest-array-flatref a i))
-                (manifest-array-size a)))
+                (segment->list (acc-manifest-array-data a) len)
+                len))
+
+(define (segment->list seg len)
+  (for/list ((i len))
+    (segment-flatref seg i)))
 
 (define (reshape-list shp ls len)
   (cond [(null? shp)
@@ -393,10 +360,12 @@
 
 ;; returns the shape of the given acc array
 (define (manifest-array-shape arr)
-  (list->vector (segment->sexp (acc-manifest-array-shape arr))))
+  (list->vector (segment->list (acc-manifest-array-shape arr)
+                               (manifest-array-dimension arr))))
 
 (define (manifest-array-size arr)
-  (let ((ls (segment->sexp (acc-manifest-array-shape arr))))
+  (let ((ls (segment->list (acc-manifest-array-shape arr)
+                           (manifest-array-dimension arr))))
     ;; Note: This is 1 if list is null.
     (apply * ls)))
 

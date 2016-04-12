@@ -16,7 +16,7 @@
   (check-equal? (manifest-array-shape x) #())
   (check-equal? (manifest-array-size  x) '1)
   (check-equal? (manifest-array-dimension x) 0)
-  (check-equal? (read-data* x) '99)
+  (check-equal? (manifest-array->sexp x) '99)
   )
 
 (test-case "list->manifest-array 2D"
@@ -26,7 +26,7 @@
   (check-equal? (manifest-array-shape x) #(2 3))
   (check-equal? (manifest-array-size x)  '6)
   (check-equal? (manifest-array-dimension x) 2)
-  (check-equal? (read-data* x) '((1 2 3) (4 5 6)) )
+  (check-equal? (manifest-array->sexp x) '((1 2 3) (4 5 6)) )
   )
 
 (test-case "make-empty-manifest-array 2D"
@@ -35,7 +35,7 @@
   (check-equal? (manifest-array-shape y) #(2 3))
   (check-equal? (manifest-array-size  y) 6)
   (check-equal? (manifest-array-dimension y) 2)
-  (check-equal? (read-data* y) '((0 0 0) (0 0 0))))
+  (check-equal? (manifest-array->sexp y) '((0 0 0) (0 0 0))))
 
 (test-case "make-empty-manifest-array 0D"
   (define y (make-empty-manifest-array '() _int))
@@ -43,7 +43,7 @@
   (check-equal? (manifest-array-shape y) #() )
   (check-equal? (manifest-array-size  y) 1 )
   (check-equal? (manifest-array-dimension y) 0)
-  (check-equal? (read-data* y) '0))
+  (check-equal? (manifest-array->sexp  y) '0))
 
 (test-case "acc-manifest-array-flatref"
   (define y (make-empty-manifest-array '(2 3) _int))

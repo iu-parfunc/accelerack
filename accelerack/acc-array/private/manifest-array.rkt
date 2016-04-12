@@ -1,7 +1,11 @@
 #lang racket
 
-;; Utilities for building acc-manifest-array data structures
-;; as C pointers.
+;; This is the public interface for manifest arrays in Accelerack.
+;; End users should not need to use this.
+
+;; Implementors should use this rather than violating manifest-array's
+;; abstraction.  (Internally, it is implemented based on a tree of C
+;; pointers.)
 
 (require (except-in ffi/unsafe ->)
          ffi/unsafe/cvector
@@ -27,11 +31,15 @@
   [manifest-array-flatref (-> acc-manifest-array? exact-nonnegative-integer?
                               acc-element?)]
   [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
+
+  [manifest-array->sexp (-> acc-manifest-array?
+                            ; (or/c pair? number? boolean?)
+                            any/c
+                            )]
   
   ;; DEPRECATED / rename or remove:
   [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
   [read-data  (-> segment? (or/c null? pair?))]
-  [read-data* (-> acc-manifest-array? any/c)]
   [get-type (-> acc-manifest-array? integer?)]
   [type (-> (or/c acc-manifest-array? segment?) integer?)]
  ))
@@ -178,7 +186,7 @@
 ;; Arguments -> acc-manifest-array pointer
 ;; Return value -> list with data read from given memory location
 
-(define (read-data* cptr)
+(define (manifest-array->sexp cptr)
   (letrec ([type (mapType (acc-manifest-array-type cptr))]
            [data-ptr  (acc-manifest-array-data cptr)]
            [shape-ptr (acc-manifest-array-shape cptr)]
@@ -282,7 +290,7 @@
 (define (get-result-array input-arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr)
                               (get-type input-arr))
-                      (get-tuple-type (unzip (vector->list* (read-data* input-arr)))
+                      (get-tuple-type (unzip (vector->list* (manifest-array->sexp  input-arr)))
                                       (get-shape input-arr))
                       (mapType (get-type input-arr)))]
            [temp (make-empty-manifest-array (get-shape input-arr) type*)])

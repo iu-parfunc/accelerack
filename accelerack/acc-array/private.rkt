@@ -5,7 +5,7 @@
 ;; copying.
 
 (require
- (only-in accelerack/acc-array/private/manifest-array read-data*)
+ (only-in accelerack/acc-array/private/manifest-array manifest-array->sexp)
  (only-in accelerack/acc-array/private/manifest-array/structs
           acc-manifest-array?)
  accelerack/acc-array/private/delayed)
@@ -32,7 +32,7 @@
       (let ((arr (acc-array-val v)))
         (if (acc-delayed-array? arr)
             (list 'acc-array "<DELAYED ARRAY>")
-            (list 'acc-array (read-data* arr))))
+            (list 'acc-array (manifest-array->sexp arr))))
       prt))]
   #:transparent ;; Temporary!  For debugging.
   #:mutable

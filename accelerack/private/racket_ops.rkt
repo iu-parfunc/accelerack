@@ -107,7 +107,7 @@
   ;; we leverage a mutable representation internally.
   (letrec ([len (manifest-array-size arr)]
            [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-                      (get-tuple-type (unzip (vector->list* (read-data* arr)))
+                      (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr)))
                                       (shape arr))
                       (mapType (type arr)))]
            [temp (make-empty-manifest-array (shape arr) type*)])
@@ -164,7 +164,7 @@
 ;; --------------------------------------------------------------------------------
 
 (define (acc-zipwith fn arr1 arr2)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
+  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
            [temp* (make-empty-manifest-array shape* type*)]
            [len (manifest-array-size temp*)])
@@ -179,13 +179,13 @@
 
 (define (acc-zipwith-dev fn arr1 arr2)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1))
-                      (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1))
+                      (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr1))) (shape arr1))
                       (mapType (type arr1)))]
            [shape* (find-shape (shape arr1) (shape arr2) '())]
            [temp* (make-empty-manifest-array shape* type*)]
            [len (manifest-array-size temp*)]
-           [new-arr1 (list->manifest-array type* shape* (reshape shape* (read-data* arr1)))]
-           [new-arr2 (list->manifest-array type* shape* (reshape shape* (read-data* arr2)))])
+           [new-arr1 (list->manifest-array type* shape* (reshape shape* (manifest-array->sexp arr1)))]
+           [new-arr2 (list->manifest-array type* shape* (reshape shape* (manifest-array->sexp arr2)))])
           (begin
             (for ([i (in-range 0 len)])
               (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))

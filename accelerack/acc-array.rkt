@@ -37,7 +37,7 @@
 (define (acc-array=? x nexp)
   (cond
     ;; ((or (boolean? x) (number? x)) (eqv? x nexp))
-    ((acc-manifest-array? x) (equal? (read-data* x) (read-data* nexp)))
+    ((acc-manifest-array? x) (equal? (manifest-array->sexp x) (manifest-array->sexp nexp)))
     ;; TODO - This doesn't work
     ;; ((acc-delayed-array? ))
     ((acc-array? x) (equal? (acc-array->sexp x) (acc-array->sexp nexp)))
@@ -66,10 +66,10 @@
 (define (acc-array->sexp x)
   (if (acc-array? x)
       (if (acc-manifest-array? (acc-array-val x))
-          (read-data* (acc-array-val x))
+          (manifest-array->sexp (acc-array-val x))
           ;; (acc-array-val ((acc-delayed-array-thunk (acc-array-val x))))
-          (read-data* (force-acc-array! x)))
-      (error 'acc-array->sexp "works only on acc-array"))) ;;(read-data* x)))
+          (manifest-array->sexp (force-acc-array! x)))
+      (error 'acc-array->sexp "works only on acc-array"))) ;;(manifest-array->sexp x)))
 
 ;; Retrieve an element of an N-dimensional using an N-dimensional reference.
 (define (acc-array-ref arr . inds)  

@@ -166,6 +166,7 @@
 
 (define (segment-flatset! seg ind val)
   (define type (mapType (segment-type seg)))
+  ; (printf "FLATSET type ~a\n" type)
   (cond
     ;; FIXME: need good scalar type pred here:
     [(or (equal? type _int) (equal? type _double) (equal? type _bool))
@@ -177,9 +178,9 @@
     [(smells-like-interior-node? type)
      (let ((segs (ptr-ref* (segment-data seg)
                            type 0 (segment-length seg))))
-       (list->vector
-        (map (lambda (s) (segment-flatset! s ind val))
-             segs)))]
+       (for ((i (length segs)))
+         (segment-flatset! (list-ref segs i) ind (vector-ref val i)))
+       )]
     [else (error 'acc-manifest-array-data
                  "unexpected type inside segment: ~a" type)]))
 
@@ -214,6 +215,15 @@
             (car (list->md-array data shape))
             (list->md-array data shape))
         (list->vector* (zip data) shape)))) ;; (read-data-helper data)
+
+#|
+(define (manifest-array->sexp a)
+  (shape-list (manifest-array-shape a)
+              (for/list ((i (manifest-array-size a)))
+                (manifest-array-flatref a i))))
+
+(define (shape-list ) )
+|#
 
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.

@@ -38,14 +38,14 @@
                   (bytes-ref bytes    (* i 4)))))
        (make-acc-array arr))]))
 
-#;
+
 (test-case "Convert image->array"
   ;(define x (bitmap/url "http://racket-lang.org/logo-and-text.png"))
   ; (define x (bitmap/url "http://cf.ydcdn.net/1.0.1.50/images/wiktionary/eng-wik-lambda-2.jpg"))
   (define x (circle 5 "solid" "red"))
   ; (define y (image->color-list x))
   (define z (image->acc-array x))
+  ; (acc-array->sexp z)
+  (printf "victory\n")
   (acc-array->sexp z)
   )
-
-; (test)

@@ -32,16 +32,19 @@
    ;; Segments:
    
    [get-type (-> acc-manifest-array? integer?)]
-   [get-shape (-> acc-manifest-array? (listof exact-nonnegative-integer?))]
+   ; [get-shape (-> acc-manifest-array? (listof exact-nonnegative-integer?))]
    ; [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
    [type (-> (or/c acc-manifest-array? segment?) integer?)]
-   [shape (-> acc-manifest-array? (or/c null? pair?))]
- 
-   [acc-manifest-array-flatref
+   ; [shape (-> acc-manifest-array? (or/c null? pair?))]
+
+   [manifest-array-shape (-> acc-manifest-array? (vectorof exact-nonnegative-integer?))]
+   [manifest-array-size  (-> acc-manifest-array? exact-nonnegative-integer?)]
+   
+   [manifest-array-flatref
     (-> acc-manifest-array? exact-nonnegative-integer?
         acc-element?)]
 
-   [acc-manifest-array-dimension
+   [manifest-array-dimension
     (-> acc-manifest-array? exact-nonnegative-integer?)]
  ))
 
@@ -201,7 +204,7 @@
 
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
-(define (acc-manifest-array-flatref arr ind)
+(define (manifest-array-flatref arr ind)
   (letrec ([type (mapType (acc-manifest-array-type arr))]
            [seg  (acc-manifest-array-data arr)])
     (segment-flatref seg ind)))
@@ -287,9 +290,6 @@
       (segment-type (acc-manifest-array-data arr))
       (segment-type arr)))
 
-(define (get-shape arr)
-  (read-data (acc-manifest-array-shape arr)))
-
 #;
 (define (get-result-array input-arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr)
@@ -310,8 +310,13 @@
       (segment-type arr)))
 
 ;; returns the shape of the given acc array
-(define (shape arr)
-  (read-data (acc-manifest-array-shape arr)))
+(define (manifest-array-shape arr)
+  (list->vector (read-data (acc-manifest-array-shape arr))))
 
-(define (acc-manifest-array-dimension a)
+(define (manifest-array-size arr)
+  (let ((ls (read-data (acc-manifest-array-shape arr))))
+    ;; Note: This is 1 if list is null.
+    (apply * ls)))
+
+(define (manifest-array-dimension a)
   (segment-length (acc-manifest-array-shape a)))

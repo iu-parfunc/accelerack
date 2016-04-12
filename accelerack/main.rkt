@@ -24,6 +24,7 @@
 (provide acc-array acc-array? acc-array=?
          acc-array-ref acc-array-flatref
          acc-array-dimension
+         acc-array-shape
          acc-array->sexp
          acc-scalar? acc-element?
 

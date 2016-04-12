@@ -3,9 +3,14 @@
 ;; This file provides the Racket-side implementation of core Accelerate operators.
 ;; They operate exclusively over MANIFEST data.
 
+
+
+(require accelerack/acc-array
+         (only-in accelerack/private/types acc-element? stencil-boundary?))
+
+;; TODO: REMOVE ANY DEPENDENCE ON NON-PUBLIC ARRAY INTERFACES:
 (require (except-in ffi/unsafe ->)
-         accelerack/acc-array/private/manifest-array/structs
-         (only-in accelerack/private/types acc-element? stencil-boundary?)
+         accelerack/acc-array/private/manifest-array/structs         
          accelerack/acc-array/private/manifest-array/allocate
          accelerack/acc-array/private/arrayutils
          (only-in accelerack/private/utils vector->list*)
@@ -83,13 +88,15 @@
 
 ;; --------------------------------------------------------------------------------
 
-;; "arraySize" in Accelerate.  Convert camel case to hyphens:
-(define (array-size arr)
-  (md-array-length (shape arr)))
-
+;; REMOVE THIS:
 ;; returns the length of the given acc array
 (define (acc-length arr)
-  (if (acc-manifest-array? arr) (segment-length (acc-manifest-array-data arr)) (segment-length arr)))
+  (if (acc-manifest-array? arr)
+      (segment-length (acc-manifest-array-data arr))
+      (segment-length arr)))
+
+;; TEMP: REMOVE THIS:
+(define (shape x) (vector->list (manifest-array-shape x)))
 
 ;; Execute the given function over the given acc array
 ;; Arguments -> input function, reference to the acc array
@@ -98,9 +105,10 @@
 (define (acc-map fn arr)
   ;; The acc-manifest-array is not mutable for end users, but for this library implementation
   ;; we leverage a mutable representation internally.
-  (letrec ([len (array-size arr)]
+  (letrec ([len (manifest-array-size arr)]
            [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-                        (get-tuple-type (unzip (vector->list* (read-data* arr))) (shape arr))
+                      (get-tuple-type (unzip (vector->list* (read-data* arr)))
+                                      (shape arr))
                       (mapType (type arr)))]
            [temp (make-empty-manifest-array (shape arr) type*)])
     ;; (assert (acc-manifest-array? temp))
@@ -123,7 +131,7 @@
                       (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
            [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))]
            [temp (make-empty-manifest-array shape* type*)]
-           [len (array-size temp)]
+           [len (manifest-array-size temp)]
            [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])
           (begin
             (acc-fold-helper func def arr temp len rlen 0 0)
@@ -159,7 +167,7 @@
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (read-data* arr1))) (shape arr1)) (mapType (type arr1)))]
            [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
            [temp* (make-empty-manifest-array shape* type*)]
-           [len (array-size temp*)])
+           [len (manifest-array-size temp*)])
           (begin
             (for ([i (in-range 0 len)])
               (array-set!! temp* i (fn (array-get arr1 i) (array-get arr2 i))))
@@ -175,7 +183,7 @@
                       (mapType (type arr1)))]
            [shape* (find-shape (shape arr1) (shape arr2) '())]
            [temp* (make-empty-manifest-array shape* type*)]
-           [len (array-size temp*)]
+           [len (manifest-array-size temp*)]
            [new-arr1 (list->manifest-array type* shape* (reshape shape* (read-data* arr1)))]
            [new-arr2 (list->manifest-array type* shape* (reshape shape* (read-data* arr2)))])
           (begin

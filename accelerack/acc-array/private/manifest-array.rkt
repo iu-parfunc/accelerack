@@ -287,8 +287,14 @@
           (make-acc-manifest-array type* shape** data)))
 
 (define (make-empty-manifest-array shape type)
-  ;; TODO: replace this:
-  (make-empty-manifest-array-lame shape (acc-type->lame-type type)))
+  (match type
+    [`(Array ,_ ,elt)
+     ;; TODO: replace -lame function:
+     (make-empty-manifest-array-lame shape (acc-type->lame-type elt))]
+    ;; TEMP: Remove this behavior or the other:
+    [sty #:when (acc-scalar-type? sty)
+         (make-empty-manifest-array-lame shape (acc-type->lame-type sty))]
+    [else (error 'make-empty-manifest-array "expected an array type, got: ~a" type)]))
 
 ;; Allocate memory for the payload
 ;; Arguments -> (type, shape,  payload, expression)

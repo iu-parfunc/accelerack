@@ -86,8 +86,6 @@
             (for ([i (in-range 0 len)])
               (array-set!! arr-ref i (fn (array-get input-arr i)))))])))
 
-;; --------------------------------------------------------------------------------
-
 ;; REMOVE THIS:
 ;; returns the length of the given acc array
 (define (acc-length arr)
@@ -98,30 +96,22 @@
 ;; TEMP: REMOVE THIS:
 (define (shape x) (vector->list (manifest-array-shape x)))
 
-;; Execute the given function over the given acc array
-;; Arguments -> input function, reference to the acc array
-;; Return value -> reference to result array
 
+;; Map
+;; --------------------------------------------------------------------------------
+
+;; Map a function over every element, irrespective of dimension.
 (define (acc-map fn arr)
   ;; The acc-manifest-array is not mutable for end users, but for this library implementation
   ;; we leverage a mutable representation internally.
-  (letrec ([len (manifest-array-size arr)]
-           [type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-                      (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr)))
-                                      (shape arr))
-                      (mapType (type arr)))]
-           [temp (make-empty-manifest-array-lame (shape arr) type*)])
-    ;; (assert (acc-manifest-array? temp))
-    (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-        (begin (tuple-array-set!! (acc-manifest-array-data temp)
-                                  (acc-manifest-array-data arr) fn) temp)
-        (begin
-          (for ([i (in-range 0 len)])
-            (array-set!! temp i (fn (array-get arr i))))
-          temp))))
-
-
-
+  (let* ([len  (manifest-array-size arr)]
+         [ty   (manifest-array-type arr)]
+         [shp  (manifest-array-shape arr)]
+         [new (make-empty-manifest-array (vector->list shp) ty)])
+    (for ((i (range len)))
+      (manifest-array-flatset! new i
+         (fn (manifest-array-flatref arr i))))
+    new))
 
 ;; Fold:
 ;; --------------------------------------------------------------------------------

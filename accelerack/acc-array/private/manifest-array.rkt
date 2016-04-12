@@ -21,25 +21,25 @@
 (require racket/trace)
 
 (provide
- ;; TODO: improve contracts, remove occurrences of lame-type?:
  (contract-out
    ;; Manifest arrays:
   [list->manifest-array (-> acc-type? acc-shape? acc-sexp-data?
-                            acc-manifest-array?)]   
-  [make-empty-manifest-array (-> acc-shape? lame-type? acc-manifest-array?)]
+                            acc-manifest-array?)]
+  [make-empty-manifest-array (-> acc-shape? acc-type? acc-manifest-array?)]
   [manifest-array-shape (-> acc-manifest-array? (vectorof exact-nonnegative-integer?))]
-  [manifest-array-size  (-> acc-manifest-array? exact-nonnegative-integer?)]   
+  [manifest-array-size  (-> acc-manifest-array? exact-nonnegative-integer?)]
   [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
   [manifest-array-flatref (-> acc-manifest-array? exact-nonnegative-integer?
                               acc-element?)]
   [manifest-array-flatset! (-> acc-manifest-array? exact-nonnegative-integer?
                                acc-element? void?)]
-  
+
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
   [manifest-array-type  (-> acc-manifest-array? acc-type?)]
-  
+
   ;; DEPRECATED / rename or remove:
   [type (-> (or/c acc-manifest-array? segment?) integer?)]
+  [make-empty-manifest-array-lame (-> acc-shape? lame-type? acc-manifest-array?)]
  ))
 
 
@@ -81,7 +81,7 @@
         (length segs)
         ((ctype-scheme->c scalar) 'acc-payload-ptr)
         (cvector-ptr (list->cvector segs _segment-pointer))))]))
-       
+
 
 ;; Stores the payload information into segment structure
 ;; Arguments -> (list containing the payload, type, initial empty list)
@@ -89,7 +89,7 @@
 
 
 ;; DEPRECATED:
-; [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]  
+; [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
 (define (generatePayload data type)
   (if (ctype? type)
       (let ([payload (list->cvector data type)])
@@ -251,7 +251,6 @@
     ((equal? _double type) 0.0)
     ((equal? _bool type) #f)))
 
-
 ;; Helper function for make-empty-manifest-array.
 ;; Arguments: (shape, type, payload)
 ;; Return value: list initialized with unit values
@@ -274,7 +273,7 @@
 ;; Arguments: (shape, type)
 ;; Return value: list with racket pointer and c pointer to result structure
 
-(define (make-empty-manifest-array shape type)
+(define (make-empty-manifest-array-lame shape type)
   (letrec ([type-data (if (ctype? type) (getUnit-scalar type) (getUnit-tuple type))]
            [type* (if (ctype? type)
                       ((ctype-scheme->c scalar) 'scalar-payload)
@@ -286,6 +285,10 @@
                      (generatePayload (flatten init-data) type)
                      (generatePayload (unzip init-data) type))])
           (make-acc-manifest-array type* shape** data)))
+
+(define (make-empty-manifest-array shape type)
+  ;; TODO: replace this:
+  (make-empty-manifest-array-lame shape (acc-type->lame-type type)))
 
 ;; Allocate memory for the payload
 ;; Arguments -> (type, shape,  payload, expression)
@@ -355,4 +358,3 @@
       [(equal? ty 'rkt-payload-ptr)
        (error 'segtree-type "What to do with rkt-payload-ptr")]
       [else (error 'segtree-type "Unexpected type: ~a" ty)])))
-  

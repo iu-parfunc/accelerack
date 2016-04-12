@@ -38,7 +38,7 @@
   )
 
 (test-case "make-empty-manifest-array 2D"
-  (define y (make-empty-manifest-array '(2 3) _int))
+  (define y (make-empty-manifest-array '(2 3) 'Int))
   (check-equal? (manifest-array-type y)  '(Array 2 Int))
   (check-equal? (manifest-array-shape y) #(2 3))
   (check-equal? (manifest-array-size  y) 6)
@@ -46,7 +46,7 @@
   (check-equal? (manifest-array->sexp y) '((0 0 0) (0 0 0))))
 
 (test-case "make-empty-manifest-array 0D"
-  (define y (make-empty-manifest-array '() _int))
+  (define y (make-empty-manifest-array '() 'Int))
   (check-equal? (manifest-array-type y)  '(Array 0 Int))
   (check-equal? (manifest-array-shape y) #() )
   (check-equal? (manifest-array-size  y) 1 )
@@ -54,7 +54,7 @@
   (check-equal? (manifest-array->sexp  y) '0))
 
 (test-case "acc-manifest-array-flatref"
-  (define y (make-empty-manifest-array '(2 3) _int))
+  (define y (make-empty-manifest-array '(2 3) 'Int))
   (check-equal? (manifest-array-flatref y 1) 0)
   )
 

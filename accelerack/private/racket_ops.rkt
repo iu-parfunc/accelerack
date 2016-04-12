@@ -10,7 +10,7 @@
 
 ;; TODO: REMOVE ANY DEPENDENCE ON NON-PUBLIC ARRAY INTERFACES:
 (require (except-in ffi/unsafe ->)
-         accelerack/acc-array/private/manifest-array/structs         
+         accelerack/acc-array/private/manifest-array/structs
          accelerack/acc-array/private/manifest-array
          accelerack/acc-array/private/arrayutils
          (only-in accelerack/private/utils vector->list*)
@@ -29,12 +29,12 @@
                 acc-element? acc-manifest-array?
                 acc-manifest-array?)]
   [acc-zipwith
-   (-> procedure? acc-manifest-array? acc-manifest-array? acc-manifest-array?)] 
+   (-> procedure? acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
   [acc-stencil3x3 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
- 
+
   ;; TODO: acc-stencil3x3
- 
+
   [array-get (-> acc-manifest-array? exact-integer? any/c)] ;; Remove me.
  ))
 
@@ -110,7 +110,7 @@
                       (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr)))
                                       (shape arr))
                       (mapType (type arr)))]
-           [temp (make-empty-manifest-array (shape arr) type*)])
+           [temp (make-empty-manifest-array-lame (shape arr) type*)])
     ;; (assert (acc-manifest-array? temp))
     (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
         (begin (tuple-array-set!! (acc-manifest-array-data temp)
@@ -130,7 +130,7 @@
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
                       (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
            [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))]
-           [temp (make-empty-manifest-array shape* type*)]
+           [temp (make-empty-manifest-array-lame shape* type*)]
            [len (manifest-array-size temp)]
            [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])
           (begin
@@ -182,7 +182,7 @@
                       (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr1))) (shape arr1))
                       (mapType (type arr1)))]
            [shape* (find-shape (shape arr1) (shape arr2) '())]
-           [temp* (make-empty-manifest-array shape* type*)]
+           [temp* (make-empty-manifest-array-lame shape* type*)]
            [len (manifest-array-size temp*)]
            [new-arr1 (list->manifest-array type* shape* (reshape shape* (manifest-array->sexp arr1)))]
            [new-arr2 (list->manifest-array type* shape* (reshape shape* (manifest-array->sexp arr2)))])

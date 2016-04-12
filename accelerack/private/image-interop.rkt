@@ -9,6 +9,7 @@
  (only-in mrlib/image-core render-image)
  rackunit
  (except-in racket/draw make-pen )
+ racket/trace
  )
 
 (provide
@@ -42,10 +43,10 @@
 (test-case "Convert image->array"
   ;(define x (bitmap/url "http://racket-lang.org/logo-and-text.png"))
   ; (define x (bitmap/url "http://cf.ydcdn.net/1.0.1.50/images/wiktionary/eng-wik-lambda-2.jpg"))
-  (define x (circle 5 "solid" "red"))
+  (define x (circle 3 "solid" "red"))
   ; (define y (image->color-list x))
   (define z (image->acc-array x))
   ; (acc-array->sexp z)
-  (printf "victory\n")
+  (printf "victory ~a\n" z)
   (acc-array->sexp z)
   )

@@ -53,6 +53,18 @@
   (check-equal? (manifest-array-dimension y) 0)
   (check-equal? (manifest-array->sexp  y) '0))
 
+(test-case "make-empty-manifest-array 1D, of tuples"
+  (define x (make-empty-manifest-array '(3) '#(Int Int)))
+  (check-equal? (manifest-array->sexp x) '(#(0 0) #(0 0) #(0 0))))
+
+;; Failing test:
+#;
+(test-case "make-empty-manifest-array 2D, of tuples"
+  (define x (make-empty-manifest-array '(2 2) '#(Int Int)))
+  (define sexp (manifest-array->sexp x))
+  (check-equal? sexp '((#(0 0) #(0 0))
+                       (#(0 0) #(0 0)))))
+
 (test-case "acc-manifest-array-flatref"
   (define y (make-empty-manifest-array '(2 3) 'Int))
   (check-equal? (manifest-array-flatref y 1) 0)

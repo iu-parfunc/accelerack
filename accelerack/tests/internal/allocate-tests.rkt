@@ -5,24 +5,40 @@
 (require
   ffi/unsafe
   accelerack/acc-array/private/manifest-array/allocate
+  (only-in accelerack/acc-array/private/manifest-array/structs scalar)
   rackunit
+  (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
+  )
+
+(test-case "list->manifest-array 0D"
+  (define x (list->manifest-array 'Int '() '(99)))
+  (check-equal? (get-type x) 0)
+  (check-equal? (get-shape x) '())
+  (check-equal? (read-data* x) '99)
   )
 
 (test-case "list->manifest-array 1"
   (define x (list->manifest-array 'Int '(2 3) '(1 2 3 4 5 6)))
-  ;; Huh?  This looks bogus!
-  (check-equal? 0 (get-type x))  
-  (check-equal? '(2 3) (get-shape x))
-  (check-equal? '((1 2 3) (4 5 6)) (read-data* x)))
+  ; (check-equal? ((ctype-scheme->c scalar) _int) (get-type x))
+  (check-equal? (get-type x) 0)
+  (check-equal? (get-shape x) '(2 3))
+  (check-equal? (read-data* x) '((1 2 3) (4 5 6)) )
+  )
 
 (test-case "make-empty-manifest-array 1"
   (define y (make-empty-manifest-array '(2 3) _int))
-  (check-equal? 0 (get-type y))
-  (check-equal? '(2 3) (get-shape y))
-  (check-equal? '((0 0 0) (0 0 0)) (read-data* y)))
+  (check-equal? (get-type y) 0 )
+  (check-equal? (get-shape y) '(2 3))
+  (check-equal? (read-data* y) '((0 0 0) (0 0 0))))
 
+(test-case "make-empty-manifest-array 0D"
+  (define y (make-empty-manifest-array '() _int))
+  (check-equal?  (get-type y) 0 )
+  (check-equal? (get-shape y) '() )
+  (check-equal? (read-data* y) '0))
 
-(test-case "acc-manifest-array-flatmap"
+(test-case "acc-manifest-array-flatref"
   (define y (make-empty-manifest-array '(2 3) _int))
   (check-equal? (acc-manifest-array-flatref y 1) 0)
   )
+

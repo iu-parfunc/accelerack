@@ -72,15 +72,15 @@
 (define (list->segment-tree ty data)
   (cond
     [(acc-scalar-type? ty)
-     (list->segment-tree (acc-type->lame-type ty) data)]
+     (list->segment (acc-type->lame-type ty) data)]
     [(vector? ty)
-     (let ([segs (for/list ((i ((range (length ty)))))
+     (let ([segs (for/list ((i (range (vector-length ty))))
                    (list->segment-tree (vector-ref ty i)
                                        (map (lambda (v) (vector-ref v i)) data)))])
        (make-segment
         (length segs)
-        'acc-payload-ptr
-        (list->cvector segs _segment-pointer)))]))
+        ((ctype-scheme->c scalar) 'acc-payload-ptr)
+        (cvector-ptr (list->cvector segs _segment-pointer))))]))
        
 
 ;; Stores the payload information into segment structure
@@ -97,11 +97,11 @@
       (generatePayload-helper data '())))
 
 (define (list->segment cty data)
-  (let ([payload (list->cvector data type)])
-           (make-segment
-             (length data)
-             ((ctype-scheme->c scalar) (ctype->symbol type))
-             (cvector-ptr payload))))
+  (let ([payload (list->cvector data cty)])
+    (make-segment
+     (length data)
+     ((ctype-scheme->c scalar) (ctype->symbol cty))
+     (cvector-ptr payload))))
 
 
 ;; Helper to read-data function
@@ -142,6 +142,7 @@
         data
         (read-data-helper data))))
 
+;; Retrieve an acc-element? from a tree of segments, using linear indexing.
 (define (segment-flatref seg ind)
   (define type (mapType (segment-type seg)))
   (cond
@@ -185,15 +186,15 @@
 
 (define (read-data* cptr)
   (letrec ([type (mapType (acc-manifest-array-type cptr))]
-           [data-ptr (acc-manifest-array-data cptr)]
+           [data-ptr  (acc-manifest-array-data cptr)]
            [shape-ptr (acc-manifest-array-shape cptr)]
            [data  (read-data data-ptr)]
            [shape (read-data shape-ptr)])
-          (if (equal? type 'scalar-payload)
-              (if (null? shape)
-                  (car (list->md-array data shape))
-                  (list->md-array data shape))
-              (list->vector* (zip data) shape)))) ;; (read-data-helper data)
+    (if (equal? type 'scalar-payload)
+        (if (null? shape)
+            (car (list->md-array data shape))
+            (list->md-array data shape))
+        (list->vector* (zip data) shape)))) ;; (read-data-helper data)
 
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
@@ -253,7 +254,7 @@
                       ((ctype-scheme->c scalar) 'scalar-payload)
                       ((ctype-scheme->c scalar) 'tuple-payload))]
            [shape* (if (null? shape) '(1) shape)]
-           [shape** (generatePayload shape* _int)]
+           [shape** (generatePayload shape _int)] ;; RRN: change to empty shape for 0D.
            [init-data (car (make-empty-manifest-array* (reverse shape*) type-data '()))]
            [data (if (ctype? type)
                      (generatePayload (flatten init-data) type)
@@ -265,12 +266,19 @@
 ;; Return value -> pointer to allocated memory location
 
 (define (list->manifest-array type shape data)
-  (printf "LIST->MANIFEST ~a ~a ~a\n" type shape data)
-  (let ([shape* (if (null? shape) '(1) shape)])
-    (make-acc-manifest-array 'remove-type-field-from-manifest-array
-                             (list->segment _int shape*)
+  ;; In terms of layout, 0D arrays are the same as singleton 1D arrays:
+  (let () ; ([shape* (if (null? shape) '(1) shape)])
+    (make-acc-manifest-array (remove-type-field-from-manifest-array type)
+                             (list->segment _int shape)
                              (list->segment-tree type (flatten data)))))
-    
+
+;; TODO: Remove this by removing the field that contains it:
+(define (remove-type-field-from-manifest-array type)
+  ;; This replicates the old/strange protocol.  Unclear that it is necessary.
+  (if (ctype? (acc-type->lame-type type))
+      ((ctype-scheme->c scalar) 'scalar-payload)
+      ((ctype-scheme->c scalar) 'tuple-payload)))
+
 (define (get-type arr)
   (if (acc-manifest-array? arr)
       (segment-type (acc-manifest-array-data arr))

@@ -12,7 +12,7 @@
 (require (except-in accelerack ->))
 
 (require accelerack/acc-array/private/manifest-array/structs ;; C data reps.
-         (only-in accelerack/private/syntax   array)
+         ; (only-in accelerack/private/syntax   array)
          (only-in accelerack/acc-array/private/manifest-array/allocate
                   read-data*)
          accelerack/private/racket_ops

@@ -183,13 +183,13 @@
              (define-acc x (acc-array (1 2 3)))
              (define-acc y (map (lambda(x) (+ x 1)) x))
              (define-acc z (fold + 0 y))
-             (check-equal? 9 (car (acc-array->sexp z))))
+             (check-equal? (acc-array->sexp z) 9))
   
   (test-case "plain-racket: map + fold"
              (define x (acc-array (1 2 3)))
              (define y (map (lambda(x) (+ x 1)) x))
              (define z (fold + 0 y))
-             (check-equal? 9 (car (acc-array->sexp z))))
+             (check-equal? (acc-array->sexp z) 9 ))
 
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
@@ -204,7 +204,7 @@
   (test-case "test-case 10"
              (define-acc x (acc-array (1 2 3)))
              (define-acc y (fold + 0 x))
-             (check-equal? (car (acc-array->sexp y)) 6))
+             (check-equal? (acc-array->sexp y) 6))
 
   ;; Same as test 8 but on floats and with add1 function:
   (test-case "11: map test"

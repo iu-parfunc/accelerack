@@ -12,7 +12,7 @@
          accelerack/acc-array/private/manifest-array/structs
          accelerack/private/wrappers
          accelerack/private/types
-         accelerack/acc-array/private/manifest-array/allocate)
+         accelerack/acc-array/private/manifest-array)
 
 (provide (contract-out
           (normalize (-> list? any/c list?)))
@@ -208,7 +208,7 @@
            (require accelerack/acc-array/private/manifest-array/structs)
            (require accelerack/private/wrappers)
            (require accelerack/private/types)
-           (require accelerack/acc-array/private/manifest-array/allocate)
+           (require accelerack/acc-array/private/manifest-array)
            (let ((x ,exp)
                  (nexp ,(normalize exp '())))
              (if (acc-array=? x nexp)

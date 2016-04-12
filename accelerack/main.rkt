@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require accelerack/acc-array/private/manifest-array/allocate
+(require accelerack/acc-array/private/manifest-array
          accelerack/acc-array/private/manifest-array/structs
          accelerack/private/syntax
          accelerack/private/parse

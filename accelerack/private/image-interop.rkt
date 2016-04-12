@@ -2,7 +2,7 @@
 
 (require
  accelerack/private/types
- (only-in accelerack/acc-array/private/manifest-array/allocate
+ (only-in accelerack/acc-array/private/manifest-array
           )
  (only-in 2htdp/image image-width image-height color bitmap/url circle)
  (only-in mrlib/image-core render-image)

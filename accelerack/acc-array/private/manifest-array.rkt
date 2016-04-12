@@ -15,37 +15,25 @@
 (require racket/trace)
 
 (provide
+ ;; TODO: improve contracts, remove occurrences of lame-type?:
  (contract-out
    ;; Manifest arrays:
+  [list->manifest-array (-> acc-type? acc-shape? 
+                            (or/c number? boolean? vector? list?) ;; data
+                            acc-manifest-array?)]   
+  [make-empty-manifest-array (-> acc-shape? lame-type? acc-manifest-array?)]
+  [manifest-array-shape (-> acc-manifest-array? (vectorof exact-nonnegative-integer?))]
+  [manifest-array-size  (-> acc-manifest-array? exact-nonnegative-integer?)]   
+  [manifest-array-flatref (-> acc-manifest-array? exact-nonnegative-integer?
+                              acc-element?)]
+  [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
   
-   ;; TODO: improve contracts:
-   ;; HIDE any of this junk that isn't used.
-   [list->manifest-array (-> acc-type? acc-shape? 
-                             (or/c number? boolean? vector? list?) ;; data
-                             acc-manifest-array?)]
-   [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
-   [make-empty-manifest-array
-    (-> acc-shape? lame-type? acc-manifest-array?)]
-   [read-data  (-> segment? (or/c null? pair?))]
-   [read-data* (-> acc-manifest-array? any/c)]
-
-   ;; Segments:
-   
-   [get-type (-> acc-manifest-array? integer?)]
-   ; [get-shape (-> acc-manifest-array? (listof exact-nonnegative-integer?))]
-   ; [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
-   [type (-> (or/c acc-manifest-array? segment?) integer?)]
-   ; [shape (-> acc-manifest-array? (or/c null? pair?))]
-
-   [manifest-array-shape (-> acc-manifest-array? (vectorof exact-nonnegative-integer?))]
-   [manifest-array-size  (-> acc-manifest-array? exact-nonnegative-integer?)]
-   
-   [manifest-array-flatref
-    (-> acc-manifest-array? exact-nonnegative-integer?
-        acc-element?)]
-
-   [manifest-array-dimension
-    (-> acc-manifest-array? exact-nonnegative-integer?)]
+  ;; DEPRECATED / rename or remove:
+  [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
+  [read-data  (-> segment? (or/c null? pair?))]
+  [read-data* (-> acc-manifest-array? any/c)]
+  [get-type (-> acc-manifest-array? integer?)]
+  [type (-> (or/c acc-manifest-array? segment?) integer?)]
  ))
 
 

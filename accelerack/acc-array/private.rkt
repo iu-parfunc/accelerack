@@ -5,7 +5,7 @@
 ;; copying.
 
 (require
- (only-in accelerack/acc-array/private/manifest-array/allocate read-data*)
+ (only-in accelerack/acc-array/private/manifest-array read-data*)
  (only-in accelerack/acc-array/private/manifest-array/structs
           acc-manifest-array?)
  accelerack/acc-array/private/delayed)

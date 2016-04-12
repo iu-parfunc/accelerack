@@ -200,30 +200,31 @@
                 (list->vector* (cdr ls) (cons (sub1 (car shape)) (cdr shape)))))))
 
 
-;; Read data from given memory location
-;; Arguments -> acc-manifest-array pointer
-;; Return value -> list with data read from given memory location
 
-(define (manifest-array->sexp cptr)
-  (letrec ([type (mapType (acc-manifest-array-type cptr))]
-           [data-ptr  (acc-manifest-array-data cptr)]
-           [shape-ptr (acc-manifest-array-shape cptr)]
-           [data  (segment->sexp data-ptr)]
-           [shape (segment->sexp shape-ptr)])
-    (if (equal? type 'scalar-payload)
-        (if (null? shape)
-            (car (list->md-array data shape))
-            (list->md-array data shape))
-        (list->vector* (zip data) shape)))) ;; (read-data-helper data)
-
-#|
+;; Convert the tree structured (unzipped) manifest array
+;; into a fully-zipped, nested-list S-Expression.
 (define (manifest-array->sexp a)
-  (shape-list (manifest-array-shape a)
-              (for/list ((i (manifest-array-size a)))
-                (manifest-array-flatref a i))))
+  (reshape-list (vector->list (manifest-array-shape a))
+                (for/list ((i (manifest-array-size a)))
+                  (manifest-array-flatref a i))
+                (manifest-array-size a)))
 
-(define (shape-list ) )
-|#
+(define (reshape-list shp ls len)
+  (cond [(null? shp)
+         (if (= (length ls) 1)
+             (car ls)
+             (error 'reshape-list "Shape was zero-dim but list: ~a" ls))]
+        [(null? (cdr shp)) ls]
+        [else
+         (define chunksize (quotient len (car shp)))
+         (map (lambda (g) (reshape-list (cdr shp) g chunksize))
+              (groups chunksize ls))]))
+
+;; Maybe this is in the standard lib somewhere.
+(define (groups n ls)
+  (cond [(null? ls) ls]
+        [else (let-values ([(a b) (split-at ls n)])
+                (cons a (groups n b)))]))
 
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
@@ -269,7 +270,7 @@
 ;; Arguments: (shape, type, payload)
 ;; Return value: list initialized with unit values
 
-(define (make-empty-manifest-array* shape type payload)
+(trace-define (make-empty-manifest-array* shape type payload)
   (cond
     ((null? shape) payload)
     ((zero? (car shape))
@@ -369,7 +370,7 @@
 
 (define (list->manifest-array type shape data)
   ;; In terms of layout, 0D arrays are the same as singleton 1D arrays:
-  (let () ; ([shape* (if (null? shape) '(1) shape)])
+  (let ()
     (make-acc-manifest-array (remove-type-field-from-manifest-array type)
                              (list->segment _int shape)
                              (list->segment-tree type (flatten data)))))

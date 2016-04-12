@@ -204,26 +204,30 @@
 ;; --------------------------------------------------------------------------------
 
 ;; TODO
-;(define (acc-stencil3x3 f b arr)
-;  (error 'stencil3x3 "FINISHME: acc-stencil3x3 unimplemented"))
 
 (define (acc-stencil3x3 fn b arr)
-  ;; The acc-manifest-array is not mutable for end users, but for this library implementation
-  ;; we leverage a mutable representation internally.
   (let* ([len  (manifest-array-size arr)]
          [ty   (manifest-array-type arr)]
-         [shp  (manifest-array-shape arr)]
-         [new (make-empty-manifest-array (vector->list shp) ty)])
-    (for ((i (range (vector-ref shp 0))))
-      (for ((j (range (vector-ref shp 1))))
-        (manifest-array-flatset! 
-         new (+ (* (vector-ref shp 0) i) j)
-         (apply fn (stencil-range2d b i j 3 3 arr)))))))
+         [shp  (manifest-array-shape arr)])
+         ;[new (make-empty-manifest-array (vector->list shp) ty)])
+    (let* ([elm0 (apply fn (map (lambda (i) (manifest-array-flatref arr i)) (range 9)))]
+           [tyout (acc-element->type elm0)]
+           [new (make-empty-manifest-array (vector->list shp) tyout)])
+      (for ((i (range (vector-ref shp 0))))
+        (for ((j (range (vector-ref shp 1))))
+          (manifest-array-flatset! 
+           new (+ (* (vector-ref shp 0) i) j)
+           (apply fn (stencil-range2d b i j 3 3 arr))))))))
 
 (define (stencil-range2d b x y xd yd arr)
   (let ([x-base (- x (floor (/ x 2)))]
         [y-base (- y (floor (/ y 2)))])                                          
     (for*/list ([i (in-range xd)] [j (in-range yd)])
-      ; still need to handle boundary condition
-      (manifest-array-flatref arr (+ (* (vector-ref (manifest-array-shape arr) 0) (+ x-base i))
-                                     (+ y-base j))))))
+      (let ([ind (+ (* (vector-ref (manifest-array-shape arr) 0) (+ x-base i))
+                                         (+ y-base j))])
+      (if (or (< ind 0) (>= ind (manifest-array-size arr)))
+          (match b 
+            [`(Constant ,v) v]
+            ;; handle other boundary conditions here
+            [else (error 'stencil-range2d "Invalid boundary condition")])
+          (manifest-array-flatref arr ind))))))

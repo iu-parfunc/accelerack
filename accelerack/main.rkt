@@ -6,6 +6,8 @@
          accelerack/private/parse
          accelerack/private/racket_ops
 
+         accelerack/private/image-interop
+
          (prefix-in r: racket/base)
          (for-syntax racket/base syntax/parse)
 
@@ -21,17 +23,28 @@
 ;; RRN: Here we provide an explicit export list as a final gate-keeper
 ;; for what's in the language.  This should very closely match
 ;; accelerack_grammar.txt:
-(provide acc-array acc-array? acc-array=?
-         acc-array-ref acc-array-flatref
-         acc-array-dimension
-         acc-array-shape
-         acc-array->sexp
-         acc-scalar? acc-element?
+(provide
+ ;; The array datatype and conversions
+ acc-array acc-array? acc-array=?
+ acc-array-ref acc-array-flatref
+ acc-array-dimension
+ acc-array-size
+ acc-array-shape
+ acc-array->sexp
 
-         map fold zipwith stencil3x3 generate
+ ;; Data-parallel aggregate operations
+ map fold zipwith stencil3x3 generate
 
-         define-acc run-gpu
-         Int Bool Double
+ ;; Individual elements
+ acc-scalar? acc-element?
+
+ ;; Image conversions
+ image->acc-array
+
+ ;; Typed operations
+
+ define-acc run-gpu
+ Int Bool Double
 
          ;; Not reexporting from base:
          ;; vector vector-ref + * - ...

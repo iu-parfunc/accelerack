@@ -122,39 +122,19 @@
 ;; Fold:
 ;; --------------------------------------------------------------------------------
 
-(define (acc-fold func def arr)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-                      (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
-           [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))]
-           [temp (make-empty-manifest-array-lame shape* type*)]
-           [len (manifest-array-size temp)]
-           [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])
-          (begin
-            (acc-fold-helper func def arr temp len rlen 0 0)
-            temp)))
-
-(define (acc-fold-helper func def arr res len rlen i j)
-  (cond
-    ((equal? i len) '())
-    (else (begin
-            (array-set!! res i (apply-func func def arr j (+ j rlen)))
-            (acc-fold-helper func def arr res len rlen (add1 i) (+ j rlen))))))
-
-;; Find the length of the row in a payload
-;; Arguments -> shape
-;; Return value -> length
-
-(define (row-length shape)
-  (cond
-    ((equal? 1 (length shape)) (car shape))
-    ((null? (cadr shape)) (car shape))
-    (else (row-length (cdr shape)))))
-
-(define (apply-func func def arr i j)
-  (cond
-    ((equal? i j) def)
-    (else (func (array-get arr i) (apply-func func def arr (add1 i) j)))))
-
+(define (acc-fold fn init arr)
+  (let* ([len      (manifest-array-size arr)]
+         [ty       (manifest-array-type arr)]
+         [shp      (manifest-array-shape arr)]
+         [new-shp  (reverse (cdr (reverse (vector->list shp))))]
+         [new      (make-empty-manifest-array new-shp ty)]
+         [stride   (last (vector->list shp))])
+    (for ((i (range (/ len stride))))
+      (manifest-array-flatset! new i init)
+      (for ((j (range stride)))
+        (manifest-array-flatset! new i (fn (manifest-array-flatref arr (+ (* i stride) j))
+                                           (manifest-array-flatref new i)))))
+    new))
 
 ;; ZipWith:
 ;; --------------------------------------------------------------------------------
@@ -217,7 +197,8 @@
         (for ((j (range (vector-ref shp 1))))
           (manifest-array-flatset! 
            new (+ (* (vector-ref shp 0) i) j)
-           (apply fn (stencil-range2d b i j 3 3 arr))))))))
+           (apply fn (stencil-range2d b i j 3 3 arr)))))
+      new)))
 
 (define (stencil-range2d b x y xd yd arr)
   (let ([x-base (- x (floor (/ x 2)))]

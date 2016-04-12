@@ -136,40 +136,6 @@
                                            (manifest-array-flatref new i)))))
     new))
 
-;(define (acc-fold func def arr)
-;  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr))
-;                      (error 'acc-fold "fold cannot be used on tuples") (mapType (type arr)))]
-;           [shape* (if (null? (shape arr)) '(1) (reverse (cdr (reverse (shape arr)))))]
-;           [temp (make-empty-manifest-array-lame shape* type*)]
-;           [len (manifest-array-size temp)]
-;           [rlen (if (null? (shape arr)) 1 (row-length (shape arr)))])
-;          (begin
-;            (acc-fold-helper func def arr temp len rlen 0 0)
-;            temp)))
-;
-;(define (acc-fold-helper func def arr res len rlen i j)
-;  (cond
-;    ((equal? i len) '())
-;    (else (begin
-;            (array-set!! res i (apply-func func def arr j (+ j rlen)))
-;            (acc-fold-helper func def arr res len rlen (add1 i) (+ j rlen))))))
-;
-;;; Find the length of the row in a payload
-;;; Arguments -> shape
-;;; Return value -> length
-;
-;(define (row-length shape)
-;  (cond
-;    ((equal? 1 (length shape)) (car shape))
-;    ((null? (cadr shape)) (car shape))
-;    (else (row-length (cdr shape)))))
-;
-;(define (apply-func func def arr i j)
-;  (cond
-;    ((equal? i j) def)
-;    (else (func (array-get arr i) (apply-func func def arr (add1 i) j)))))
-
-
 ;; ZipWith:
 ;; --------------------------------------------------------------------------------
 

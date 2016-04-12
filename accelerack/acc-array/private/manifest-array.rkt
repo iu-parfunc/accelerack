@@ -34,10 +34,9 @@
                               acc-element?)]
   
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
-  ; [manifest-array-type  (-> acc-manifest-array? acc-type?)]
+  [manifest-array-type  (-> acc-manifest-array? acc-type?)]
   
   ;; DEPRECATED / rename or remove:
-  ; [get-type (-> acc-manifest-array? integer?)]
   [type (-> (or/c acc-manifest-array? segment?) integer?)]
  ))
 
@@ -154,9 +153,7 @@
          (error (format "flatref: out of bounds access to array, index ~a, but array length is ~a"
                         ind (segment-length seg))))]
 ;    [(eq? type 'scalar-payload) (error "what the heck is this needed for?")]
-    [(or (eq? type 'tuple-payload)
-         (eq? type 'scalar-payload)
-         (equal? type _segment-pointer))
+    [(smells-like-interior-node? type)
      (let ((segs (ptr-ref* (segment-data seg)
                            type 0 (segment-length seg))))
        (list->vector
@@ -280,21 +277,6 @@
       ((ctype-scheme->c scalar) 'scalar-payload)
       ((ctype-scheme->c scalar) 'tuple-payload)))
 
-(define (get-type arr)
-  (if (acc-manifest-array? arr)
-      (segment-type (acc-manifest-array-data arr))
-      (segment-type arr)))
-
-#;
-(define (get-result-array input-arr)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr)
-                              (get-type input-arr))
-                      (get-tuple-type (unzip (vector->list* (manifest-array->sexp  input-arr)))
-                                      (get-shape input-arr))
-                      (mapType (get-type input-arr)))]
-           [temp (make-empty-manifest-array (get-shape input-arr) type*)])
-          temp))
-
 ;; RRN: Get rid of functions that are unnecessarily overloaded over
 ;; segment or acc-manifest-array.  That's sloppy:
 
@@ -316,3 +298,33 @@
 (define (manifest-array-dimension a)
   (segment-length (acc-manifest-array-shape a)))
 
+;; This must recursively read the tree of segments to reconstruct the
+;; full type.
+(define (manifest-array-type a)
+  `(Array ,(manifest-array-dimension a)
+          ,(segtree-type (acc-manifest-array-data a))))
+
+;; DEPRECATED: Fix this strange protocol:
+(define (smells-like-interior-node? type)
+  (or (eq? type 'tuple-payload)
+      (eq? type 'scalar-payload)
+      (equal? type _segment-pointer)))
+
+(define (segtree-type seg)
+  (let ((ty (mapType (segment-type seg))))
+    (cond
+      [(equal? ty _int)    'Int]
+      [(equal? ty _double) 'Double]
+      [(equal? ty _bool)   'Bool]
+      [(smells-like-interior-node? ty)
+       (let ((segs (ptr-ref* (segment-data seg)
+                             type 0 (segment-length seg))))
+         (list->vector (map segtree-type segs)))]
+      [(equal? ty _acc-manifest-array-pointer)
+       (error 'segtree-type "What to do with _acc-manifest-array-pointer")]
+      [(equal? ty _gcpointer)
+       (error 'segtree-type "What to do with _gcpointer")]
+      [(equal? ty 'rkt-payload-ptr)
+       (error 'segtree-type "What to do with rkt-payload-ptr")]
+      [else (error 'segtree-type "Unexpected type: ~a" ty)])))
+  

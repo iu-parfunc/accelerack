@@ -116,13 +116,15 @@
     [(array (shape ...) #(type ...) (data ...))
      #'(letrec ([data* (process-data (syntax->datum (syntax (data ...))))]
                 [type* (r:map map-type  (list type ...))]
-                [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) data*))])
+                [ret (verify-accelerack
+                      (vector type* (syntax->datum (syntax (shape ...))) data*))])
          (if (car ret)
              (list->manifest-array type* (syntax->datum (syntax (shape ...))) data*)
              (error 'verify-accelerack (cadr ret))))]
     [(array (shape ...) #(type ...) data)
-     #'(let ([type* (r:map map-type (list type ...))]
-             [ret (verify-accelerack (vector type* (syntax->datum (syntax (shape ...))) (flatten data)))])
+     #'(let* ([type* (r:map map-type (list type ...))]
+              [ret (verify-accelerack
+                    (vector type* (syntax->datum (syntax (shape ...))) (flatten data)))])
          (if (car ret)
              (list->manifest-array type* (syntax->datum (syntax (shape ...))) data)
              (error 'verify-accelerack (cadr ret))))]

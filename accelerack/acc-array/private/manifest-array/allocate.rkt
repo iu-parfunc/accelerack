@@ -12,6 +12,7 @@
          (only-in accelerack/private/paven_old/global_utils vector->list*)
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
+(require racket/trace)
 
 (provide
  (contract-out
@@ -120,25 +121,24 @@
         data
         (read-data-helper data))))
 
-(define (segment-flatref seg type ind)  
+(define (segment-flatref seg ind)
+  (define type (mapType (segment-type seg)))
   (cond
-    [; (or (equal? type _int) (equal? type _double) (equal? type _bool))
-     (ctype? (mapType (segment-type seg)))
-     ; (ctype? type)
+    ;; FIXME: need good scalar type pred here:
+    [(or (equal? type _int) (equal? type _double) (equal? type _bool))
      (if (< ind (segment-length seg))
-         (ptr-ref (segment-data seg)
-                  (mapType (segment-type seg)) ind)
+         (ptr-ref (segment-data seg) type ind)
          (error (format "flatref: out of bounds access to array, index ~a, but array length is ~a"
                         ind (segment-length seg))))]
-;    [(eq? type 'scalar-payload) (error "what the heck is this")]
-    [(or (eq? type 'tuple-payload) (eq? type 'scalar-payload))     
-     (error (format "Results of ptr-ref*, type ~a ctype? ~a:\n ~a\n"
-                    (mapType (segment-type seg))
-                    (ctype? (mapType (segment-type seg)))
-                    (ptr-ref* (segment-data seg)
-                              (mapType (segment-type seg))
-                              0 (segment-length seg))))
-     ]
+;    [(eq? type 'scalar-payload) (error "what the heck is this needed for?")]
+    [(or (eq? type 'tuple-payload)
+         (eq? type 'scalar-payload)
+         (equal? type _segment-pointer))
+     (let ((segs (ptr-ref* (segment-data seg)
+                           type 0 (segment-length seg))))
+       (list->vector
+        (map (lambda (s) (segment-flatref s ind))
+             segs)))]
     [else (error 'acc-manifest-array-data
                  "unexpected type inside segment: ~a" type)]))
 
@@ -179,7 +179,7 @@
 (define (acc-manifest-array-flatref arr ind)
   (letrec ([type (mapType (acc-manifest-array-type arr))]
            [seg  (acc-manifest-array-data arr)])
-    (segment-flatref seg type ind)))
+    (segment-flatref seg ind)))
 
 ;; Get a list corresponding to given type
 ;; Arguments -> type

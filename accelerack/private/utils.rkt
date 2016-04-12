@@ -3,7 +3,8 @@
 (provide
  (contract-out
   [accelerack-debug-mode? (-> boolean?)])
-  pass-output-chatter )
+ pass-output-chatter
+ vector->list*)
 
 (define (accelerack-debug-mode?)
   (match (getenv "DEBUG_ACCELERACK")
@@ -27,3 +28,13 @@
              "\nPass output, ~a:\n~a\n~a\n" name
              "================================================================================"
              res)))
+
+;; DEPRECATED:
+;; It is a bad sign if you need this.
+(define (vector->list* vec/ls)
+  (cond
+    ((vector? vec/ls) (vector->list* (vector->list vec/ls)))
+    ((null? vec/ls) '())
+    ((vector? (car vec/ls)) (cons (vector->list* (car vec/ls)) (vector->list* (cdr vec/ls))))
+    ((pair? (car vec/ls)) (cons (vector->list* (car vec/ls)) (vector->list* (cdr vec/ls))))
+    (else (cons (car vec/ls) (vector->list* (cdr vec/ls))))))

@@ -8,7 +8,7 @@
          (only-in accelerack/private/types acc-element? stencil-boundary?)
          accelerack/acc-array/private/manifest-array/allocate
          accelerack/acc-array/private/arrayutils
-         accelerack/private/paven_old/global_utils
+         (only-in accelerack/private/utils vector->list*)
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          racket/contract
          )

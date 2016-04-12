@@ -38,7 +38,7 @@
                   (bytes-ref bytes    (* i 4)))))
        (make-acc-array arr))]))
 
-
+#;
 (test-case "Convert image->array"
   ;(define x (bitmap/url "http://racket-lang.org/logo-and-text.png"))
   ; (define x (bitmap/url "http://cf.ydcdn.net/1.0.1.50/images/wiktionary/eng-wik-lambda-2.jpg"))

@@ -24,30 +24,31 @@
 ;; for what's in the language.  This should very closely match
 ;; accelerack_grammar.txt:
 (provide
- ;; The array datatype and conversions
- acc-array acc-array? acc-array=?
- acc-array-ref acc-array-flatref
- acc-array-dimension
- acc-array-size
- acc-array-shape
- acc-array->sexp
+    ;; The array datatype and conversions
+    acc-array acc-array? acc-array=?
+    acc-array-ref acc-array-flatref
+    acc-array-dimension
+    acc-array-size
+    acc-array-shape
+    acc-array->sexp
 
- ;; Data-parallel aggregate operations
- map fold zipwith stencil3x3 generate
+    ;; Data-parallel aggregate operations
+    map fold zipwith stencil3x3 generate
 
- ;; Individual elements
- acc-scalar? acc-element?
+    ;; Individual elements
+    acc-scalar? acc-element?
 
- ;; Image conversions
- image->acc-array
+    ;; Image conversions
+    image->acc-array
 
- ;; Typed operations
+    ;; Types and Typed operations
+    acc-type? acc-element-type?
 
- define-acc run-gpu
- Int Bool Double
+    define-acc run-gpu
+    Int Bool Double
 
-         ;; Not reexporting from base:
-         ;; vector vector-ref + * - ...
-	 ;; if let lambda
-         -> : use
-         )
+    ;; Not reexporting from base:
+    ;; vector vector-ref + * - ...
+    ;; if let lambda
+    -> : use
+    )

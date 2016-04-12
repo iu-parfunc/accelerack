@@ -11,5 +11,5 @@
 (define test-omit-paths compile-omit-paths)
 
 (define deps '("c-defs"
-               ; ("base" #:version "6.3")
                ))
+(define scribblings '(("manual.scrbl" ())))

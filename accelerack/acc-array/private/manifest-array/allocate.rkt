@@ -32,7 +32,7 @@
    ;; Segments:
    
    [get-type (-> acc-manifest-array? integer?)]
-   [get-shape (-> acc-manifest-array? (or/c null? pair?))]
+   [get-shape (-> acc-manifest-array? (listof exact-nonnegative-integer?))]
    ; [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
    [type (-> (or/c acc-manifest-array? segment?) integer?)]
    [shape (-> acc-manifest-array? (or/c null? pair?))]
@@ -40,6 +40,9 @@
    [acc-manifest-array-flatref
     (-> acc-manifest-array? exact-nonnegative-integer?
         acc-element?)]
+
+   [acc-manifest-array-dimension
+    (-> acc-manifest-array? exact-nonnegative-integer?)]
  ))
 
 
@@ -309,3 +312,6 @@
 ;; returns the shape of the given acc array
 (define (shape arr)
   (read-data (acc-manifest-array-shape arr)))
+
+(define (acc-manifest-array-dimension a)
+  (segment-length (acc-manifest-array-shape a)))

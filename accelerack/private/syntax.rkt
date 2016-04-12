@@ -6,9 +6,7 @@
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          accelerack/private/parse
          accelerack/acc-array/private/manifest-array/allocate
-         accelerack/acc-array/private/arrayutils
-         (only-in accelerack/private/paven_old/global_utils
-                  vector->list*) 
+         accelerack/acc-array/private/arrayutils 
          (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
 
@@ -20,7 +18,7 @@
          ;; Regular require, careful of phasing of these identifiers:
          accelerack/private/keywords
          (for-template accelerack/private/keywords)
-
+         (only-in accelerack/private/utils vector->list*)
          (only-in rackunit check-not-false)
          )
 

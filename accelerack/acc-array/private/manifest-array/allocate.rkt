@@ -9,7 +9,7 @@
          accelerack/acc-array/private/arrayutils
 
          (only-in accelerack/private/types acc-element?)
-         (only-in accelerack/private/paven_old/global_utils vector->list*)
+         ; (only-in accelerack/private/paven_old/global_utils vector->list*)
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 (require racket/trace)
@@ -34,7 +34,7 @@
    
    [get-type (-> acc-manifest-array? integer?)]
    [get-shape (-> acc-manifest-array? (or/c null? pair?))]
-   [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
+   ; [get-result-array (-> acc-manifest-array? acc-manifest-array?)]
    [type (-> (or/c acc-manifest-array? segment?) integer?)]
    [shape (-> acc-manifest-array? (or/c null? pair?))]
  
@@ -262,6 +262,7 @@
 (define (get-shape arr)
   (read-data (acc-manifest-array-shape arr)))
 
+#;
 (define (get-result-array input-arr)
   (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr)
                               (get-type input-arr))

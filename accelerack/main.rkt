@@ -2,7 +2,6 @@
 
 (require accelerack/acc-array/private/manifest-array/allocate
          accelerack/acc-array/private/manifest-array/structs
-         accelerack/private/paven_old/global_utils         
          accelerack/private/syntax
          accelerack/private/parse
          accelerack/private/racket_ops

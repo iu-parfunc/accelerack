@@ -13,7 +13,7 @@
          accelerack/acc-array/private/arrayutils
 
          (only-in accelerack/private/types
-                  acc-element? acc-shape? acc-type? acc-scalar-type?
+                  acc-element? acc-shape? acc-type? acc-scalar-type? acc-element-type?
                   acc-sexp-data? acc-sexp-data-shallow?)
          ; (only-in accelerack/private/paven_old/global_utils vector->list*)
          racket/contract
@@ -166,6 +166,7 @@
 
 (define (segment-flatset! seg ind val)
   (define type (mapType (segment-type seg)))
+  ; (printf "FLATSET type ~a\n" type)
   (cond
     ;; FIXME: need good scalar type pred here:
     [(or (equal? type _int) (equal? type _double) (equal? type _bool))
@@ -177,9 +178,9 @@
     [(smells-like-interior-node? type)
      (let ((segs (ptr-ref* (segment-data seg)
                            type 0 (segment-length seg))))
-       (list->vector
-        (map (lambda (s) (segment-flatset! s ind val))
-             segs)))]
+       (for ((i (length segs)))
+         (segment-flatset! (list-ref segs i) ind (vector-ref val i)))
+       )]
     [else (error 'acc-manifest-array-data
                  "unexpected type inside segment: ~a" type)]))
 
@@ -215,6 +216,15 @@
             (list->md-array data shape))
         (list->vector* (zip data) shape)))) ;; (read-data-helper data)
 
+#|
+(define (manifest-array->sexp a)
+  (shape-list (manifest-array-shape a)
+              (for/list ((i (manifest-array-size a)))
+                (manifest-array-flatref a i))))
+
+(define (shape-list ) )
+|#
+
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
 (define (manifest-array-flatref arr ind)
@@ -229,6 +239,10 @@
            [seg  (acc-manifest-array-data arr)])
     (segment-flatset! seg ind val)))
 
+
+;; ====================================================================================================
+;; DELETEME:
+;; ====================================================================================================
 ;; Get a list corresponding to given type
 ;; Arguments -> type
 ;; Return value -> list corresponding to given type initialized with unit values
@@ -268,7 +282,6 @@
            (cons (sub1 (car shape)) (cdr shape))
            type (cons type payload)))))
 
-
 ;; Allocates a manifest array and fills it with default values.
 ;; Arguments: (shape, type)
 ;; Return value: list with racket pointer and c pointer to result structure
@@ -285,16 +298,70 @@
                      (generatePayload (flatten init-data) type)
                      (generatePayload (unzip init-data) type))])
           (make-acc-manifest-array type* shape** data)))
+;; ====================================================================================================
+
 
 (define (make-empty-manifest-array shape type)
   (match type
     [`(Array ,_ ,elt)
      ;; TODO: replace -lame function:
-     (make-empty-manifest-array-lame shape (acc-type->lame-type elt))]
+     ; (make-empty-manifest-array-lame shape (acc-type->lame-type elt))
+     (new-manifest-array elt shape)
+     ]
     ;; TEMP: Remove this behavior or the other:
-    [sty #:when (acc-scalar-type? sty)
-         (make-empty-manifest-array-lame shape (acc-type->lame-type sty))]
+    [elt #:when (acc-element-type? elt)
+         ; (make-empty-manifest-array-lame shape (acc-type->lame-type elt))
+         (new-manifest-array elt shape)
+         ]
     [else (error 'make-empty-manifest-array "expected an array type, got: ~a" type)]))
+
+;; Extremely similar to the list-> versions:
+;;--------------------------------------------------------------------------------
+(define (new-manifest-array elt shapels)
+  (make-acc-manifest-array (remove-type-field-from-manifest-array elt)
+                           (list->segment _int shapels)
+                           (new-segment-tree elt (apply * shapels))))
+
+(define (new-segment-tree ty len)
+  (cond
+    [(acc-scalar-type? ty)
+     (new-segment (acc-type->lame-type ty) len)]
+    [(vector? ty)
+     (let ([segs (for/list ((i (range (vector-length ty))))
+                   (new-segment-tree (vector-ref ty i) len))])
+       (make-segment
+        (length segs)
+        ((ctype-scheme->c scalar) 'acc-payload-ptr)
+        (cvector-ptr (list->cvector segs _segment-pointer))))]))
+
+(define (new-segment cty len)
+  (define vec (make-cvector cty len))
+  (define init-val (cond
+                     [(equal? cty _bool) #f]
+                     [(equal? cty _int)   0]
+                     [(equal? cty _double) 0.0]
+                     [else 'new-segment "internal-error, unexpected type: ~a" cty]))
+  ;; Some kind of calloc would be better:
+  (for ((i (range len))) (cvector-set! vec i init-val))
+  (make-segment len
+                ((ctype-scheme->c scalar) (ctype->symbol cty))
+                (cvector-ptr vec)))
+
+;; TODO: This could be more efficient by blasting the segments one at a time:
+(define (zero-manifest-array! arr)
+  (define ty  (manifest-array-type arr))
+  (define len (manifest-array-size arr))
+  (define zer
+    (match ty
+      ['Bool  #f]
+      ['Int    0]
+      ['Double 0.0]
+      [else 'zero-manifest-array! "internal-error, unexpected type: ~a" ty]))
+  (for ((i (range len)))
+    (manifest-array-flatset! arr i zer)))
+
+;;--------------------------------------------------------------------------------
+
 
 ;; Allocate memory for the payload
 ;; Arguments -> (type, shape,  payload, expression)

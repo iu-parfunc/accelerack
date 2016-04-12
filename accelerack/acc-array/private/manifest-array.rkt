@@ -29,18 +29,15 @@
   [make-empty-manifest-array (-> acc-shape? lame-type? acc-manifest-array?)]
   [manifest-array-shape (-> acc-manifest-array? (vectorof exact-nonnegative-integer?))]
   [manifest-array-size  (-> acc-manifest-array? exact-nonnegative-integer?)]   
+  [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
   [manifest-array-flatref (-> acc-manifest-array? exact-nonnegative-integer?
                               acc-element?)]
-  [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
-
+  
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
-
-  ;; Private:
-  ; [segment->sexp  (-> segment? acc-sexp-data-shallow?)]
+  ; [manifest-array-type  (-> acc-manifest-array? acc-type?)]
   
   ;; DEPRECATED / rename or remove:
-  [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]  
-  [get-type (-> acc-manifest-array? integer?)]
+  ; [get-type (-> acc-manifest-array? integer?)]
   [type (-> (or/c acc-manifest-array? segment?) integer?)]
  ))
 
@@ -89,6 +86,9 @@
 ;; Arguments -> (list containing the payload, type, initial empty list)
 ;; Return value -> pointer to segment containing the payload informations
 
+
+;; DEPRECATED:
+; [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]  
 (define (generatePayload data type)
   (if (ctype? type)
       (let ([payload (list->cvector data type)])
@@ -131,9 +131,8 @@
                 (read-data-helper (cdr ls))))))
 
 
-;; Read data from given memory location
-;; Arguments -> segment pointer
-;; Return value -> list with data read from given memory location
+;  segment->sexp: (-> segment? acc-sexp-data-shallow?)
+;; Read data from a segment or tree of segments.
 (define (segment->sexp cptr)
   (letrec ([len (segment-length cptr)]
            [cptr* (segment-data cptr)]
@@ -316,3 +315,4 @@
 
 (define (manifest-array-dimension a)
   (segment-length (acc-manifest-array-shape a)))
+

@@ -12,7 +12,9 @@
          accelerack/acc-array/private/manifest-array/structs
          accelerack/acc-array/private/arrayutils
 
-         (only-in accelerack/private/types acc-element? acc-shape? acc-type? acc-scalar-type?)
+         (only-in accelerack/private/types
+                  acc-element? acc-shape? acc-type? acc-scalar-type?
+                  acc-sexp-data? acc-sexp-data-shallow?)
          ; (only-in accelerack/private/paven_old/global_utils vector->list*)
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
@@ -22,8 +24,7 @@
  ;; TODO: improve contracts, remove occurrences of lame-type?:
  (contract-out
    ;; Manifest arrays:
-  [list->manifest-array (-> acc-type? acc-shape? 
-                            (or/c number? boolean? vector? list?) ;; data
+  [list->manifest-array (-> acc-type? acc-shape? acc-sexp-data?
                             acc-manifest-array?)]   
   [make-empty-manifest-array (-> acc-shape? lame-type? acc-manifest-array?)]
   [manifest-array-shape (-> acc-manifest-array? (vectorof exact-nonnegative-integer?))]
@@ -32,14 +33,11 @@
                               acc-element?)]
   [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
 
-  [manifest-array->sexp (-> acc-manifest-array?
-                            ; (or/c pair? number? boolean?)
-                            any/c
-                            )]
+  [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
   
   ;; DEPRECATED / rename or remove:
   [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
-  [read-data  (-> segment? (or/c null? pair?))]
+  [read-data  (-> segment? acc-sexp-data-shallow?)]
   [get-type (-> acc-manifest-array? integer?)]
   [type (-> (or/c acc-manifest-array? segment?) integer?)]
  ))

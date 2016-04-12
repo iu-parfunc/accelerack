@@ -12,7 +12,8 @@
 (provide                  
          ;; Elements
          acc-scalar? acc-int? acc-element?
-
+         acc-sexp-data? acc-sexp-data-shallow?
+         
          ;; Syntax
          acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
 
@@ -46,6 +47,15 @@
   (or (acc-scalar? x)
       (and (vector? x)
            (andmap acc-element? (vector->list x)))))
+
+;; O(1) Something which is plausibly SExp data representing Accelerack arrays or elements.
+(define acc-sexp-data-shallow? 
+  (or/c pair? number? boolean? null? vector?))
+
+;; O(N) Something which is SExp data representing Accelerack arrays or elements.
+(define acc-sexp-data?
+  (or/c acc-sexp-data-shallow? list?))
+
 
 ;; Valid shapes are just lists of numbers
 (define acc-shape? (listof exact-nonnegative-integer?))

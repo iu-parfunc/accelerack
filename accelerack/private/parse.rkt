@@ -3,120 +3,79 @@
 (require (except-in ffi/unsafe ->)
          racket/contract
          accelerack/acc-array/private/arrayutils
+         (only-in accelerack/private/types acc-element-type? acc-scalar? acc-int? acc-element?)
          )
 
 (provide
   (contract-out
-    [verify-accelerack (-> vector? pair?)]))
+   [validate-literal (-> acc-element-type?
+                         (listof exact-nonnegative-integer?)
+                         any/c (or/c #t string?))]
+   ))
 
-(define (verify-accelerack exp)
-  (define check-tuple
-      (lambda (type)
-        (match type
-          (`(,x ...) (if (memv #f (map (lambda (y) (check-tuple y)) x)) #f #t))
-          (`#(,x ...) (if (memv #f (map (lambda (y) (check-tuple y)) x)) #f #t))
-          (`,x #:when (scalar? x) #t)
-          (`,y #f))))
+;; Returns #t if everything checks out.  Otherwise returns an
+;; explanation of the problem in a string.
+(define (validate-literal typ shp dat)
+  (define (mkpred ty)
+    (match ty
+      ['Bool boolean?]
+      ['Int  acc-int?]
+      ['Double flonum?]
+      [`#( ,tys ...)
+       (let ((preds (map mkpred tys)))
+         (if (andmap procedure? preds)             
+             (lambda (x)
+               (if (vector? x)
+                   (format "Expected tuple of type ~a, found: ~a\n" ty x)
+                   (squish (map (lambda (f y) (f y))
+                                preds (vector->list x)))))
+             (squish (filter string? preds))))]
+      [else (format "Unexpected type for array element: ~a\n" ty)]))
 
-    (define check-type
-      (lambda (type)
-        (if (ctype? type) #t
-            (if (list? type)
-                (if (check-tuple type) #t #f)
-                #f))))
-    
-    (define check-shape
-      (lambda (shape)
-        (cond
-          ((null? shape) #t)
-          ((exact-integer? (car shape)) (and #t (check-shape (cdr shape))))
-          (else #f))))
-    
-    (define dbl_vector?
-      (lambda (vec-list)
-        (cond
-          ((null? vec-list) #t)
-          ((pair? (car vec-list)) (and (dbl_vector? (car vec-list)) (dbl_vector? (cdr vec-list))))
-          ((double-flonum? (car vec-list)) (dbl_vector? (cdr vec-list)))
-          (else #f))))
+  ;; This is tedious because it tries to avoid throwing an exception:
+  (define (lenmatch l s)
+    (cond
+      [(acc-element? l)
+       (if (null? s) #t
+           (format "Wrong nesting depth.  Expected something of shape ~a, found ~a.\n" s l))]
+      [(null? l) #t] ;; zero-length dim is always ok.      
+      [(list? l)
+       (if (= (length l) (car s))
+           (squish (map (lambda (x) (lenmatch x (cdr s))) l))
+           (format "Literal array data of wrong length.  Expected ~a things, found ~a, in:\n ~a\n"
+                   (car s) (length l) l))]
+      [else (format "Unexpected expression where array data was expected: ~a\n"
+                    l)]))
 
-    (define int_vector?
-      (lambda (vec-list)
-        (cond
-          ((null? vec-list) #t)
-          ((pair? (car vec-list)) (and (int_vector? (car vec-list)) (int_vector? (cdr vec-list))))
-          ((exact-integer? (car vec-list)) (int_vector? (cdr vec-list)))
-          (else #f))))  
-
-    (define bool_vector?
-      (lambda (vec-list)
-        (cond
-          ((null? vec-list) #t)
-          ((pair? (car vec-list)) (and (bool_vector? (car vec-list)) (bool_vector? (cdr vec-list))))
-          ((boolean? (car vec-list)) (bool_vector? (cdr vec-list)))
-          (else #f))))  
+  ;; Apply to each element, disregarding nesting level.
+  (define (deep-map f dat)
+    (cond
+      [(pair? dat) (map (lambda (x) (deep-map f x)) dat)]
+      [else (f dat)]))
+  ;; Take a mix of #t's and strings in an arbitrary sexp.  Append the
+  ;; strings separated by newlines.  If no strings found, return #t.
+  (define (squish x)
+    (cond
+      [(eq? #t x) #t]
+      [(string? x) x]
+      [(null? x) #t]
+      [(pair? x)
+       (let ((fst (squish (car x)))
+             (snd (squish (cdr x))))
+         (if (eq? fst #t) snd
+             (if (eq? snd #t) fst
+                 (string-append fst snd))))]
+      [else (error 'validate-literal "internal error.  Squish function got: ~a\n" x)]))
   
-    (define check-length
-      (lambda (vec-list shape)
-        (cond
-          ((null? vec-list) #t)
-          ((null? shape) (if (equal? 1 (length vec-list)) #t #f))
-          ((and (pair? (car vec-list)) (equal? (length vec-list) (car shape))) (not (memv #f (map (lambda (x) (check-length x (cdr shape))) vec-list))))
-          ((equal? (length vec-list) (car shape)) #t)
-          (else #f))))
+  (let ((len-check (lenmatch dat shp))
+        (pred (mkpred typ)))
+    (if (not (procedure? pred))
+        pred
+        (if (eq? len-check #t)
+            (squish (deep-map (lambda (el)
+                                (if (pred el) #t
+                                    (format "Array element ~a does not match expected type ~a\n"
+                                            el typ)))
+                              dat))
+            len-check))))
 
-    (define (check-tuple-expr-length type data)
-      (cond
-        ((null? type) (if (null? data) #t #f))
-        ((null? data) (if (null? type) #t #f))
-        ((pair? (car type)) (and (check-tuple-expr-length (car type) (car data)) (check-tuple-expr-length (cdr type) (cdr data))))
-        (else (and #t (check-tuple-expr-length (cdr type) (cdr data))))))
-  
-    (define (build-type type ls len shape)
-      (cond
-        ((zero? len) (list->md-array ls shape))
-        (else (build-type type (cons type ls) (sub1 len) shape))))
-
-    (define (verify-type type data)
-      (cond
-        ((equal? 'c-int type) (exact-integer? data))
-        ((equal? 'c-double type) (double-flonum? data))
-        ((equal? 'c-bool type) (boolean? data))))
-    
-    (define (check-tuple-expr type data)
-      (cond
-        ((null? type) #t)
-        ((pair? (car type)) (and (check-tuple-expr (car type) (car data)) (check-tuple-expr (cdr type) (cdr data))))
-        (else (and (verify-type (car type) (car data)) (check-tuple-expr (cdr type) (cdr data))))))
-
-    (define check-exp
-      (lambda (exp shape type)
-            (if (ctype? type)
-                (if (check-length exp shape)
-                    (if (if (equal? type _int) (int_vector? exp) 
-                            (if (equal? type _double) (dbl_vector? exp)
-                                (if (equal? type _bool) (bool_vector? exp)
-                                    #f)))
-                        '(#t)
-                       '(#f "failed ! Invalid expression: type mismatch"))
-                   '(#f "failed ! Invalid expression: length mismatch"))
-                (if (check-tuple-expr-length (build-type type '() (md-array-length shape) shape) exp)
-                    (if (check-tuple-expr (build-type type '() (md-array-length shape) shape) exp)
-                        '(#t)
-                       '(#f "failed ! Invalid expression: type mismatch"))
-                   '(#f "failed ! Invalid expression: length mismatch")))))
-    
-    (match exp
-      [`#(,type ,shape ,exp ...) #:when (list? shape)
-         (let ((val (if (check-type type) 
-                      (if (check-shape shape)
-                          (let ((ret (check-exp (car exp) shape type)))
-                               (if (equal? #t (car ret))
-                                  '(#t)
-                                   ret))
-                         '(#f "failed ! Invalid Shape"))
-                     '(#f "failed ! Invalid Type"))))
-             (if (equal? #t (car val))
-                 '(#t) ;(car exp)
-                `(#f ,(cadr val))))]
-      [`,no-match '(#f "failed ! Invalid expression ~a" no-match)]))

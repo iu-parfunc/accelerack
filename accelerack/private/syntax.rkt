@@ -7,7 +7,7 @@
          accelerack/private/parse
          accelerack/acc-array/private/manifest-array/allocate
          accelerack/acc-array/private/arrayutils 
-         (for-syntax racket/base syntax/parse)
+         (for-syntax racket/base syntax/parse accelerack/private/parse)
          (prefix-in r: racket/base)
 
          syntax/parse
@@ -23,8 +23,6 @@
          )
 
 (provide acc-array
-         array
-
          acc-primop
          acc-primop-lits
          ; acc-primop-identifier?
@@ -34,11 +32,13 @@
          )
 (provide (all-from-out accelerack/private/keywords))
 
+; Syntax -> Syntax (acc-element-type?)
 (define-for-syntax (infer-type d)
   (syntax-parse d
-    [_:boolean #'_bool]
-    [_:number (if (flonum? (syntax-e d)) #'_double #'_int)]
+    [_:boolean #'Bool ]
+    [_:number (if (flonum? (syntax-e d)) #'Double #'Int)]
     [#(v ...) #`(#,@(list->vector (map infer-type (syntax->list #'(v ...)))))]
+    ;; To get the element type we dig inside any arrays:
     [(v more ...) (infer-type #'v)]
     ))
 
@@ -58,7 +58,8 @@
     #:attributes (shape type)
     [pattern v
              #:with shape (infer-shape #'v)
-             #:with type (infer-type #'v)])
+             #:with type (infer-type #'v)
+             ])
   )
 
 ;; TODO: Replace with a primop type table:
@@ -90,61 +91,26 @@
   (pattern p:id #:when (acc-scalar-identifier? #'p))
   (pattern #(t:acc-element-type ...)))
 
+
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.
-(define-syntax (acc-array stx)
+(define-syntax (acc-array stx)  
   (syntax-parse stx
     [(_ data:acc-data)
-     #'(make-acc-array (array data.shape data.type data))]))
+     #;
+     (printf "ACC-ARRAY MACRO, finishme: ~a ~a ~a\n"
+            (syntax->datum #'data)
+            (syntax->datum #'data.type)
+            (syntax->datum #'data.shape))
+     (let* ([typ (syntax->datum #'data.type)]
+            [shp (syntax->datum #'data.shape)]
+            [dat (syntax->datum #'data)]
+            [ver (validate-literal typ shp dat)])
+       (if (eq? ver #t)
+           #`(make-acc-array (list->manifest-array '#,typ '#,shp '#,dat))
+           (raise-syntax-error 'acc-array
+                               (string-append "bad array literal.\n" ver) stx))
+           )]))
 
 
-;;------------------------------
 
-;; TODO - Need to rework the macros
-
-(define (process-data data)
-  (match data
-    ((list (list x ...) ...) (r:map process-data x))
-    (`(,x ...) (r:map process-data x))
-    (`,x (if (vector? x) (vector->list* x) x))))
-
-(define-syntax (array stx)
-  (syntax-case stx ()
-
-    [(array (shape ...) #(type ...) (data ...))
-     #'(letrec ([data* (process-data (syntax->datum (syntax (data ...))))]
-                [type* (r:map map-type  (list type ...))]
-                [ret (verify-accelerack
-                      (vector type* (syntax->datum (syntax (shape ...))) data*))])
-         (if (car ret)
-             (list->manifest-array type* (syntax->datum (syntax (shape ...))) data*)
-             (error 'verify-accelerack (cadr ret))))]
-    [(array (shape ...) #(type ...) data)
-     #'(let* ([type* (r:map map-type (list type ...))]
-              [ret (verify-accelerack
-                    (vector type* (syntax->datum (syntax (shape ...))) (flatten data)))])
-         (if (car ret)
-             (list->manifest-array type* (syntax->datum (syntax (shape ...))) data)
-             (error 'verify-accelerack (cadr ret))))]
-    [(array (shape ...) type (data ...))  #'(ctype? type)
-     #'(letrec ((data* (process-data (syntax->datum (syntax (data ...)))))
-                (ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) data*))))
-         (if (car ret)
-             (list->manifest-array type (syntax->datum (syntax (shape ...))) data*)
-             (error 'verify-accelerack (cadr ret))))]
-    [(array (shape ...) type data)  #'(ctype? type)
-     #'(let ((ret (verify-accelerack (vector type (syntax->datum (syntax (shape ...))) (flatten data)))))
-         (if (car ret)
-             (list->manifest-array type (syntax->datum (syntax (shape ...))) data)
-             (error 'verify-accelerack (cadr ret))))]))
-
-(define map-type
-  (lambda (x)
-    (cond
-      ((ctype? x) (ctype->symbol x))
-      ((symbol? x) (ctype->symbol x))
-      ((pair? x) (cons (map-type (car x)) (map-type (cdr x))))
-      ((vector? x) (cons (map-type (car (vector->list x))) (map-type (cdr (vector->list x)))))
-      (else x))))
-
-(define test (acc-array (1 2 3 4)))

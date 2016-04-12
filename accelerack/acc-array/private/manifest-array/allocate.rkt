@@ -8,7 +8,7 @@
          accelerack/acc-array/private/manifest-array/structs
          accelerack/acc-array/private/arrayutils
 
-         (only-in accelerack/private/types acc-element?)
+         (only-in accelerack/private/types acc-element? acc-shape? acc-type? acc-scalar-type?)
          ; (only-in accelerack/private/paven_old/global_utils vector->list*)
          racket/contract
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
@@ -20,13 +20,12 @@
   
    ;; TODO: improve contracts:
    ;; HIDE any of this junk that isn't used.
-   [list->manifest-array (-> (or/c ctype? pair?)   ;; type
-                  (or/c null? pair?)    ;; shape
-                  (or/c number? boolean? list?) ;; data
-                  acc-manifest-array?)]
+   [list->manifest-array (-> acc-type? acc-shape? 
+                             (or/c number? boolean? vector? list?) ;; data
+                             acc-manifest-array?)]
    [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
    [make-empty-manifest-array
-    (-> (or/c null? pair?) (or/c ctype? pair?) acc-manifest-array?)]
+    (-> acc-shape? lame-type? acc-manifest-array?)]
    [read-data  (-> segment? (or/c null? pair?))]
    [read-data* (-> acc-manifest-array? any/c)]
 
@@ -69,6 +68,21 @@
                                        (cvector-ptr payload*))
                          payload-c))))))
 
+
+(define (list->segment-tree ty data)
+  (cond
+    [(acc-scalar-type? ty)
+     (list->segment-tree (acc-type->lame-type ty) data)]
+    [(vector? ty)
+     (let ([segs (for/list ((i ((range (length ty)))))
+                   (list->segment-tree (vector-ref ty i)
+                                       (map (lambda (v) (vector-ref v i)) data)))])
+       (make-segment
+        (length segs)
+        'acc-payload-ptr
+        (list->cvector segs _segment-pointer)))]))
+       
+
 ;; Stores the payload information into segment structure
 ;; Arguments -> (list containing the payload, type, initial empty list)
 ;; Return value -> pointer to segment containing the payload informations
@@ -81,6 +95,13 @@
              ((ctype-scheme->c scalar) (ctype->symbol type))
              (cvector-ptr payload)))
       (generatePayload-helper data '())))
+
+(define (list->segment cty data)
+  (let ([payload (list->cvector data type)])
+           (make-segment
+             (length data)
+             ((ctype-scheme->c scalar) (ctype->symbol type))
+             (cvector-ptr payload))))
 
 
 ;; Helper to read-data function
@@ -243,17 +264,13 @@
 ;; Arguments -> (type, shape,  payload, expression)
 ;; Return value -> pointer to allocated memory location
 
-(define (list->manifest-array _type _shape _data)
-    (letrec
-      ([type (if (ctype? _type)
-                 ((ctype-scheme->c scalar) 'scalar-payload)
-                 ((ctype-scheme->c scalar) 'tuple-payload))]
-       [shape (generatePayload _shape _int)]
-       [data (if (ctype? _type)
-                 (generatePayload (flatten _data) _type)
-                 (generatePayload (unzip _data) _type))])
-      (make-acc-manifest-array type shape data)))
-
+(define (list->manifest-array type shape data)
+  (printf "LIST->MANIFEST ~a ~a ~a\n" type shape data)
+  (let ([shape* (if (null? shape) '(1) shape)])
+    (make-acc-manifest-array 'remove-type-field-from-manifest-array
+                             (list->segment _int shape*)
+                             (list->segment-tree type (flatten data)))))
+    
 (define (get-type arr)
   (if (acc-manifest-array? arr)
       (segment-type (acc-manifest-array-data arr))

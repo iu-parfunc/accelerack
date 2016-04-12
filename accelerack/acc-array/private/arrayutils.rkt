@@ -3,6 +3,7 @@
 (require (except-in ffi/unsafe ->)
          accelerack/acc-array/private/manifest-array/structs
          racket/contract
+         (only-in accelerack/private/types acc-type?)
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme))
 
 
@@ -18,14 +19,23 @@
     [append-end (-> any/c (or/c pair? null?) pair?)]
     [scalar? (-> symbol? boolean?)]
     [string->ctype (-> string? ctype?)]
-    [ctype->symbol (-> (or/c symbol? ctype?) symbol?)]
+    [ctype->symbol (-> lame-type? symbol?)]
     [symbol->ctype (-> symbol? ctype?)]
-    [mapType (-> integer? (or/c ctype? symbol?))]
+    [mapType (-> integer? lame-type?)]
+    [lame-type? (-> any/c boolean?)]
+    [acc-type->lame-type (-> acc-type? lame-type?)]
     [ptr-ref* (-> cpointer? ctype? integer? integer? any/c)]
     [list->md-array (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]
     [md-array-length (-> (or/c null? pair?) integer?)]
     [get-ctype (-> any/c symbol?)]
     [find-shape (-> (or/c null? pair?) (or/c null? pair?) (or/c null? pair?) (or/c null? pair?))]))
+
+;; This protocol is lame and isn't explained anywhere.  Kill it!
+(define lame-type?
+  (or/c 'scalar-payload ;; Why do we need this?
+        'tuple-payload
+        'rkt-payload-ptr ;; is this still used?        
+        ctype?))
   
 (define (get-tuple-type-helper data type)
   (cond
@@ -204,6 +214,18 @@
     ((equal? type 7) _gcpointer)
     ((equal? type 8) 'rkt-payload-ptr )
     (else (error 'mapType "invalid accelerack type enumeration: ~a" type))))
+
+;; DEPRECATED
+;; Remove this and the lame notion of (U ctype? symbol?)
+(define (acc-type->lame-type t)
+  (match t
+    ['Int    _int]
+    ['Double _double]
+    ['Bool   _bool]
+    [`#( ,_ ...) 'tuple-payload
+     #| Uh, maybe?  The protocol is unclear. |#  ]
+    ; [`(Array ,d ,elt) _acc-manifest-array-pointer]
+    [else (error 'acc-type->lame-type "Cannot convert: ~a\n" t)]))
 
 
 ;; Map the actual type to scalar enum values

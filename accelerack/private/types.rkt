@@ -11,7 +11,7 @@
 
 (provide                  
          ;; Elements
-         acc-scalar? acc-element?
+         acc-scalar? acc-int? acc-element?
 
          ;; Syntax
          acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
@@ -24,6 +24,7 @@
 
          ;; Boundary values for stencils
          stencil-boundary?
+         acc-shape?
          
          )
 
@@ -31,10 +32,14 @@
 ;; A scalar here is defined as a single numeric or boolean value.
 (define (acc-scalar? x)
   (or ; (fixnum? x) ;; FIXME: this rules out some numbers at the high ange.
-      (and (integer? x)
-           (<= (- (expt 2 63)) x (sub1 (expt 2 64))))
+      (acc-int? x)
       (boolean? x)
       (flonum? x)))
+
+;; Confirm that an integer is in the expected range for the acc "Int" type.
+(define (acc-int? x)
+  (and (integer? x)
+       (<= (- (expt 2 63)) x (sub1 (expt 2 64)))))
 
 ;; This is anything that goes inside an array.
 (define (acc-element? x)
@@ -42,6 +47,8 @@
       (and (vector? x)
            (andmap acc-element? (vector->list x)))))
 
+;; Valid shapes are just lists of numbers
+(define acc-shape? (listof exact-nonnegative-integer?))
 
 (define (stencil-boundary? x)
   (match x

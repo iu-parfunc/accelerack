@@ -94,7 +94,7 @@
                              #(4 #(16 3.3 #f))) (acc-array->sexp x))
              (maybe-display "Test 4 Success !!!"))
 
-  (test-case "plain-racket: literal5"
+  (test-case "plain-racket: literal5 (0D)"
              (define x (acc-array 1))
              (check-equal? (acc-array->sexp x) '1)
              (maybe-display "Test 5 Success !!!"))
@@ -104,6 +104,10 @@
              (check-equal? (acc-array->sexp x) '(1 2))
              (maybe-display "Test 6 Success !!!"))
 
+  (test-case "plain-racket: print 0D array of tuple ref"
+             (define x (acc-array #(11 22 33)))
+             (with-output-to-string (lambda () (display x))))
+  
   (test-case "plain-racket: acc-array=?"
              (define x (acc-array (#(2 #(2 1.1 #f))
                                    #(1 #(3 2.2 #f))
@@ -154,12 +158,14 @@
                         (lambda () (acc-array-flatref x 1))
                         "array ref past end"))
 
-  #; 
+#;
   (test-case "plain-racket: 0D array of tuple ref"
              (define x (acc-array #(11 22 33)))
              ; (check-equal? 0 (acc-array-dimension x))
-             (check-equal? '#(11 22 33) (acc-array-flatref x 0))
+             ; (check-equal? '#(11 22 33) (acc-array-flatref x 0))
              ; (check-equal? '#(11 22 33) (acc-array-ref x))
+             ;(printf "TEMP: ~a\n" x)
+             (void) ;; FINISHME
              )
   
   (test-case "acc: map1"

@@ -30,7 +30,7 @@
      (send bdc erase)
      (render-image image bdc 0 0)
      (send bdc get-argb-pixels 0 0 w h bytes)
-     (let ((arr (make-empty-manifest-array (list w h) '#(Int Int Int Int))))
+     (let ((arr (make-empty-manifest-array (vector w h) '#(Int Int Int Int))))
        (for ([i (in-range 0 (* w h))])
          (manifest-array-flatset! arr i
           (vector (bytes-ref bytes (+ (* i 4) 1))

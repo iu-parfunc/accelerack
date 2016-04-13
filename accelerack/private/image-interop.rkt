@@ -2,20 +2,23 @@
 
 (require
  accelerack/private/types
- (only-in accelerack/acc-array acc-array->sexp)
+ (only-in accelerack/acc-array
+          acc-array->sexp acc-array-size acc-array-shape acc-array-flatref)
  accelerack/acc-array/private
  accelerack/acc-array/private/manifest-array
- (only-in 2htdp/image image-width image-height color bitmap/url circle image?)
- (only-in mrlib/image-core render-image)
+ 2htdp/image
+ (only-in mrlib/image-core render-image bitmap->image)
  rackunit
- (except-in racket/draw make-pen )
+ (except-in racket/draw make-pen make-color)
  racket/trace
  )
 
 (provide
  (contract-out
-  [image->acc-array (-> image? acc-array?)]))
+  [image->acc-array (-> image? acc-array?)]
+  [acc-array->image (-> acc-array? image?)]))
 
+;; Based on image->color-list from 2htdp/private/image-more.rkt
 (define (image->acc-array image)
   (define w (image-width image))
   (define h (image-height image))
@@ -31,22 +34,49 @@
      (render-image image bdc 0 0)
      (send bdc get-argb-pixels 0 0 w h bytes)
      (let ((arr (make-empty-manifest-array (vector w h) '#(Int Int Int Int))))
+       ;; TODO: use 2D indexing here.. We may actually want to transpose it..
        (for ([i (in-range 0 (* w h))])
          (manifest-array-flatset! arr i
           (vector (bytes-ref bytes (+ (* i 4) 1))
                   (bytes-ref bytes (+ (* i 4) 2))
                   (bytes-ref bytes (+ (* i 4) 3))
-                  (bytes-ref bytes    (* i 4)))))
+                  (bytes-ref bytes    (* i 4)  ))))
        (make-acc-array arr))]))
 
-#;
+(define (acc-array->image arr)
+  (define len    (acc-array-size arr))
+  (define shp    (acc-array-shape arr)) 
+  (define width  (vector-ref shp 0)) ;; It's debatable which way we should do it.
+  (define height (vector-ref shp 1))
+  (cond
+    [(or (zero? width) (zero? height))
+     (rectangle width height "solid" "black")]
+    [else
+     (define bmp (make-bitmap width height))
+     (define bytes (make-bytes (* width height 4) 0))
+     (define o (make-object color%))
+     (for ([i (range len)])
+       (define v (acc-array-flatref arr i))
+       (define c (make-color (vector-ref v 0)
+                             (vector-ref v 1)
+                             (vector-ref v 2)
+                             (vector-ref v 3)))
+       (define j (* i 4))
+       (bytes-set! bytes  j      (color-alpha c))
+       (bytes-set! bytes (+ j 1) (color-red c))
+       (bytes-set! bytes (+ j 2) (color-green c))
+       (bytes-set! bytes (+ j 3) (color-blue c)))
+     (send bmp set-argb-pixels 0 0 width height bytes)
+     (bitmap->image bmp)]))
+
 (test-case "Convert image->array"
-  ;(define x (bitmap/url "http://racket-lang.org/logo-and-text.png"))
-  ; (define x (bitmap/url "http://cf.ydcdn.net/1.0.1.50/images/wiktionary/eng-wik-lambda-2.jpg"))
   (define x (circle 3 "solid" "red"))
-  ; (define y (image->color-list x))
+  (define y (image->color-list x))
   (define z (image->acc-array x))
-  ; (acc-array->sexp z)
-  (printf "victory ~a\n" z)
-  (acc-array->sexp z)
+  (define l (acc-array->sexp z))
+  (test-case "right length"
+    (check-equal? (length (flatten l)) (length y)) )
+  (test-case "exact image match"
+    (check-equal? (color-list->bitmap y (image-width x) (image-height x))
+                  (acc-array->image z)))
   )

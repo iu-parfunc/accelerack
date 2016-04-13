@@ -4,7 +4,6 @@
 ;; This includes most things EXCEPT the main acc-array datatype,
 ;; which is exported from accelerack/acc-array
 
-
 (provide
          ;; Elements
          acc-scalar? acc-int? acc-element?

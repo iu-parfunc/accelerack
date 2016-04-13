@@ -39,7 +39,7 @@
     acc-scalar? acc-element?
 
     ;; Image conversions
-    image->acc-array
+    image->acc-array acc-array->image
 
     ;; Types and Typed operations
     acc-type? acc-element-type?

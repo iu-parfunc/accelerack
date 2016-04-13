@@ -37,7 +37,7 @@
     [type _int]
     [data _gcpointer])
    ;; Don't let the GC move it:
-   #:malloc-mode 'atomic-interior)
+   #:malloc-mode 'interior)
 
 ;; This is the Racket-side notion of a manifest array.
 ;; C structure to store accelerate arrays information (one logical array)
@@ -46,7 +46,7 @@
    [shape _segment-pointer]
    [data _segment-pointer])
   ;; Don't let the GC move it:
-  #:malloc-mode 'atomic-interior)
+  #:malloc-mode 'interior)
 
 
 ;; Import the acc type definitions from the c header file to maintain consistent naming with haskell

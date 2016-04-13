@@ -38,7 +38,7 @@
 
   ;; TODO: acc-stencil3x3
 
-  [array-get (-> acc-manifest-array? exact-integer? any/c)] ;; Remove me.
+  ; [array-get (-> acc-manifest-array? exact-integer? any/c)] ;; Remove me.
  ))
 
 ;; Utilities: these look broken/wrong -RRN [2016.04.11]
@@ -48,6 +48,7 @@
 ;; Arguments -> reference to the acc array, offset, the value to set
 ;; Return value -> void
 
+#; 
 (define (array-set!! arr-ref offset value)
   (let ([type (mapType ((ctype-scheme->c scalar) (get-ctype value)))]
         [data (if (acc-manifest-array? arr-ref)
@@ -60,6 +61,7 @@
 ;; Return value -> value at given position
 
 ;; FIXME : this doesn't work for tuples!!!
+#;
 (define (array-get arr-ref offset)
   (let ([type (mapType (type arr-ref))]
         [data (if (acc-manifest-array? arr-ref)
@@ -70,7 +72,7 @@
 ;; Execute the given function over the given acc tuple data
 ;; Arguments -> reference to result acc array ,reference to the input acc array, input function
 ;; Return value -> void
-
+#;
 (define (tuple-array-set!! arr-ref input-arr fn)
   (let ([acc-tuple ((ctype-scheme->c scalar) 'acc-payload-ptr)]
         [acc-int ((ctype-scheme->c scalar) 'c-int)]
@@ -90,6 +92,7 @@
               (array-set!! arr-ref i (fn (array-get input-arr i)))))])))
 
 ;; REMOVE THIS:
+#;
 ;; returns the length of the given acc array
 (define (acc-length arr)
   (if (acc-manifest-array? arr)
@@ -97,7 +100,7 @@
       (segment-length arr)))
 
 ;; TEMP: REMOVE THIS:
-(define (shape x) (vector->list (manifest-array-shape x)))
+; (define (shape x) (vector->list (manifest-array-shape x)))
 
 
 ;; Map

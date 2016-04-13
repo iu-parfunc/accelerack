@@ -15,7 +15,8 @@
                   (acc-array->image z)))
   )
 
-#; ;; FINISHME
+;; FINISHME
+#;
 (test-case "Convert image->array"
   (define x (image->acc-array (circle 3 "solid" "red")))
   (define y (image->acc-array (circle 4 "solid" "green")))

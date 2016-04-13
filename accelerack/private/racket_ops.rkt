@@ -29,80 +29,11 @@
   [acc-fold (-> procedure? ; (-> acc-element? acc-element? acc-element?)
                 acc-element? acc-manifest-array?
                 acc-manifest-array?)]
-  [acc-zipwith
-   (-> procedure? acc-manifest-array? acc-manifest-array? acc-manifest-array?)]
+  [acc-zipwith  (-> procedure? acc-manifest-array? acc-manifest-array?
+                    acc-manifest-array?)]
   [acc-stencil3x3 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
-
-  ;; TODO: acc-stencil3x3
-
-  ; [array-get (-> acc-manifest-array? exact-integer? any/c)] ;; Remove me.
  ))
-
-;; Utilities: these look broken/wrong -RRN [2016.04.11]
-;; --------------------------------------------------------------------------------
-
-;; Set the value at given position in an acc array
-;; Arguments -> reference to the acc array, offset, the value to set
-;; Return value -> void
-
-#; 
-(define (array-set!! arr-ref offset value)
-  (let ([type (mapType ((ctype-scheme->c scalar) (get-ctype value)))]
-        [data (if (acc-manifest-array? arr-ref)
-                  (segment-data (acc-manifest-array-data arr-ref))
-                  (segment-data arr-ref))])
-    (ptr-set! data type offset value)))
-
-;; Get the value at given position in an acc array
-;; Arguments -> reference to the acc array, offset
-;; Return value -> value at given position
-
-;; FIXME : this doesn't work for tuples!!!
-#;
-(define (array-get arr-ref offset)
-  (let ([type (mapType (type arr-ref))]
-        [data (if (acc-manifest-array? arr-ref)
-                  (segment-data (acc-manifest-array-data arr-ref))
-                  (segment-data arr-ref))])
-    (ptr-ref data type offset)))
-
-;; Execute the given function over the given acc tuple data
-;; Arguments -> reference to result acc array ,reference to the input acc array, input function
-;; Return value -> void
-#;
-(define (tuple-array-set!! arr-ref input-arr fn)
-  (let ([acc-tuple ((ctype-scheme->c scalar) 'acc-payload-ptr)]
-        [acc-int ((ctype-scheme->c scalar) 'c-int)]
-        [acc-double ((ctype-scheme->c scalar) 'c-double)])
-       (cond
-         [(equal? (type input-arr) acc-tuple)
-          (let ([len (acc-length input-arr)])
-            (for ([i (in-range 0 len)])
-              (tuple-array-set!!
-               (ptr-ref (segment-data arr-ref) _segment-pointer i)
-               (ptr-ref (segment-data input-arr) _segment-pointer i)
-               fn)))]
-         [(or (equal? (type input-arr) acc-int)
-              (equal? (type input-arr) acc-double))
-          (let ([len (acc-length input-arr)])
-            (for ([i (in-range 0 len)])
-              (array-set!! arr-ref i (fn (array-get input-arr i)))))])))
-
-;; REMOVE THIS:
-#;
-;; returns the length of the given acc array
-(define (acc-length arr)
-  (if (acc-manifest-array? arr)
-      (segment-length (acc-manifest-array-data arr))
-      (segment-length arr)))
-
-;; TEMP: REMOVE THIS:
-; (define (shape x) (vector->list (manifest-array-shape x)))
-
-
-;; Map
-;; --------------------------------------------------------------------------------
 
 ;; Map a function over every element, irrespective of dimension.
 (define (acc-map fn arr)
@@ -122,9 +53,6 @@
                                      (fn (manifest-array-flatref arr i))))
           new))))
 
-;; Fold:
-;; --------------------------------------------------------------------------------
-
 (define (acc-fold fn init arr)
   (let* ([len      (manifest-array-size arr)]
          [ty       (manifest-array-type arr)]
@@ -139,8 +67,6 @@
                                            (manifest-array-flatref new i)))))
     new))
 
-;; ZipWith:
-;; --------------------------------------------------------------------------------
 
 (define (acc-zipwith fn a1 a2)
   ;; The acc-manifest-array is not mutable for end users, but for this library implementation

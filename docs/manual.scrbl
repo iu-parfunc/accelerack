@@ -35,12 +35,17 @@ Determine whether a value is an @racket[acc-array].
 
 @defproc[(acc-element? [element any]) boolean?]
 
-Determine whether a value is an @racket[acc-element].
-
+Determine whether a value can go inside an @racket[acc-array], that is, whether it can be an
+array @emph{element}.  This currently includes: exact integers, inexact floating point numbers, and booleans.
+Also, vectors of elements are also valid elements (including vectors of vectors).
 
 @defproc[(acc-array->sexp [acc-array acc-array?]) sexp?]
 
-Arrays can be converted into ordinary Racket s-experessions.
+Arrays can be converted into ordinary Racket s-expressions.
+The result is a nested series of lists, with nesting depth equal to the dimension of the array.
+The element values will all satisfy @racket{acc-element?}.
+
+Note that the s-expression uses the same format as the @racket{acc-array} syntax for constructing literal arrays.
 
 @racketblock[
 (define x (acc-array 15))
@@ -68,16 +73,23 @@ row-major order index of the element.
 Return the number of dimensions of an array.
 
 @defproc[(acc-array-shape [acc-array acc-array?])
-         vector?]
+         (vectorof integer?)]
 
 Returns a vector of the sizes of each dimension of an array.
+Note that the shape returned satisfies @racket{acc-element?}, and also
+@racket{acc-shape?}.
+
+@defproc[(acc-shape? [x any]) boolean?]
+
+Determine whether a value is a valid shape, i.e. a vector of zero or more non-negative integers.
 
 @defproc[(acc-array-size [acc-array acc-array?])
          integer?]
 
 Returns the size of an array.
 
-
+@;{
+@; -------------------------------------------------------
 @section[#:tag "computations"]{Accelerack Computations}
 
 @defform*[((define-acc (name args ...) body)
@@ -89,8 +101,9 @@ Define an Accelerack computation, either a function or expression.
 
 Take a Racket value and make it an Accelerack value. This is done
 automatically in some cases by @racket[define-acc].
+}
 
-
+@; -------------------------------------------------------
 @section[#:tag "functions"]{Basic Functions}
 
 @defproc[(map [proc procedure?] [acc-array acc-array?]) acc-array?]

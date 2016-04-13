@@ -22,6 +22,7 @@
 (require racket/trace)
 
 (provide
+ acc-manifest-array?
  manifest-array-ref
  ; manifest-array-set!
  manifest-array-flatref

@@ -13,7 +13,6 @@
 
 ;; TODO: REMOVE ANY DEPENDENCE ON NON-PUBLIC ARRAY INTERFACES:
 (require (except-in ffi/unsafe ->)
-         accelerack/acc-array/private/manifest-array/structs
          accelerack/acc-array/private/manifest-array
          accelerack/acc-array/private/arrayutils
          accelerack/private/utils

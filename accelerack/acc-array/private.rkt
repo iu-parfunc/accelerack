@@ -5,9 +5,7 @@
 ;; copying.
 
 (require
- (only-in accelerack/acc-array/private/manifest-array manifest-array->sexp)
- (only-in accelerack/acc-array/private/manifest-array/structs
-          acc-manifest-array?)
+ (only-in accelerack/acc-array/private/manifest-array manifest-array->sexp acc-manifest-array?)
  accelerack/acc-array/private/delayed)
 
 (provide

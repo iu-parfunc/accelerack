@@ -7,8 +7,6 @@
 
 (require
  accelerack/acc-array/private/manifest-array
- (only-in accelerack/acc-array/private/manifest-array/structs
-          acc-manifest-array?)
  accelerack/acc-array/private
  accelerack/acc-array/private/delayed
  accelerack/acc-array/private/arrayutils

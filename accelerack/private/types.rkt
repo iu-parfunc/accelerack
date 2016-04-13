@@ -4,10 +4,6 @@
 ;; This includes most things EXCEPT the main acc-array datatype,
 ;; which is exported from accelerack/acc-array
 
-(require
- (only-in accelerack/acc-array/private/manifest-array/structs
-          acc-manifest-array?)
- )
 
 (provide
          ;; Elements

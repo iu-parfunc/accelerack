@@ -10,7 +10,8 @@
 (require (except-in ffi/unsafe ->)
          ffi/unsafe/cvector
          accelerack/acc-array/private/manifest-array/structs
-         accelerack/acc-array/private/arrayutils
+         (only-in accelerack/acc-array/private/arrayutils
+                  acc-type->lame-type ctype->symbol mapType ptr-ref*)
          accelerack/private/utils
 
          (only-in accelerack/private/types
@@ -22,7 +23,9 @@
 (require racket/trace)
 
 (provide
+ acc-manifest-array?
  manifest-array-ref
+ ; manifest-array-set!
  manifest-array-flatref
  manifest-array-flatset!
  (contract-out
@@ -38,40 +41,13 @@
   ;;                             acc-element?)]
   ;; [manifest-array-flatset! (-> acc-manifest-array? exact-nonnegative-integer?
   ;;                              acc-element? void?)]
-
+  [manifest-array-set! (-> acc-manifest-array? (listof exact-nonnegative-integer?)
+                           acc-element? void?)]
+  
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
   [manifest-array-type  (-> acc-manifest-array? acc-type?)]
 
-  ;; DEPRECATED / rename or remove:
-  [type (-> (or/c acc-manifest-array? segment?) integer?)]
-  [make-empty-manifest-array-lame (-> (listof number?) lame-type? acc-manifest-array?)]
  ))
-
-
-;; Helper to generatePayload function
-;; Arguments -> (list containing the payload, type, initial empty list)
-;; Return value -> pointer to segment containing the payload informations
-
-(define (generatePayload-helper data payload-c)
-  (cond
-    ((null? data)
-     (make-segment
-      (length payload-c)
-      ((ctype-scheme->c scalar) 'acc-payload-ptr)
-      (cvector-ptr (list->cvector payload-c _segment-pointer))))
-    ((pair? (caar data))
-     (letrec ([payload*-c (generatePayload-helper (car data) '())])
-       (generatePayload-helper (cdr data)
-                               (append-end payload*-c payload-c))))
-    (else (let ([payload* (list->cvector
-                           (car data)
-                           (symbol->ctype (get-ctype (caar data))))])
-            (generatePayload-helper
-             (cdr data)
-             (append-end (make-segment (length (car data))
-                                       ((ctype-scheme->c scalar) (get-ctype (caar data)))
-                                       (cvector-ptr payload*))
-                         payload-c))))))
 
 
 (define (list->segment-tree ty data)
@@ -87,22 +63,6 @@
         ((ctype-scheme->c scalar) 'acc-payload-ptr)
         (cvector-ptr (list->cvector segs _segment-pointer))))]))
 
-
-;; Stores the payload information into segment structure
-;; Arguments -> (list containing the payload, type, initial empty list)
-;; Return value -> pointer to segment containing the payload informations
-
-
-;; DEPRECATED:
-; [generatePayload (-> pair? (or/c ctype? symbol?) segment?)]
-(define (generatePayload data type)
-  (if (ctype? type)
-      (let ([payload (list->cvector data type)])
-           (make-segment
-             (length data)
-             ((ctype-scheme->c scalar) (ctype->symbol type))
-             (cvector-ptr payload)))
-      (generatePayload-helper data '())))
 
 (define (list->segment cty data)
   (let ([payload (list->cvector data cty)])
@@ -212,73 +172,16 @@
    (let ((offset (ND->1D-index (manifest-array-shape arr) inds)))
      (manifest-array-flatref arr offset)))
 
+(define (manifest-array-set! arr inds val)
+   (let ((offset (ND->1D-index (manifest-array-shape arr) inds)))
+     (manifest-array-flatset! arr offset val)))
+
 ;; Set an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
 (define (manifest-array-flatset! arr ind val)
   (letrec ([type (mapType (acc-manifest-array-type arr))]
            [seg  (acc-manifest-array-data arr)])
     (segment-flatset! seg ind val)))
-
-
-;; ====================================================================================================
-;; DELETEME:
-;; ====================================================================================================
-;; Get a list corresponding to given type
-;; Arguments -> type
-;; Return value -> list corresponding to given type initialized with unit values
-
-(define (getUnit-tuple type)
-  (cond
-    ((null? type) '())
-    ((equal? '_int (car type)) (cons 0 (getUnit-tuple (cdr type))))
-    ((equal? '_double (car type)) (cons 0.0 (getUnit-tuple (cdr type))))
-    ((equal? '_bool (car type)) (cons #f (getUnit-tuple (cdr type))))
-    ((pair? (car type)) (cons (getUnit-tuple (car type)) (getUnit-tuple (cdr type))))))
-
-;; Get a unit value corresponding to given type
-;; Arguments -> type
-;; Return value -> value corresponding to given type
-
-(define (getUnit-scalar type)
-  (cond
-    ((equal? _int type) 0)
-    ((equal? _double type) 0.0)
-    ((equal? _bool type) #f)))
-
-;; Helper function for make-empty-manifest-array.
-;; Arguments: (shape, type, payload)
-;; Return value: list initialized with unit values
-
-(define (make-empty-manifest-array* shape type payload)
-  (cond
-    ((null? shape) payload)
-    ((zero? (car shape))
-     (let ([shape* (if (null? (cdr shape))
-                       '()
-                       (cons (sub1 (car (cdr shape)))
-                             (cdr (cdr shape))))])
-       (make-empty-manifest-array* shape* payload (list payload))))
-    (else (make-empty-manifest-array*
-           (cons (sub1 (car shape)) (cdr shape))
-           type (cons type payload)))))
-
-;; Allocates a manifest array and fills it with default values.
-;; Arguments: (shape, type)
-;; Return value: list with racket pointer and c pointer to result structure
-
-(define (make-empty-manifest-array-lame shape type)
-  (letrec ([type-data (if (ctype? type) (getUnit-scalar type) (getUnit-tuple type))]
-           [type* (if (ctype? type)
-                      ((ctype-scheme->c scalar) 'scalar-payload)
-                      ((ctype-scheme->c scalar) 'tuple-payload))]
-           [shape* (if (null? shape) '(1) shape)]
-           [shape** (generatePayload shape _int)] ;; RRN: change to empty shape for 0D.
-           [init-data (car (make-empty-manifest-array* (reverse shape*) type-data '()))]
-           [data (if (ctype? type)
-                     (generatePayload (flatten init-data) type)
-                     (generatePayload (unzip init-data) type))])
-          (make-acc-manifest-array type* shape** data)))
-;; ====================================================================================================
 
 
 (define (make-empty-manifest-array _shape type)

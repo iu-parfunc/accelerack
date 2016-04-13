@@ -3,7 +3,7 @@
 ;; Wrappers around Accelerack array routines to make them fall back to
 ;; regular Racket list operations as appropriate.
 
-(require accelerack/acc-array/private/manifest-array/structs
+(require 
          accelerack/private/racket_ops
          ;(for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)

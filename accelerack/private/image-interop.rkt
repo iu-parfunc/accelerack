@@ -69,14 +69,4 @@
      (send bmp set-argb-pixels 0 0 width height bytes)
      (bitmap->image bmp)]))
 
-(test-case "Convert image->array"
-  (define x (circle 3 "solid" "red"))
-  (define y (image->color-list x))
-  (define z (image->acc-array x))
-  (define l (acc-array->sexp z))
-  (test-case "right length"
-    (check-equal? (length (flatten l)) (length y)) )
-  (test-case "exact image match"
-    (check-equal? (color-list->bitmap y (image-width x) (image-height x))
-                  (acc-array->image z)))
-  )
+

@@ -147,14 +147,14 @@
 (define (acc-zipwith fn a1 a2)
   ;; The acc-manifest-array is not mutable for end users, but for this library implementation
   ;; we leverage a mutable representation internally.
-  (let* ([ty    (manifest-array-type a1)]
+  (let* (; [ty    (manifest-array-type a1)]  ;; This errors [2016.04.13]
          [shp1  (manifest-array-shape a1)]
          [shp2  (manifest-array-shape a2)]
          [shp   (intersect-shape shp1 shp2)]
          [len   (apply * (vector->list shp))])
     (if (= len 0)
         ;; FIXME: the type is bogus here.  No good support for polymorphic constants atm:
-        (make-acc-array (list->manifest-array ty #() '()))
+        (make-acc-array (list->manifest-array #() #() '()))
 
         ;; The "upper left" point is always in the intersection:
         (let* ([elm0 (fn (manifest-array-flatref a1 0)

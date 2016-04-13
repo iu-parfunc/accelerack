@@ -15,14 +15,24 @@
                   (acc-array->image z)))
   )
 
-;; FINISHME
+;; Saturating arithmetic:
+(define (add-bytes b1 b2)
+  (min 255 (+ b1 b2)))
+
+(define (add-cols c1 c2)
+  (vector (add-bytes (vector-ref c1 0) (vector-ref c2 0))
+          (add-bytes (vector-ref c1 1) (vector-ref c2 1))
+          (add-bytes (vector-ref c1 2) (vector-ref c2 2))
+          (add-bytes (vector-ref c1 3) (vector-ref c2 3))))
+
+;; FINISHME: memory corruption problems atm:
 #;
 (test-case "Convert image->array"
-  (define x (image->acc-array (circle 3 "solid" "red")))
-  (define y (image->acc-array (circle 4 "solid" "green")))
-  (define z (map (lambda (x) (min x 255))
-                 (zipwith + x y)))
-  ;(acc-array->image z)
-  (length (acc-array->sexp y))
+  (define x (image->acc-array (circle 30 "solid" "red")))
+  (define y (image->acc-array (circle 40 "solid" "green")))
+  (printf "Image 1 shape ~a, image 2 shape ~a\n" (acc-array-shape x) (acc-array-shape y))
+  (define z (zipwith add-cols x y))  
+  (image-width (acc-array->image z))
   )
+
 

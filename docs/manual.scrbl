@@ -4,7 +4,7 @@
                      accelerack
                      2htdp/image))
 
-@title{Data-Parallel Programming with Accelerack}
+@title{Data-Parallel Programming with Accelerack (v0.1)}
 
 In this course we are using a library called @racket[accelerack],
 which allows you to use Racket to do data-parallel programming

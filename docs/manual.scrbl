@@ -152,4 +152,17 @@ referenced by @racket[(acc-array-ref arr x y)] in the converted array.  Thus:
                 (image-height img)))
 ]
 
+Finally, when performing the conversion, we convert the struct @racket[color]
+(which contains red, green, blue, alpha) into an equivalent vector that satisfies
+@racket[acc-element?]: @racket[(vector r g b a)].
 
+The following functions provide convenient conversions:
+
+@defproc[(color->acc-element [x color?]) acc-element?]
+
+@defproc[(acc-element->color [x (vector integer? integer? integer? integer?)])
+         color?]
+
+Note that @racket[acc-element->color] does not work for @emph{any}
+element, rather it must specifically be a vector of four integers
+between 0 and 255.

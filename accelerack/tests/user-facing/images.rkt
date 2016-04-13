@@ -1,5 +1,6 @@
 #lang racket
-(require accelerack rackunit
+(require accelerack
+         rackunit
          2htdp/image
          )
 
@@ -44,7 +45,21 @@
                   (vector (image-width img)
                           (image-height img))))
 
+  (define (color-prop img)
+    (define ls (image->color-list img))
+    (check-equal? ls
+                  (map acc-element->color
+                       (map color->acc-element ls))))
+
+  (define x2 (circle 50 "solid" "red"))
+  (define x3 (empty-scene 30 40))
+           
   (test-case "shape-prop 1" (shape-prop x))
-  (test-case "shape-prop 1" (shape-prop (circle 50 "solid" "red")))
-  (test-case "shape-prop 1" (shape-prop (empty-scene 100 100)))
+  (test-case "shape-prop 2" (shape-prop x2))
+  (test-case "shape-prop 3" (shape-prop x3))
+
+  (test-case "color-prop 1" (shape-prop x))
+  (test-case "color-prop 2" (shape-prop x2))
+  (test-case "color-prop 3" (shape-prop x3))
+  
   )

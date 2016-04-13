@@ -6,15 +6,17 @@
 
 
 (require accelerack/acc-array
+         (only-in accelerack/acc-array/private make-acc-array)
          (only-in accelerack/private/types acc-element?
-                  acc-element->type stencil-boundary?))
+                  acc-element->type stencil-boundary?)
+         racket/trace)
 
 ;; TODO: REMOVE ANY DEPENDENCE ON NON-PUBLIC ARRAY INTERFACES:
 (require (except-in ffi/unsafe ->)
          accelerack/acc-array/private/manifest-array/structs
          accelerack/acc-array/private/manifest-array
          accelerack/acc-array/private/arrayutils
-         (only-in accelerack/private/utils vector->list*)
+         accelerack/private/utils
          (only-in '#%foreign ctype-scheme->c ctype-c->scheme)
          racket/contract
          )
@@ -139,64 +141,34 @@
 ;; ZipWith:
 ;; --------------------------------------------------------------------------------
 
-#;
-(define (zipwith fn a1 a2)
+(define (acc-zipwith fn a1 a2)
   ;; The acc-manifest-array is not mutable for end users, but for this library implementation
   ;; we leverage a mutable representation internally.
-  (let* ([len  (manifest-array-size a1)]
-         [ty   (manifest-array-type a1)]
+  (let* ([ty    (manifest-array-type a1)]
          [shp1  (manifest-array-shape a1)]
          [shp2  (manifest-array-shape a2)]
-         [shp   (intersect-shape a1 a2)])
+         [shp   (intersect-shape shp1 shp2)]
+         [len   (apply * (vector->list shp))])
     (if (= len 0)
-        arr
+        ;; FIXME: the type is bogus here.  No good support for polymorphic constants atm:
+        (make-acc-array (list->manifest-array ty #() '()))
+
+        ;; The "upper left" point is always in the intersection:
         (let* ([elm0 (fn (manifest-array-flatref a1 0)
                          (manifest-array-flatref a2 0))]
                [tyout (acc-element->type elm0)]
                [new (make-empty-manifest-array shp tyout)])
-          (manifest-array-flatset! new 0 elm0)
-          (for ((i (range 1 len)))
-            (manifest-array-flatset! new i
-                                     (fn (manifest-array-flatref arr i))))
+          (let loop ([inds '()]
+                     [shpls (vector->list shp)])
+            (if (null? shpls)
+                (let ((ix (reverse inds)))
+                  (manifest-array-set! new ix
+                                       (fn (apply manifest-array-ref a1 ix)
+                                           (apply manifest-array-ref a2 ix))))
+                (for ((i (range (car shpls))))
+                  (loop (cons i inds) (cdr shpls)))
+                ))
           new))))
-
-
-(define (acc-zipwith fn arr1 arr2)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1)) (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr1))) (shape arr1)) (mapType (type arr1)))]
-           [shape* (if (equal? (shape arr1) (shape arr2)) (shape arr1) (error 'acc-zipwith "shape of array 1 and array 2 not equal"))]
-           [temp* (make-empty-manifest-array-lame shape* type*)]
-           [len (manifest-array-size temp*)])
-          (begin
-            (for ([i (in-range 0 len)])
-              (array-set!! temp* i (fn (array-get arr1 i) (array-get arr2 i))))
-            temp*)))
-
-;; Accelerate zipwith (development) function
-;; Arguments -> binary function, reference to array 1,reference to array 2
-;; Return value -> result array
-
-(define (acc-zipwith-dev fn arr1 arr2)
-  (letrec ([type* (if (equal? ((ctype-scheme->c scalar) 'acc-payload-ptr) (type arr1))
-                      (get-tuple-type (unzip (vector->list* (manifest-array->sexp arr1))) (shape arr1))
-                      (mapType (type arr1)))]
-           [shape* (find-shape (shape arr1) (shape arr2) '())]
-           [temp* (make-empty-manifest-array-lame shape* type*)]
-           [len (manifest-array-size temp*)]
-           [new-arr1 (list->manifest-array type* (list->vector shape*)
-                                           (reshape shape* (manifest-array->sexp arr1)))]
-           [new-arr2 (list->manifest-array type* (list->vector shape*)
-                                           (reshape shape* (manifest-array->sexp arr2)))])
-          (begin
-            (for ([i (in-range 0 len)])
-              (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))
-            temp*)))
-
-(define (reshape shp ls)
-  (cond
-    ((null? shp) ls)
-    ((equal? (length ls) (car shp)) (map (lambda (x) (reshape (cdr shp) x)) ls))
-    (else (map (lambda (x) (reshape (cdr shp) x)) (take ls (car shp))))))
-
 
 ;; Stencils:
 ;; --------------------------------------------------------------------------------

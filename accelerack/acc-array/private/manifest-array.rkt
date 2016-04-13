@@ -23,6 +23,7 @@
 
 (provide
  manifest-array-ref
+ ; manifest-array-set!
  manifest-array-flatref
  manifest-array-flatset!
  (contract-out
@@ -38,7 +39,9 @@
   ;;                             acc-element?)]
   ;; [manifest-array-flatset! (-> acc-manifest-array? exact-nonnegative-integer?
   ;;                              acc-element? void?)]
-
+  [manifest-array-set! (-> acc-manifest-array? (listof exact-nonnegative-integer?)
+                           acc-element? void?)]
+  
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
   [manifest-array-type  (-> acc-manifest-array? acc-type?)]
 
@@ -211,6 +214,10 @@
 (define (manifest-array-ref arr . inds)
    (let ((offset (ND->1D-index (manifest-array-shape arr) inds)))
      (manifest-array-flatref arr offset)))
+
+(define (manifest-array-set! arr inds val)
+   (let ((offset (ND->1D-index (manifest-array-shape arr) inds)))
+     (manifest-array-flatset! arr offset val)))
 
 ;; Set an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.

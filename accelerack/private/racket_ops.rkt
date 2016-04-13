@@ -166,8 +166,10 @@
            [shape* (find-shape (shape arr1) (shape arr2) '())]
            [temp* (make-empty-manifest-array-lame shape* type*)]
            [len (manifest-array-size temp*)]
-           [new-arr1 (list->manifest-array type* shape* (reshape shape* (manifest-array->sexp arr1)))]
-           [new-arr2 (list->manifest-array type* shape* (reshape shape* (manifest-array->sexp arr2)))])
+           [new-arr1 (list->manifest-array type* (list->vector shape*)
+                                           (reshape shape* (manifest-array->sexp arr1)))]
+           [new-arr2 (list->manifest-array type* (list->vector shape*)
+                                           (reshape shape* (manifest-array->sexp arr2)))])
           (begin
             (for ([i (in-range 0 len)])
               (array-set!! temp* i (fn (array-get new-arr1 i) (array-get new-arr2 i))))

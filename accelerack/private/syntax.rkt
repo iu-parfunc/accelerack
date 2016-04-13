@@ -107,7 +107,7 @@
             [dat (syntax->datum #'data)]
             [ver (validate-literal typ shp dat)])
        (if (eq? ver #t)
-           #`(make-acc-array (list->manifest-array '#,typ '#,shp '#,dat))
+           #`(make-acc-array (list->manifest-array '#,typ (list->vector '#,shp) '#,dat))
            (raise-syntax-error 'acc-array
                                (string-append "bad array literal.\n" ver) stx))
            )]))

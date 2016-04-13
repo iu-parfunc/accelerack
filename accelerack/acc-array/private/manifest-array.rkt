@@ -39,7 +39,7 @@
 
   ;; DEPRECATED / rename or remove:
   [type (-> (or/c acc-manifest-array? segment?) integer?)]
-  [make-empty-manifest-array-lame (-> acc-shape? lame-type? acc-manifest-array?)]
+  [make-empty-manifest-array-lame (-> (listof number?) lame-type? acc-manifest-array?)]
  ))
 
 
@@ -237,7 +237,7 @@
 ;; Arguments: (shape, type, payload)
 ;; Return value: list initialized with unit values
 
-(trace-define (make-empty-manifest-array* shape type payload)
+(define (make-empty-manifest-array* shape type payload)
   (cond
     ((null? shape) payload)
     ((zero? (car shape))
@@ -269,7 +269,8 @@
 ;; ====================================================================================================
 
 
-(define (make-empty-manifest-array shape type)
+(define (make-empty-manifest-array _shape type)
+  (define shape (vector->list _shape))
   (match type
     [`(Array ,_ ,elt)
      ;; TODO: replace -lame function:
@@ -336,11 +337,9 @@
 ;; Return value -> pointer to allocated memory location
 
 (define (list->manifest-array type shape data)
-  ;; In terms of layout, 0D arrays are the same as singleton 1D arrays:
-  (let ()
-    (make-acc-manifest-array (remove-type-field-from-manifest-array type)
-                             (list->segment _int shape)
-                             (list->segment-tree type (flatten data)))))
+  (make-acc-manifest-array (remove-type-field-from-manifest-array type)
+                           (list->segment _int (vector->list shape))
+                           (list->segment-tree type (flatten data))))
 
 ;; TODO: Remove this by removing the field that contains it:
 (define (remove-type-field-from-manifest-array type)

@@ -67,7 +67,7 @@
 
 
 ;; Valid shapes are just lists of numbers
-(define acc-shape? (listof exact-nonnegative-integer?))
+(define acc-shape? (vectorof exact-nonnegative-integer?))
 
 (define (stencil-boundary? x)
   (match x

@@ -13,18 +13,24 @@
 
 (define-acc (sqr x) (* x x))
 
-(define-acc ac 3)
-(define-acc foo (+ ac 4)) ;; Use a previous binding.
+(test-case "defs1"  
+  (define-acc num2 (+ (: 3 Int) 4))
 
-(define-acc num2 (+ (: 3 Int) 4))
+  ; (check-equal? num2 7)
+  (void)
+)
 
 ; (define plain 34)
 ; (define-acc num3 (+ 1 (use plain)))
 
-; (check-eq? ac 3)
-(check-pred acc-array? ac) ;; TEMP: this needs to be a scalar.
+(test-case "pred1"
+  (define-acc ac 3)
+  (define-acc foo (+ ac 4)) ;; Use a previous binding.
+  (check-pred acc-array? ac) ;; TEMP: this needs to be a scalar.
+) 
 
-(check-eq? 9 (sqr 3))
+(test-case "run sqr"
+  (check-eq? 9 (sqr 3)))
 
 (define-acc num (* 3 (+ 4 (- 5 (add1 2)))))
 

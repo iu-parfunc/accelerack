@@ -43,14 +43,13 @@
 
  ))
 
+(define-struct manifest-array (type shape data))
 
 (define acc-manifest-array? manifest-array?)
 
-(struct manifest-array (type shape data))
-
 (define (manifest-array->sexp a)
   (reshape-list
-   (manifest-array-shape a)
+   (vector->list (manifest-array-shape a))
    (vector->list (manifest-array-data a))
    (manifest-array-size a)))
 
@@ -106,7 +105,7 @@
   (define len (apply * (vector->list shape)))
   (make-manifest-array
    `(Array ,(vector-length shape) ,ty2)
-   shape (make-vector len (mkzer ty))))
+   shape (make-vector len (mkzer type))))
 
 (define (list->manifest-array type shape data)
   (define ty2 ;; FIXME
@@ -121,4 +120,4 @@
   (apply * (vector->list (manifest-array-shape arr))))
 
 (define (manifest-array-dimension a)
-  (vector-length (acc-manifest-array-shape a)))
+  (vector-length (manifest-array-shape a)))

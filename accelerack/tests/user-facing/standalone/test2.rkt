@@ -5,6 +5,6 @@
 (require "test1.rkt") ;; Import x definition.
 
 ; FIXME: FAILING TEST
-; (define-acc z (map (lambda(x) (+ x 1)) x))
+; (define z (map (lambda(x) (+ x 1)) x))
 
 ;; (check-equal? 2 (car (acc-array->sexp z)))

@@ -37,11 +37,11 @@
 
 
 (test-case "acc: literal5"
-           (define-acc x (acc-array (#(2 #(2 1.1 #f))
+           (define x (acc-array (#(2 #(2 1.1 #f))
                                      #(1 #(3 2.2 #f))
                                      #(4 #(16 3.3 #f)))))
            (check-pred acc-array? x))
 
 (test-case "acc: literal7"
-           (define-acc x (acc-array (1 2 3)))
+           (define x (acc-array (1 2 3)))
            (check-equal? 1 (car (acc-array->sexp x))))

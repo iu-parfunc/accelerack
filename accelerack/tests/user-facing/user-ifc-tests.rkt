@@ -24,7 +24,7 @@
 #;
   (test-case "add1 function definition"
     "add1 function definition"
-    (define-acc (f x) (begin (printf "hello") (add1 x)))
+    (define (f x) (begin (printf "hello") (add1 x)))
     (check-true (procedure? f))
     (check-equal? 4 (f 3)))
 
@@ -33,12 +33,12 @@
 
   (test-case "failing-test-case 1"
              "failing-test-case 1"
-             (define-acc x (map add1 unbound))
+             (define x (map add1 unbound))
              (check-equal? 2 3)
              )
 
   (define unbound 3)
-  (define-acc x (map add1 unbound))
+  (define x (map add1 unbound))
 
   |#
 
@@ -79,9 +79,9 @@
   (test-case "test-case 9"
              (convert-compile-time-error
                  (let ()
-                   ;; (define-acc x (acc-array (1 2 3)))
+                   ;; (define x (acc-array (1 2 3)))
                    (define q 1)
-                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+                   (define y (map (lambda(y) (+ y  q)) (acc-array (1 2 3))))
                    (check-equal? 2 (car (acc-array->sexp y))))))
 
 
@@ -91,7 +91,7 @@
   #;
   (test-case "scalar"
              "scalar"
-    (define-acc x 3)
+    (define x 3)
     (printf "scalar x: ~a\n" x)
     (check-true (acc-scalar? x))
     (check-false (acc-array? x)))
@@ -99,7 +99,7 @@
   #;
   (test-case "scalar ascription"
              "scalar ascription"
-    (define-acc x (: 3 Int))
+    (define x (: 3 Int))
     (printf "scalar x: ~a\n" x)
     (check-true (acc-scalar? x))
     (check-false (acc-array? x))
@@ -109,7 +109,7 @@
 #;
   (test-case "array ascription"
              "array ascription"
-             (define-acc x
+             (define x
                (: (acc-array ((#f #f #f)
                               (#t #t #t)))
                   (Array 2 Bool)))
@@ -118,8 +118,8 @@
 #;
   (test-case "use a scalar in an array expression"
              "use a scalar in an array expression"
-    (define-acc x 4)
-    (define-acc y (map (lambda (_) x)
+    (define x 4)
+    (define y (map (lambda (_) x)
                        (acc-array (1 2 3))))
     (check-equal? '(4 4 4)
                   (acc-array->sexp y))
@@ -129,7 +129,7 @@
 #; ;; [2016.03.31] This is getting a totally bogus error
   (test-case "add1 function definition"
              "add1 function definition"
-    (define-acc (f x) (add1 x))
+    (define (f x) (add1 x))
     (check-true (procedure? f))
     (check-equal? 4 (f 3)))
 

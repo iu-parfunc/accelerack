@@ -42,14 +42,7 @@
     ;; Image conversions
     image->acc-array acc-array->image
 
-    ;; Types and Typed operations
+    ;; Type representations
     acc-type? acc-element-type?
 
-    define-acc run-gpu
-    Int Bool Double
-
-    ;; Not reexporting from base:
-    ;; vector vector-ref + * - ...
-    ;; if let lambda
-    -> : use
     )

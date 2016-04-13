@@ -3,8 +3,9 @@
          2htdp/image
          )
 
+(define x (circle 3 "solid" "red"))
+
 (test-case "Convert image->array"
-  (define x (circle 3 "solid" "red"))
   (define y (image->color-list x))
   (define z (image->acc-array x))
   (define l (acc-array->sexp z))
@@ -36,3 +37,14 @@
   )
 
 
+(test-case "Image properties"
+  (define (shape-prop img)
+    ; (check-true (image? img))
+    (check-equal? (acc-array-shape (image->acc-array img))
+                  (vector (image-width img)
+                          (image-height img))))
+
+  (test-case "shape-prop 1" (shape-prop x))
+  (test-case "shape-prop 1" (shape-prop (circle 50 "solid" "red")))
+  (test-case "shape-prop 1" (shape-prop (empty-scene 100 100)))
+  )

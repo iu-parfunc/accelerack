@@ -1,7 +1,8 @@
 #lang scribble/manual
 
 @(require (for-label (except-in racket map)
-                     accelerack))
+                     accelerack
+                     2htdp/image))
 
 @title{Data-Parallel Programming with Accelerack}
 
@@ -127,3 +128,28 @@ right fold. The function may be applied to the elements of the array in any orde
 
 @racket[zipwith] is just @racket[map] over two input arrays. The function is expected
 to take two arguments.
+
+
+@; -------------------------------------------------------
+@section[#:tag "functions"]{Image functions}
+
+The @racket[image] type from @racket[2htdp/image] can be converted too
+and from lists, but @racket[acc-array]'s are much more efficient than lists.
+
+@defproc[(image->acc-array [x image?]) acc-array?]
+
+@defproc[(acc-array->image [x acc-array?]) image?]
+
+In these conversions, a two-dimensional image maps onto a two dimensional array.
+
+We keep the order of indices the same, for ease of interoperability.
+That is, a point @racket[(x,y)] in the original image, will be
+referenced by @racket[(acc-array-ref arr x y)] in the converted array.  Thus:
+
+@racketblock[
+(equal? (acc-array-shape (image->acc-array img))
+        (vector (image-width img)
+                (image-height img)))
+]
+
+

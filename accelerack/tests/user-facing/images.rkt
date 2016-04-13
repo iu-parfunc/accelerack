@@ -41,9 +41,17 @@
 (test-case "Image properties"
   (define (shape-prop img)
     ; (check-true (image? img))
-    (check-equal? (acc-array-shape (image->acc-array img))
+    (define arr (image->acc-array img))
+    (check-equal? (acc-array-shape arr)
                   (vector (image-width img)
-                          (image-height img))))
+                          (image-height img)))
+    ;; Need random access inside the image to compute this:
+    #|
+    (for ((x (range (image-width img))))
+      (for ((y (range (image-height img))))
+        (check-equal? (acc-element->color (acc-array-ref arr x y))
+    |#
+    )
 
   (define (color-prop img)
     (define ls (image->color-list img))
@@ -51,6 +59,7 @@
                   (map acc-element->color
                        (map color->acc-element ls))))
 
+  
   (define x2 (circle 50 "solid" "red"))
   (define x3 (empty-scene 30 40))
            

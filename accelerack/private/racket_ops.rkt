@@ -139,10 +139,26 @@
 ;; ZipWith:
 ;; --------------------------------------------------------------------------------
 
-
 #;
 (define (zipwith fn a1 a2)
-  )
+  ;; The acc-manifest-array is not mutable for end users, but for this library implementation
+  ;; we leverage a mutable representation internally.
+  (let* ([len  (manifest-array-size a1)]
+         [ty   (manifest-array-type a1)]
+         [shp1  (manifest-array-shape a1)]
+         [shp2  (manifest-array-shape a2)]
+         [shp   (intersect-shape a1 a2)])
+    (if (= len 0)
+        arr
+        (let* ([elm0 (fn (manifest-array-flatref a1 0)
+                         (manifest-array-flatref a2 0))]
+               [tyout (acc-element->type elm0)]
+               [new (make-empty-manifest-array shp tyout)])
+          (manifest-array-flatset! new 0 elm0)
+          (for ((i (range 1 len)))
+            (manifest-array-flatset! new i
+                                     (fn (manifest-array-flatref arr i))))
+          new))))
 
 
 (define (acc-zipwith fn arr1 arr2)

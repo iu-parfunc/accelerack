@@ -29,15 +29,16 @@
     acc-array-ref acc-array-flatref
     acc-array-dimension
     acc-array-size
-    acc-array-shape
+    acc-array-shape 
     acc-array->sexp
 
     ;; Data-parallel aggregate operations
     map fold zipwith stencil3x3 generate
 
-    ;; Individual elements
+    ;; Individual elements plus shapes
     acc-scalar? acc-element?
-
+    intersect-shape
+    
     ;; Image conversions
     image->acc-array acc-array->image
 

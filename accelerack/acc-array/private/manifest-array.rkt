@@ -272,16 +272,10 @@
 (define (make-empty-manifest-array _shape type)
   (define shape (vector->list _shape))
   (match type
-    [`(Array ,_ ,elt)
-     ;; TODO: replace -lame function:
-     ; (make-empty-manifest-array-lame shape (acc-type->lame-type elt))
-     (new-manifest-array elt shape)
-     ]
+    [`(Array ,_ ,elt) (new-manifest-array elt shape)]
     ;; TEMP: Remove this behavior or the other:
     [elt #:when (acc-element-type? elt)
-         ; (make-empty-manifest-array-lame shape (acc-type->lame-type elt))
-         (new-manifest-array elt shape)
-         ]
+         (new-manifest-array elt shape)]
     [else (error 'make-empty-manifest-array "expected an array type, got: ~a" type)]))
 
 ;; Extremely similar to the list-> versions:

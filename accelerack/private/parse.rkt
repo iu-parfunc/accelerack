@@ -2,7 +2,6 @@
 
 (require (except-in ffi/unsafe ->)
          racket/contract
-         accelerack/acc-array/private/arrayutils
          (only-in accelerack/private/types acc-element-type? acc-scalar? acc-int? acc-element?)
          )
 

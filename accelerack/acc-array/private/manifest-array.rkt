@@ -10,7 +10,8 @@
 (require (except-in ffi/unsafe ->)
          ffi/unsafe/cvector
          accelerack/acc-array/private/manifest-array/structs
-         accelerack/acc-array/private/arrayutils
+         (only-in accelerack/acc-array/private/arrayutils
+                  acc-type->lame-type ctype->symbol mapType ptr-ref*)
          accelerack/private/utils
 
          (only-in accelerack/private/types

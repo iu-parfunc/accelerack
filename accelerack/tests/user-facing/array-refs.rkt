@@ -33,3 +33,17 @@
              "array ref past end")
   )
 
+(test-case "plain-racket: 0D array of tuple ref"
+           (define x (acc-array #(11 22 33)))
+           (check-equal? 0 (acc-array-dimension x))
+           (check-equal? '#(11 22 33) (acc-array-flatref x 0))
+           ; (check-equal? '#(11 22 33) (acc-array-ref x)) ;; FINISHME
+           )
+
+(test-case "plain-racket: 1D array of tuple ref"
+  (define x (acc-array ( #(11 22 33)) ))
+  ; (check-equal? 1 (acc-array-dimension x))
+  (check-equal? '#(11 22 33) (acc-array-flatref x 0))
+  (check-exn exn:fail?
+             (lambda () (acc-array-flatref x 1))
+             "array ref past end"))

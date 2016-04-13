@@ -28,9 +28,6 @@
          stencil-boundary?
          acc-shape?
 
-         (contract-out
-          [intersect-shape (-> acc-shape? acc-shape? acc-shape?)])
-
          )
 
 ;; Is a given Racket datum compatible with ANY accelerack scalar types?
@@ -71,14 +68,6 @@
 
 ;; Valid shapes are just lists of numbers
 (define acc-shape? (vectorof exact-nonnegative-integer?))
-
-(define (intersect-shape s1 s2)
-  (unless (= (vector-length s1)
-             (vector-length s2))
-    (error 'intersect-shape
-           "shapes must be of the same dimension, not ~e and ~e"
-           s1 s2))
-  (vector-map min s1 s2))
 
 (define (stencil-boundary? x)
   (match x

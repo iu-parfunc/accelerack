@@ -140,19 +140,6 @@
              (define-acc x (acc-array (1 2 3)))
              (check-equal? 1 (car (acc-array->sexp x))))
 
-  (test-case "plain-racket: array ref"
-             (define x (acc-array (11 22 33)))
-             (check-equal? 11 (acc-array-flatref x 0))
-             (check-equal? 22 (acc-array-flatref x 1))
-             (check-equal? 33 (acc-array-flatref x 2))
-             (check-exn exn:fail?
-                        (lambda () (acc-array-flatref x -1))
-                        "array ref negative")
-             (check-exn exn:fail?
-                        (lambda () (acc-array-flatref x 3))
-                        "array ref past end")
-             )
-
   (test-case "plain-racket: 1D array of tuple ref"
              (define x (acc-array ( #(11 22 33)) ))
              ; (check-equal? 1 (acc-array-dimension x))

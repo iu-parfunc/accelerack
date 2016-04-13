@@ -12,6 +12,7 @@
  accelerack/acc-array/private
  accelerack/acc-array/private/delayed
  accelerack/acc-array/private/arrayutils
+ accelerack/private/utils
  )
 
 (provide
@@ -19,7 +20,8 @@
  ;; ----------------------------------------
  ;; First, the public interface:
  acc-array? 
- acc-array-ref acc-array-flatref
+ acc-array-ref
+ acc-array-flatref
  acc-array=?
  acc-array->sexp 
  (contract-out
@@ -72,10 +74,9 @@
       (error 'acc-array->sexp "works only on acc-array"))) ;;(manifest-array->sexp x)))
 
 ;; Retrieve an element of an N-dimensional using an N-dimensional reference.
-(define (acc-array-ref arr . inds)  
-  (error 'acc-array-ref "FINISHME: acc-array-ref unimplemented")
-;  (apply acc-manifest-array-ref (force-acc-array! arr) inds)
-  )
+(define (acc-array-ref arr . inds)
+  (let ((offset (ND->1D-index (acc-array-shape arr) inds)))
+    (acc-array-flatref arr offset)))
 
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
@@ -98,3 +99,4 @@
 ;; Computing the exact size forces the array:
 (define (acc-array-size arr)
   (manifest-array-size (force-acc-array! arr)))
+

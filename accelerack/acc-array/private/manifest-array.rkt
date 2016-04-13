@@ -11,6 +11,7 @@
          ffi/unsafe/cvector
          accelerack/acc-array/private/manifest-array/structs
          accelerack/acc-array/private/arrayutils
+         accelerack/private/utils
 
          (only-in accelerack/private/types
                   acc-element? acc-shape? acc-type? acc-scalar-type? acc-element-type?
@@ -21,18 +22,22 @@
 (require racket/trace)
 
 (provide
+ manifest-array-ref
+ manifest-array-flatref
+ manifest-array-flatset!
  (contract-out
-   ;; Manifest arrays:
+  ;; Manifest arrays:
   [list->manifest-array (-> acc-type? acc-shape? acc-sexp-data?
                             acc-manifest-array?)]
   [make-empty-manifest-array (-> acc-shape? acc-type? acc-manifest-array?)]
   [manifest-array-shape (-> acc-manifest-array? (vectorof exact-nonnegative-integer?))]
   [manifest-array-size  (-> acc-manifest-array? exact-nonnegative-integer?)]
   [manifest-array-dimension (-> acc-manifest-array? exact-nonnegative-integer?)]
-  [manifest-array-flatref (-> acc-manifest-array? exact-nonnegative-integer?
-                              acc-element?)]
-  [manifest-array-flatset! (-> acc-manifest-array? exact-nonnegative-integer?
-                               acc-element? void?)]
+  ;; Disabling for performance:
+  ;; [manifest-array-flatref (-> acc-manifest-array? exact-nonnegative-integer?
+  ;;                             acc-element?)]
+  ;; [manifest-array-flatset! (-> acc-manifest-array? exact-nonnegative-integer?
+  ;;                              acc-element? void?)]
 
   [manifest-array->sexp (-> acc-manifest-array? acc-sexp-data-shallow?)]
   [manifest-array-type  (-> acc-manifest-array? acc-type?)]
@@ -108,7 +113,7 @@
 
 
 ;; Retrieve an acc-element? from a tree of segments, using linear indexing.
-(define (segment-flatref seg ind)
+(define (segment-flatref seg ind)  
   (define type (mapType (segment-type seg)))
   (cond
     ;; FIXME: need good scalar type pred here:
@@ -196,9 +201,16 @@
 ;; Retrieve an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.
 (define (manifest-array-flatref arr ind)
+  (when (< ind 0)
+    (error 'manifest-array-flatref "received negative index: ~a" ind))
   (letrec ([type (mapType (acc-manifest-array-type arr))]
            [seg  (acc-manifest-array-data arr)])
     (segment-flatref seg ind)))
+
+;; Multi-dimensional access.
+(define (manifest-array-ref arr . inds)
+   (let ((offset (ND->1D-index (manifest-array-shape arr) inds)))
+     (manifest-array-flatref arr offset)))
 
 ;; Set an element of an N-dimensional array using a 1-dimensional
 ;; index into its "row-major" repesentation.

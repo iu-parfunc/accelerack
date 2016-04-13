@@ -1,8 +1,13 @@
 #lang racket
 
+(require accelerack/private/types)
 (provide
  (contract-out
-  [accelerack-debug-mode? (-> boolean?)])
+  [accelerack-debug-mode? (-> boolean?)]
+  [intersect-shape (-> acc-shape? acc-shape? acc-shape?)]
+  [ND->1D-index    (-> acc-shape? (listof exact-nonnegative-integer?)
+                       exact-nonnegative-integer?)]
+  )
  pass-output-chatter
  vector->list*)
 
@@ -39,3 +44,24 @@
     ((pair? (car vec/ls)) (cons (vector->list* (car vec/ls)) (vector->list* (cdr vec/ls))))
     (else (cons (car vec/ls) (vector->list* (cdr vec/ls))))))
 
+
+(define (intersect-shape s1 s2)
+  (unless (= (vector-length s1)
+             (vector-length s2))
+    (error 'intersect-shape
+           "shapes must be of the same dimension, not ~e and ~e"
+           s1 s2))
+  (vector-map min s1 s2))
+
+;; Convert indices into a multi-dimensional array into a 1D index.
+(define (ND->1D-index shp indls)
+  (define (helper offset inds shps)
+    (cond
+      [(= 1 (length inds)) (+ offset (first inds))]
+      [else (helper (+ offset (* (first inds)
+                                 (apply * (rest shps))))
+                    (rest inds)
+                    (rest shps))]))
+  (if (= (vector-length shp) 0)
+      0
+      (helper 0 indls (vector->list shp))))

@@ -17,6 +17,7 @@
          accelerack/private/executor
          accelerack/private/syntax-capture
 
+         accelerack/private/utils
          accelerack/acc-array
          )
 

@@ -6,7 +6,6 @@
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          accelerack/private/parse
          accelerack/acc-array/private/manifest-array
-         accelerack/acc-array/private/arrayutils 
          (for-syntax racket/base syntax/parse accelerack/private/parse)
          (prefix-in r: racket/base)
 

@@ -9,7 +9,6 @@
  accelerack/acc-array/private/manifest-array
  accelerack/acc-array/private
  accelerack/acc-array/private/delayed
- accelerack/acc-array/private/arrayutils
  accelerack/private/utils
  )
 

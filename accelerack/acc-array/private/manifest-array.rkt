@@ -9,7 +9,6 @@
 
 (require (except-in ffi/unsafe ->)
          ffi/unsafe/cvector
-         accelerack/acc-array/private/arrayutils
          accelerack/private/utils
 
          (only-in accelerack/private/types

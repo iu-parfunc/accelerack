@@ -1,17 +1,18 @@
 #lang racket
 
 (require
- accelerack/private/types
- (only-in accelerack/acc-array
-          acc-array->sexp acc-array-size acc-array-shape acc-array-flatref)
- accelerack/acc-array/private
- accelerack/acc-array/private/manifest-array
- 2htdp/image
- (only-in mrlib/image-core render-image bitmap->image)
- rackunit
- (except-in racket/draw make-pen make-color)
- racket/trace
- )
+    accelerack/private/types
+    (only-in accelerack/acc-array
+             acc-array->sexp acc-array-size acc-array-shape acc-array-flatref)
+    accelerack/acc-array/private
+    accelerack/acc-array/private/manifest-array
+    2htdp/image
+    (only-in mrlib/image-core render-image bitmap->image)
+    rackunit
+    (except-in racket/draw make-pen make-color)
+    racket/trace
+    (only-in racket/unsafe/ops unsafe-bytes-set!)
+  )
 
 (provide
  (contract-out
@@ -62,7 +63,7 @@
 
 (define (acc-array->image arr)
   (define len    (acc-array-size arr))
-  (define shp    (acc-array-shape arr)) 
+  (define shp    (acc-array-shape arr))
   (define width  (vector-ref shp 0)) ;; It's debatable which way we should do it.
   (define height (vector-ref shp 1))
   (cond
@@ -75,11 +76,20 @@
      (for ([i (range len)])
        (define v (acc-array-flatref arr i))
        (define j (* i 4))
-       (bytes-set! bytes  j      (vector-ref v 3))
-       (bytes-set! bytes (+ j 1) (vector-ref v 0))
-       (bytes-set! bytes (+ j 2) (vector-ref v 1))
-       (bytes-set! bytes (+ j 3) (vector-ref v 2)))
+       (let ([r (vector-ref v 0)]
+             [g (vector-ref v 1)]
+             [b (vector-ref v 2)]
+             [a (vector-ref v 3)])
+         (unless (and (<= 0 r 255)
+                      (<= 0 g 255)
+                      (<= 0 b 255)
+                      (<= 0 a 255))
+           (error 'acc-array->image
+                  "expects the image to consist of vectors #(r g b a) of numbers 0-255, but found: "
+                  (vector r g b a)))
+         (unsafe-bytes-set! bytes  j      a)
+         (unsafe-bytes-set! bytes (+ j 1) r)
+         (unsafe-bytes-set! bytes (+ j 2) g)
+         (unsafe-bytes-set! bytes (+ j 3) b)))
      (send bmp set-argb-pixels 0 0 width height bytes)
      (bitmap->image bmp)]))
-
-

@@ -16,7 +16,23 @@
 (provide
  (contract-out
   [image->acc-array (-> image? acc-array?)]
-  [acc-array->image (-> acc-array? image?)]))
+  [acc-array->image (-> acc-array? image?)]
+  [color->acc-element (-> color? acc-element?)]
+  [acc-element->color (-> acc-element? color?)]
+  ))
+
+;; Uses RGBA ordering for the fields.
+(define (color->acc-element c)
+  (vector (color-red c)
+          (color-green c)
+          (color-blue c)
+          (color-alpha c)))
+
+(define (acc-element->color v)
+  (make-color (vector-ref v 0)
+              (vector-ref v 1)
+              (vector-ref v 2)
+              (vector-ref v 3)))
 
 ;; Based on image->color-list from 2htdp/private/image-more.rkt
 (define (image->acc-array image)
@@ -36,6 +52,7 @@
      (let ((arr (make-empty-manifest-array (vector w h) '#(Int Int Int Int))))
        ;; TODO: use 2D indexing here.. We may actually want to transpose it..
        (for ([i (in-range 0 (* w h))])
+         ;; Bytes uses ARGB order:
          (manifest-array-flatset! arr i
           (vector (bytes-ref bytes (+ (* i 4) 1))
                   (bytes-ref bytes (+ (* i 4) 2))
@@ -57,15 +74,11 @@
      (define o (make-object color%))
      (for ([i (range len)])
        (define v (acc-array-flatref arr i))
-       (define c (make-color (vector-ref v 0)
-                             (vector-ref v 1)
-                             (vector-ref v 2)
-                             (vector-ref v 3)))
        (define j (* i 4))
-       (bytes-set! bytes  j      (color-alpha c))
-       (bytes-set! bytes (+ j 1) (color-red c))
-       (bytes-set! bytes (+ j 2) (color-green c))
-       (bytes-set! bytes (+ j 3) (color-blue c)))
+       (bytes-set! bytes  j      (vector-ref v 3))
+       (bytes-set! bytes (+ j 1) (vector-ref v 0))
+       (bytes-set! bytes (+ j 2) (vector-ref v 1))
+       (bytes-set! bytes (+ j 3) (vector-ref v 2)))
      (send bmp set-argb-pixels 0 0 width height bytes)
      (bitmap->image bmp)]))
 

@@ -41,6 +41,7 @@
     
     ;; Image conversions
     image->acc-array acc-array->image
+    color->acc-element acc-element->color
 
     ;; Type representations
     acc-type? acc-element-type?

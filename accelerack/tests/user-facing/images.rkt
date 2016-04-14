@@ -1,10 +1,12 @@
 #lang racket
-(require accelerack rackunit
+(require accelerack
+         rackunit
          2htdp/image
          )
 
+(define x (circle 3 "solid" "red"))
+
 (test-case "Convert image->array"
-  (define x (circle 3 "solid" "red"))
   (define y (image->color-list x))
   (define z (image->acc-array x))
   (define l (acc-array->sexp z))
@@ -34,4 +36,39 @@
   (printf "  Intersection shape ~a\n" (acc-array-shape z))
   (printf "  Image shape ~a ~a\n" (image-width img) (image-height img))
   img
+  )
+
+(test-case "Image properties"
+  (define (shape-prop img)
+    ; (check-true (image? img))
+    (define arr (image->acc-array img))
+    (check-equal? (acc-array-shape arr)
+                  (vector (image-width img)
+                          (image-height img)))
+    ;; Need random access inside the image to compute this:
+    #|
+    (for ((x (range (image-width img))))
+      (for ((y (range (image-height img))))
+        (check-equal? (acc-element->color (acc-array-ref arr x y))
+    |#
+    )
+
+  (define (color-prop img)
+    (define ls (image->color-list img))
+    (check-equal? ls
+                  (map acc-element->color
+                       (map color->acc-element ls))))
+
+  
+  (define x2 (circle 50 "solid" "red"))
+  (define x3 (empty-scene 30 40))
+           
+  (test-case "shape-prop 1" (shape-prop x))
+  (test-case "shape-prop 2" (shape-prop x2))
+  (test-case "shape-prop 3" (shape-prop x3))
+
+  (test-case "color-prop 1" (shape-prop x))
+  (test-case "color-prop 2" (shape-prop x2))
+  (test-case "color-prop 3" (shape-prop x3))
+  
   )

@@ -8,7 +8,7 @@
 (require accelerack/acc-array
          (only-in accelerack/acc-array/private make-acc-array)
          (only-in accelerack/private/types acc-element?
-                  acc-element->type stencil-boundary?)
+                  acc-element->type stencil-boundary? acc-shape?)
          racket/trace)
 
 ;; TODO: REMOVE ANY DEPENDENCE ON NON-PUBLIC ARRAY INTERFACES:
@@ -33,7 +33,11 @@
                     acc-manifest-array?)]
   [acc-stencil3x3 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
- ))
+
+;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
+  )
+  acc-generate
+ )
 
 ;; Map a function over every element, irrespective of dimension.
 (define (acc-map fn arr)
@@ -97,6 +101,25 @@
                 ))
           new))))
 
+(define (acc-generate fn . shp)
+  (let* ([len   (apply * shp)])
+    (if (= len 0)
+        ;; FIXME: the type is bogus here.  No good support for polymorphic constants atm:
+        (make-acc-array (list->manifest-array #() #() '()))
+
+        ;; The "upper left" point:
+        (let* ([elm0 (apply fn (map (lambda (_) 0) shp))]
+               [tyout (acc-element->type elm0)]
+               [new (make-empty-manifest-array (list->vector shp) tyout)])
+          (let loop ([inds '()]
+                     [shpls shp])
+            (if (null? shpls)
+                (let ((ix (reverse inds)))
+                  (manifest-array-set! new ix (apply fn ix)))
+                (for ((i (range (car shpls))))
+                  (loop (cons i inds) (cdr shpls)))))
+          new))))
+
 ;; Stencils:
 ;; --------------------------------------------------------------------------------
 
@@ -126,3 +149,5 @@
               ;; handle other boundary conditions here
               [else (error 'stencil-range2d "Invalid boundary condition")])
             (manifest-array-flatref arr ind))))))
+
+

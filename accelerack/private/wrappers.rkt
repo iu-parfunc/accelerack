@@ -58,5 +58,5 @@
   (make-acc-array (acc-stencil3x3 f b (force-acc-array! x))))
 
 (define (generate f . dims)
-  (error 'generate "FINISHME: generate unimplemented"))
+  (make-acc-array (apply acc-generate f dims)))
 

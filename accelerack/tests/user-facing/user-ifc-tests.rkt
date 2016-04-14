@@ -68,7 +68,10 @@
              (check-false (acc-array=? z x))
              (check-false (acc-array=? z y)))
 
-
+  (test-case "plain-racket: 1d generate"
+    (check-equal? (acc-array->sexp (generate (lambda (x) x) 5))
+                  '(0 1 2 3 4)))
+    ; (define arr (generate (lambda (x y) (vector x y)) 10 10))
 
   (test-case "plain-racket: stencil3x3"
              (define x (acc-array ((1 2 3)(1 2 3)(1 2 3))))

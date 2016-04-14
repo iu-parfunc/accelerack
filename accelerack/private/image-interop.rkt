@@ -85,7 +85,7 @@
                       (<= 0 b 255)
                       (<= 0 a 255))
            (error 'acc-array->image
-                  "expects the image to consist of vectors #(r g b a) of numbers 0-255, but found: ~a"
+                  "Expects the image to consist of color vectors #(r g b a).\nAll of r,g,b,a should be in the range 0-255.\nInstead found: ~a"
                   (vector r g b a)))
          (unsafe-bytes-set! bytes  j      a)
          (unsafe-bytes-set! bytes (+ j 1) r)

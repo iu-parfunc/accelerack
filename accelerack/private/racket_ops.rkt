@@ -33,6 +33,13 @@
                     acc-manifest-array?)]
   [acc-stencil3x3 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
+  [acc-stencil5x3 (-> procedure? stencil-boundary? acc-manifest-array?
+		      acc-manifest-array?)]
+  [acc-stencil3x5 (-> procedure? stencil-boundary? acc-manifest-array?
+                      acc-manifest-array?)]
+  [acc-stencil5x5 (-> procedure? stencil-boundary? acc-manifest-array?
+                      acc-manifest-array?)]
+
 
 ;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
   )
@@ -123,31 +130,51 @@
 ;; Stencils:
 ;; --------------------------------------------------------------------------------
 
-;; TODO
-
 (define (acc-stencil3x3 fn b arr)
+  (acc-stencil2d fn b arr 3 3))
+
+(define (acc-stencil3x5 fn b arr)
+  (acc-stencil2d fn b arr 3 5))
+
+(define (acc-stencil5x3 fn b arr)
+  (acc-stencil2d fn b arr 5 3))
+
+(define (acc-stencil5x5 fn b arr)
+  (acc-stencil2d fn b arr 5 5))
+
+(define (acc-stencil3 fn b arr)
+  (acc-stencil1d fn b arr 3))
+
+(define (acc-stencil5 fn b arr)
+  (acc-stencil1d fn b arr 5))
+
+(define (acc-stencil1d fn b arr)
+  (error 'acc-stencil1d "Not implemented yet"))
+
+(define (acc-stencil2d fn b arr xd yd)
   (let* ([len  (manifest-array-size arr)]
          [ty   (manifest-array-type arr)]
          [shp  (manifest-array-shape arr)]
-         [new  (make-empty-manifest-array shp ty)])
+	 [nty  (acc-element->type (apply fn (stencil-range2d b 0 0 3 3 arr)))]
+         [new  (make-empty-manifest-array shp nty)])
   (for ((i (range (vector-ref shp 0))))
     (for ((j (range (vector-ref shp 1))))
       (manifest-array-flatset! 
        new (+ (* (vector-ref shp 0) i) j)
-       (apply fn (stencil-range2d b i j 3 3 arr)))))
+       (apply fn (stencil-range2d b i j xd yd arr)))))
       new))
 
 (define (stencil-range2d b x y xd yd arr)
   (let ([x-base (- x (floor (/ xd 2)))]
-        [y-base (- y (floor (/ yd 2)))])                                          
-    (for*/list ([i (in-range xd)] [j (in-range yd)])
-      (let ([ind (+ (* (vector-ref (manifest-array-shape arr) 0) (+ x-base i))
-                    (+ y-base j))])
-        (if (or (< ind 0) (>= ind (manifest-array-size arr)))
-            (match b 
-              [`(Constant ,v) v]
-              ;; handle other boundary conditions here
-              [else (error 'stencil-range2d "Invalid boundary condition")])
-            (manifest-array-flatref arr ind))))))
-
-
+        [y-base (- y (floor (/ yd 2)))])
+    (flatten
+     (for/list ([i (in-range xd)])
+       (for/list ([j (in-range yd)])
+	 (let ([ind (+ (* (vector-ref (manifest-array-shape arr) 0) (+ x-base i))
+		       (+ y-base j))])
+	   (if (or (< ind 0) (>= ind (manifest-array-size arr)))
+	       (match b 
+		 [`(Constant ,v) v]
+		 ;; handle other boundary conditions here
+		 [else (error 'stencil-range2d "Invalid boundary condition")])
+	       (manifest-array-flatref arr ind))))))))

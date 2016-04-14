@@ -127,7 +127,7 @@
   (let* ([len  (manifest-array-size arr)]
          [ty   (manifest-array-type arr)]
          [shp  (manifest-array-shape arr)]
-	 [nty  (apply fn (stencil-range2d b 0 0 3 3 arr))]
+	 [nty  (acc-element->type (apply fn (stencil-range2d b 0 0 3 3 arr)))]
          [new  (make-empty-manifest-array shp nty)])
   (for ((i (range (vector-ref shp 0))))
     (for ((j (range (vector-ref shp 1))))

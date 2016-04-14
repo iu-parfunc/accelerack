@@ -70,7 +70,7 @@
     ['Clamp   #t]
     ['Mirror  #t]
     ['Wrap    #t]
-    [`(Constant ,v) (acc-scalar? v)]
+    [`(Constant ,v) (acc-element? v)]
     [else #f]))
 
 ;; An entry in the syntax table.  It provides everything Accelerack

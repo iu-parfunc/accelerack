@@ -40,10 +40,8 @@
   [acc-stencil5x5 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
 
-
-;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
+  [acc-generate (->* (procedure?) () #:rest (listof exact-nonnegative-integer?)  acc-manifest-array?)]
   )
-  acc-generate
  )
 
 ;; Map a function over every element, irrespective of dimension.
@@ -159,7 +157,7 @@
          [new  (make-empty-manifest-array shp nty)])
   (for ((i (range (vector-ref shp 0))))
     (for ((j (range (vector-ref shp 1))))
-      (manifest-array-flatset! 
+      (manifest-array-flatset!
        new (+ (* (vector-ref shp 0) i) j)
        (apply fn (stencil-range2d b i j xd yd arr)))))
       new))
@@ -173,7 +171,7 @@
 	 (let ([ind (+ (* (vector-ref (manifest-array-shape arr) 0) (+ x-base i))
 		       (+ y-base j))])
 	   (if (or (< ind 0) (>= ind (manifest-array-size arr)))
-	       (match b 
+	       (match b
 		 [`(Constant ,v) v]
 		 ;; handle other boundary conditions here
 		 [else (error 'stencil-range2d "Invalid boundary condition")])

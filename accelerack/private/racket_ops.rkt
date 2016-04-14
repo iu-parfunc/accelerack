@@ -33,6 +33,13 @@
                     acc-manifest-array?)]
   [acc-stencil3x3 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
+  [acc-stencil5x3 (-> procedure? stencil-boundary? acc-manifest-array?
+		      acc-manifest-array?)]
+  [acc-stencil3x5 (-> procedure? stencil-boundary? acc-manifest-array?
+                      acc-manifest-array?)]
+  [acc-stencil5x5 (-> procedure? stencil-boundary? acc-manifest-array?
+                      acc-manifest-array?)]
+
 
 ;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
   )
@@ -124,6 +131,27 @@
 ;; --------------------------------------------------------------------------------
 
 (define (acc-stencil3x3 fn b arr)
+  (acc-stencil2d fn b arr 3 3))
+
+(define (acc-stencil3x5 fn b arr)
+  (acc-stencil2d fn b arr 3 5))
+
+(define (acc-stencil5x3 fn b arr)
+  (acc-stencil2d fn b arr 5 3))
+
+(define (acc-stencil5x5 fn b arr)
+  (acc-stencil2d fn b arr 5 5))
+
+(define (acc-stencil3 fn b arr)
+  (acc-stencil1d fn b arr 3))
+
+(define (acc-stencil5 fn b arr)
+  (acc-stencil1d fn b arr 5))
+
+(define (acc-stencil1d fn b arr)
+  (error 'acc-stencil1d "Not implemented yet"))
+
+(define (acc-stencil2d fn b arr xd yd)
   (let* ([len  (manifest-array-size arr)]
          [ty   (manifest-array-type arr)]
          [shp  (manifest-array-shape arr)]
@@ -133,7 +161,7 @@
     (for ((j (range (vector-ref shp 1))))
       (manifest-array-flatset! 
        new (+ (* (vector-ref shp 0) i) j)
-       (apply fn (stencil-range2d b i j 3 3 arr)))))
+       (apply fn (stencil-range2d b i j xd yd arr)))))
       new))
 
 (define (stencil-range2d b x y xd yd arr)

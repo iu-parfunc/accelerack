@@ -68,13 +68,27 @@
              (check-false (acc-array=? z x))
              (check-false (acc-array=? z y)))
 
-
+  (test-case "plain-racket: 1d generate"
+    (check-equal? (acc-array->sexp (generate (lambda (x) x) 5))
+                  '(0 1 2 3 4)))
+    ; (define arr (generate (lambda (x y) (vector x y)) 10 10))
 
   (test-case "plain-racket: stencil3x3"
              (define x (acc-array ((1 2 3)(1 2 3)(1 2 3))))
              (define y (stencil3x3 (lambda (x1 x2 x3 x4 x5 x6 x7 x8 x9) 0) '(Constant 0) x))
              (check-equal? (acc-array->sexp y) '((0 0 0)(0 0 0)(0 0 0))))
 
+#; ; Failing test... output array expects int32..
+  (test-case "stencil returning tuple"
+    (define x (acc-array ((1 2 3)(1 2 3)(1 2 3))))
+    (stencil3x3 (lambda (x1 x2 x3
+                         x4 x5 x6
+                         x7 x8 x9)
+                  (vector x1 x2 x3
+                          x4 x5 x6
+                          x7 x8 x9))
+                '(Constant 0) x))
+  
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
              (convert-compile-time-error

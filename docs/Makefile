@@ -1,7 +1,7 @@
 
 SERVER=tank.cs.indiana.edu
 SERVER_USER=rrnewton
-VER=v0.1
+VER=v0.2
 SERVER_PATH=/l/html/homes.soic.indiana.edu/classes/spring2016/csci/h211-rrnewton/accelerack/$(VER)/
 
 .PHONY: all build send

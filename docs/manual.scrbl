@@ -191,7 +191,45 @@ right fold. The function may be applied to the elements of the array in any orde
 to take two arguments.
 
 
+@section[#:tag "functions"]{Stencils and stencil boundary conditions}
 
+@defproc[(stencil3x3 [proc procedure?] [b stencil-boundary?] [a acc-array?]) acc-array?]
+
+Run a 3x3 stencil over a two-dimensional array.  The output array is the same
+size as the input array.  In this way @racket[stencil3x3] is like a map, but
+whereas only one value is passed to @racket[proc] in the case of @racket[map],
+here the @racket[proc] procedure observes a @emph{neighborhood} of values
+around the point in question.
+
+Thus @racket[proc] is a nine argument function that takes a 3x3 region of
+elements.  In the following example we simple return the middle value, which
+makes the stencil behave just like a map:
+
+@racketblock[
+(stencil3x3 (lambda (x1 x2 x3
+                     x4 x5 x6
+                     x7 x8 x9) x5)
+  '(Constant 0) x)
+]
+
+The boundary condition argument specifies what happens when the neighborhood
+includes points outside the image.  In this example, if @racket[x5] is at an
+"upper-left" corner of the 2D array, then @racket[x1], @racket[x2],
+@racket[x3], @racket[x4], and @racket[x7] would all be @racket[0] based on the
+boundary condition.
+
+@defproc[(stencil-boundary? [x any]) boolean?]
+
+Currently, valid boundary conditions have the form:
+
+@racketblock[
+@; 'Clamp
+@; 'Mirror
+@; 'Wrap
+'(Constant v)
+]
+
+where @racket[(acc-element? v)].
 
 
 @; -------------------------------------------------------

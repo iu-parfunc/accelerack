@@ -37,6 +37,7 @@
 
     ;; Individual elements plus shapes
     acc-scalar? acc-element?
+    stencil-boundary?
     intersect-shape
     
     ;; Image conversions

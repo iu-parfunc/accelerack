@@ -18,55 +18,35 @@ Once you have done that, some of the functions you are familiar with
 (such as @racket[map]) have been replaced with expanded versions. 
 
 
-@section[#:tag "arrays"]{Arrays}
+
+@section[#:tag "arrays"]{Array datatype and properties}
 
 @defproc[(acc-array [acc-element acc-element?] ...) acc-array?]
 
 Arrays are collections of values. Unlike lists, they are fixed in
 size, and can be indexed efficiently.
 
+The @racket[acc-array] form introduces a literal array, just as "hello" and 39
+introduce literal strings and integers, respectively.  These arrays can be zero
+dimensional, one dimensional, two dimensional or more.
+
 @racketblock[
-(define-acc x (acc-array (1 2 3)))
+(define-acc x (acc-array 1))
+(define-acc y (acc-array (1 2 3)))
+(define-acc z (acc-array ((1 2 3)
+                          (4 5 6))))
 (check-true (acc-array? x))
+(check-true (acc-array? y))
+(check-true (acc-array? z))
 ]
+
+The dimension can be computed with @racket[acc-array-dimension], and also
+corresponds to the number of parentheses before the first data element.
+
 
 @defproc[(acc-array? [array any]) boolean?]
 
 Determine whether a value is an @racket[acc-array].
-
-@defproc[(acc-element? [element any]) boolean?]
-
-Determine whether a value can go inside an @racket[acc-array], that is, whether it can be an
-array @emph{element}.  This currently includes: exact integers, inexact floating point numbers, and booleans.
-Also, vectors of elements are also valid elements (including vectors of vectors).
-
-@defproc[(acc-array->sexp [acc-array acc-array?]) sexp?]
-
-Arrays can be converted into ordinary Racket s-expressions.
-The result is a nested series of lists, with nesting depth equal to the dimension of the array.
-The element values will all satisfy @racket{acc-element?}.
-
-Note that the s-expression uses the same format as the @racket{acc-array} syntax for constructing literal arrays.
-
-@racketblock[
-(define x (acc-array 15))
-(acc-array->sexp x)
-]
-
-@defproc[(acc-array-ref [acc-array acc-array?] 
-                        [index integer?] ...) acc-element?]
-
-To reference an element in an array, you provide its index. The
-@racket[acc-array-ref] function takes as many index parameters
-as there are dimensions in the input array.
-
-@defproc[(acc-array-flatref [acc-array acc-array?]
-                            [flat-index integer?]) acc-element?]
-
-Like @racket[acc-array-ref], this function gets an element out
-of an array using an index. Unlike @racket[acc-array-ref], this
-function only takes one integer as the index. This integer is the
-row-major order index of the element. 
 
 @defproc[(acc-array-dimension [acc-array acc-array?])
          integer?]
@@ -84,10 +64,69 @@ Note that the shape returned satisfies @racket{acc-element?}, and also
 
 Determine whether a value is a valid shape, i.e. a vector of zero or more non-negative integers.
 
+@racketblock[
+(check-true (acc-shape? #()))
+(check-true (acc-shape? #(100)))
+(check-true (acc-shape? #(100 100)))
+]
+
 @defproc[(acc-array-size [acc-array acc-array?])
          integer?]
 
-Returns the size of an array.
+Returns the size of an array.  That is, the number of total elements.  This is equal to the product of the sizes in each dimension, that is:
+
+@racketblock[
+(check-equal?
+   (acc-array-size a)
+   (apply * (vector->list (acc-array-shape a))))
+]
+
+@section[#:tag "arrays"]{Array elements and element-wise access}
+
+@defproc[(acc-element? [element any]) boolean?]
+
+Determine whether a value can go inside an @racket[acc-array], that is, whether it can be an
+array @emph{element}.  This currently includes: exact integers, inexact floating point numbers, and booleans.
+Also, vectors of elements are also valid elements (including vectors of vectors).
+
+@defproc[(acc-array-ref [acc-array acc-array?] 
+                        [index integer?] ...) acc-element?]
+
+To reference an element in an array, you provide its index. The
+@racket[acc-array-ref] function takes as many index parameters
+as there are dimensions in the input array.
+
+For example, for a 3D array @racket[arr] with shape @racket[(vector x y z)], the
+smallest and largest valid indices are
+@racket[(acc-array-ref arr 0 0 0)] and
+@racket[(acc-array-ref arr (sub1 x) (sub1 y) (sub1 z))].
+These are diagonally opposite "corners" of the volume.
+
+@defproc[(acc-array-flatref [acc-array acc-array?]
+                            [flat-index integer?]) acc-element?]
+
+Like @racket[acc-array-ref], this function gets an element out
+of an array using an index. Unlike @racket[acc-array-ref], this
+function only takes one integer as the index. This integer is the
+row-major order index of the element. 
+Valid indices are thus between 0 and @racket[acc-array-size] minus 1.
+
+
+@section[#:tag "arrays"]{Array conversions}
+
+@defproc[(acc-array->sexp [acc-array acc-array?]) sexp?]
+
+Arrays can be converted into ordinary Racket s-expressions.
+The result is a nested series of lists, with nesting depth equal to the dimension of the array.
+The element values will all satisfy @racket{acc-element?}.
+
+Note that the s-expression uses the same format as the @racket{acc-array} syntax for constructing literal arrays.
+
+@racketblock[
+(define x (acc-array 15))
+(acc-array->sexp x)
+]
+
 
 @;{
 @; -------------------------------------------------------
@@ -105,7 +144,29 @@ automatically in some cases by @racket[define-acc].
 }
 
 @; -------------------------------------------------------
-@section[#:tag "functions"]{Basic Functions}
+@section[#:tag "functions"]{Building Arrays}
+
+Aside from typing literal arrays into the program using the @racket[acc-array]
+syntax, we also want to programatically generate arrays of arbitrarily large
+size, for which we use @racket[generate].
+
+@defproc[(generate [proc procedure?] [l exact-nonnegative-integer?] ...) acc-array?]
+
+Here the function @racket[proc] generates one element of the array at time.  It
+takes @racket[N] arguments, specifying the exact position element being
+generated in an @racket[N]-dimensional space.
+
+To determine the overall size of the array, we also need @racket[N] length
+arguments, @racket{l ...}.  For example, the following would produce a
+100-element 1D array, followed by a 10,000 element 2D array.
+
+@racketblock[
+(define oneD (generate (lambda (r  ) r) 100))
+(define twoD (generate (lambda (r c) r) 100 100))
+]
+
+@; -------------------------------------------------------
+@section[#:tag "functions"]{Operating on Arrays}
 
 @defproc[(map [proc procedure?] [acc-array acc-array?]) acc-array?]
 
@@ -128,6 +189,9 @@ right fold. The function may be applied to the elements of the array in any orde
 
 @racket[zipwith] is just @racket[map] over two input arrays. The function is expected
 to take two arguments.
+
+
+
 
 
 @; -------------------------------------------------------

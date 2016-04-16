@@ -18,9 +18,9 @@
          ; syntax/parse
          racket/trace
          syntax/to-string
-         (only-in accelerack/private/utils pass-output-chatter)
          rackunit rackunit/text-ui
          ;; accelerack/private/passes/typeCheckerDemo
+         (only-in accelerack/private/global_utils pass-output-chatter)
          (only-in accelerack/private/types acc-scalar? acc-int? acc-type? acc-syn-entry-type)
          )
 
@@ -31,7 +31,7 @@
 (define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
   ;; TODO:
-  ;; (p-infer e syn-table)
+  (p-infer e syn-table)
   )
 
 (define (unify-types ty1 ty2)
@@ -263,98 +263,6 @@
                                                  '() arg-env) ,e))
     ))
 
-;; ========================= RYAN temp stuuff ============================
-;; (define-syntax (acc-temp stx)
-;;   (syntax-parse stx
-;;     [(_ bod)
-;;      (helper #'bod)
-;;      ; #`(quote #,(helper #'bod))
-;;      #'(quote blah)
-;;      ]))
-
-;; Uncomment to run some simple tests:
-#;
-(begin
-  ; (printf "\nSome simple tests of a recursive macro:\n\n")
-  (walk (map add1 #f))
-  ; (walk (map add1 (acc-array (1 2 3 4))))
-  (walk (map add1 (acc-array #f)))
-
-  ; (printf "Result of calling expand:\n  ~a\n"
-  ;         (expand '(walk (map add1 (acc-array #f)))))
-
-  ; (printf "\nSome simple tests of regular recursive function over syntax objects:\n\n")
-  (acc-temp #f)
-  (acc-temp (map add1 (acc-array (1 2 3 4))))
-  )
-
-;; Scratch work below here
-;; ================================================================================
-
-#;
-(begin-for-syntax
-
-  (define-literal-set scalar-type-lit
-    (_int _bool _double _tuple))
-
-  (define-literal-set type-lit
-    (_tuple _array ->))
-
-  (define-literal-set primop-lit
-    (add1 sub1))
-
-  (define primop? (literal-set->predicate primop-lit))
-
-  (define-syntax-class acc-element-type
-    #:literal-sets (scalar-type-lit)
-    (pattern _int)
-    (pattern _bool)
-    (pattern _double)
-    (pattern (_tuple t:acc-element-type ...)))
-
-;  (define-syntax-class acc-scalar
-;    #:attributes (type)
-;    (pattern _:boolean #:with type #'_bool)
-;    (pattern _:
-
-  (define-syntax-class acc-type
-    #:literal-sets (type-lit)
-    (pattern (-> _:acc-type _:acc-type))
-    (pattern (_tuple _:acc-type ...))
-    (pattern (_array _:exact-nonnegative-integer _:acc-type))
-    (pattern _:acc-element-type))
-
-  (define-syntax-class acc-primop
-    (pattern p #:when #'(primop? p)))
-
-  (define (type-mismatch expected actual)
-    (string-append
-      "expected type "
-      expected
-      ", actual type "
-      actual))
-  )
-
-; (define-syntax (typecheck-pass e env) e)
-
-#;
-(define-syntax (check-type e env typ)
-   (syntax-parse e
-     (b:boolean
-       #:fail-unless #`(eq? ,typ _bool)
-         (type-mismatch
-           "_bool"
-           (syntax->string typ))
-       #'b)
-     (n:number
-       #:fail-unless #`(eq? ,typ _double)
-         (type-mismatch
-           "_double"
-           (syntax->string typ))
-         #'n)
-     ))
-
-; (define-syntax (infer-type e env) e)
 (define environment
   '((+ . (-> Int Int Int))
     (add1 . (-> Int Int))
@@ -463,7 +371,7 @@
     [(? string?) (string->symbol val)]
     [(? list?) (map str->sym val)]
     [else val]))
-
+          
 (define (annotate-type ty subs)
   (match ty
     [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
@@ -545,7 +453,6 @@
 (check-record-t check-equal? (inf '9) 'Int)
 (check-record-t check-equal? (inf '#t) 'Bool)
 (check-record-t check-equal? (inf '(acc-array (1 2))) '(Array 2 Int))
-(check-record-t check-equal? (inf '(acc-array ((1 2) (2 2)))) '(Array 2 (Int Int)))
 (check-record-t check-equal? (inf '(if 1 2 3)) 'Int)
 (check-record-t check-equal? (inf '(if 1 (acc-array (1 2)) (acc-array (2 3)))) '(Array 2 Int))
 ;; FIXME - Record matcher should try to ignore type variable if possible - MAYBE we shouldn't just have such test cases
@@ -560,11 +467,10 @@
 (check-record-t check-equal?(inf_r '(: x (Array 1 Bool))) '(Array 1 Bool))
 (check-record-t check-equal?(inf_r '((lambda (x) (+ (use a Int) x)) 5)) 'Int)
 (check-record-t check-equal?(inf_r '(map (lambda (x) x) (acc-array (1 2 3)))) '(-> (-> Int Int) (Array 3 Int) (Array 3 Int)))
-;; (check-record-t check-equal? (inf_r '(map (lambda (x) x) 1)) 'Error)
+(check-record-t check-equal? (inf_r '(map (lambda (x) x) 1)) 'Error)
 
 ;; TODO What should happen if 2 arrays are of different size ?????
 
 ;; (check-exn (infer-lit '(acc-array ())) '(Array 0 Int))
 ;; DUMMY
 ;; (check-equal? '(1 2 3) '(1 2 3))
-

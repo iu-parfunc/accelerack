@@ -7,6 +7,7 @@
          racket/set
          racket/dict
          (only-in accelerack/private/utils pass-output-chatter)
+         syntax/id-table
          accelerack/private/syntax
          accelerack/private/wrappers
          (prefix-in r: racket/base))
@@ -19,9 +20,9 @@
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords : Array Int Bool Double use ->)
   )
- (only-in accelerack/private/types acc-scalar? acc-type?))
+ (only-in accelerack/private/types acc-scalar? acc-type? acc-syn-entry-type))
 
-(provide p*-infer)
+(provide p-infer)
 
 
 ;; Datatype definitions:
@@ -120,19 +121,21 @@
 ;; constraint collector: Output InferRecord -> (assumptions (mutable-set)
 ;;                                              constraints (mutable-set)
 ;;                                              type)
-(define (infer-types e env)
+(define (infer-types e env syn-table)
   (match e
-    [`(lambda ,x ,b) (infer-abs e env)]
-    [`(let ,vars ,b) (infer-let e env)]
-    [`(map ,fun ,arr) (infer-map e env)]
-    [(? symbol?) (infer-var e)]
-    [`(: ,e ,t0) (infer-asc e t0 env)]
-    [`(use ,e ,t0) (infer-use e t0 env)]
-    [`(if ,cnd ,thn ,els) (infer-cond e env)]
-    [`(acc-array ,ls) (infer-array e env)]
+    [`(lambda ,x ,b) (infer-abs e env syn-table)]
+    [`(let ,vars ,b) (infer-let e env syn-table)]
+    [`(map ,fun ,arr) (infer-map e env syn-table)]
+    [`(fold ,fun ,res ,arr) (infer-fold e env syn-table)]
+    [(? symbol?) (infer-var e syn-table)]
+    [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
+    [`(use ,e ,t0) (infer-use e t0 env syn-table)]
+    [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]
+    [`(acc-array ,ls) (infer-array e env syn-table)]
     [(? acc-scalar?) (infer-lit e)]
     ;[`(Array ,n ,el) (infer-lit e)]
-    [`(,rator . ,rand) (infer-app e env)]
+    [`(,rator . ,rand) (infer-app e env syn-table)]
+
     [else (raise-syntax-error 'infer-types "unhandled syntax: ~a" e)]))
   ;; (syntax-parse e
   ;;   [(lambda (x:acc-lambda-param ...) body) (infer-abs (syntax->datum e) env)]
@@ -141,23 +144,44 @@
   ;;   [(p:acc-primop val ...) (infer-var (car e))]
   ;;   [x:identifier (infer-var e)]
   ;;   [(~or n:number b:boolean) (infer-lit e)]
-  ;;   )
+;;   )
 
-(define (infer-map e env)
+(define (val-fold-fun fun env syn-table)
+  (match fun
+    [`(lambda ,params ,body) (if (eq? 2 (length (car (get-vars params '() '()))))
+                                 (infer-types fun env syn-table)
+                                 (raise-syntax-error 'infer-fold "Function Params cant be more than 2"))]
+    [else (infer-types fun env syn-table)]))
+
+;;((-> a a a) a (Array (add1 n) a) (Array n a))
+(define (infer-fold e env syn-table)
+  (match-define `(fold ,fun ,res ,arr) e)
+  (match-define (infer-record a0 c0 t0 te0) (val-fold-fun fun env syn-table))
+  (match-define (infer-record a1 c1 t1 te1) (infer-types res env syn-table))
+  (match-define (infer-record a2 c2 t2 te2) (infer-types arr env syn-table))
+  (match-define `(-> ,a3 ,a4 ,a5) t0)
+  (match-define `(Array ,n ,ty) t2)
+  (set-union! a0 a1 a2)
+  (set-union! c0 c1 c2 (set `(== ,a3 ,a4)) (set `(== ,a4 ,a5)) (set `(== ,a3 ,ty)))
+  (infer-record a0 c0 `(-> ,t0 ,t1 ,t2 (Array ,(sub1 n) ,ty)) `(fold ,te0 ,te1 ,te2))
+  )
+
+;;((-> a b) (Array n a) (Array n b))
+(define (infer-map e env syn-table)
   (match-define `(map ,fun ,arr) e)
-  (match-define (infer-record a0 c0 t0 te0) (infer-types fun env))
-  (match-define (infer-record a1 c1 t1 te1) (infer-types arr env))
+  (match-define (infer-record a0 c0 t0 te0) (infer-types fun env syn-table))
+  (match-define (infer-record a1 c1 t1 te1) (infer-types arr env syn-table))
   (match-define `(-> ,a ,b) t0)
   (match-define `(Array ,n ,ty) t1)
   (set-union! a0 a1)
   (set-union! c0 (set `(== ,a ,ty)) c1)
-  (infer-record a0 c0 `(Array ,n ,b) `(map ,te0 ,te1)))
+  (infer-record a0 c0 `(-> ,t0 ,t1 (Array ,n ,b)) `(map ,te0 ,te1)))
 
-(define (infer-array e env)
+(define (infer-array e env syn-table)
   (match-define `(acc-array ,ls) e)
   (let ([len (length ls)]
         [el (foldl (lambda (val res)
-                   (match-define (infer-record a1 c1 t1 te1) (infer-types val env))
+                   (match-define (infer-record a1 c1 t1 te1) (infer-types val env syn-table))
                    (match-define (infer-record a0 c0 t0 te0) res)
                    (set-union! a0 a1)
                    (set-union! c0 c1)
@@ -170,30 +194,34 @@
     (match-define (infer-record a2 c2 t2 te2) el)
     (infer-record a2 c2 `(Array ,len ,(car t2)) `(acc-array ,(reverse te2)))))
 
-(define (infer-cond e env)
+(define (infer-cond e env syn-table)
   (match-define `(if ,cnd ,thn ,els) e)
-  (match-define (infer-record ac cc tc tec) (infer-types cnd env))
-  (match-define (infer-record at ct tt tet) (infer-types thn env))
-  (match-define (infer-record ae ce te tee) (infer-types els env))
+  (match-define (infer-record ac cc tc tec) (infer-types cnd env syn-table))
+  (match-define (infer-record at ct tt tet) (infer-types thn env syn-table))
+  (match-define (infer-record ae ce te tee) (infer-types els env syn-table))
   (set-union! ac at ae)
   (set-union! cc ct ce (set `(== ,tt ,te)))
   (infer-record ac cc tt `(if ,tec ,tet ,tee)))
 
-(define (infer-use e t0 env)
-  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
+(define (infer-use e t0 env syn-table)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env syn-table))
   (set-union! c1 (set `(== ,t1 ,t0)))
   (infer-record a1 c1 t1 `(use ,te1 ,t0)))
 
 
-(define (infer-asc e t0 env)
-  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
+(define (infer-asc e t0 env syn-table)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env syn-table))
   (set-union! c1 (set `(== ,t1 ,t0)))
   (infer-record a1 c1 t1 te1))
 
 ; [Var]
 ; infer-var: Variable -> InferRecord
-(define (infer-var x)
-  (let ((simple-type (dict-ref environment x #f)))
+(define (infer-var x syn-table)
+  (let ((simple-type (or (dict-ref environment x #f)
+                         (let ([prev-acc (dict-ref (unbox syn-table) x #f)])
+                           (if prev-acc
+                               (acc-syn-entry-type prev-acc)
+                               #f)))))
     (if simple-type
         (infer-record (mutable-set) (mutable-set) simple-type x)
         (let ([var (fresh x)])
@@ -217,15 +245,15 @@
 
 
 ; [App] : Exp Environment -> InferRecord
-(define (infer-app exp env)
+(define (infer-app exp env syn-table)
   (let ((e1 (car exp))
         (args (cdr exp))
         (typevar (fresh "app")))
-    (match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
+    (match-define (infer-record a1 c1 t1 te1) (infer-types e1 env syn-table))
     (let ([te1 `(,te1)])
       (define argtypes
         (for/list [(arg args)]
-          (match-define (infer-record a2 c2 t2 te2) (infer-types arg env))
+          (match-define (infer-record a2 c2 t2 te2) (infer-types arg env syn-table))
           ;(set-add! a1 typevar)
           (set-union! a1 a2)
           (set-union! c1 c2)
@@ -246,7 +274,7 @@
                         env))]))
 
 ; [Abs]
-(define (infer-abs exp env)
+(define (infer-abs exp env syn-table)
   (match-define `(lambda ,args ,body) exp)
   (let* ((arg-vals (get-vars args '() '()))
          (arg-env (map (lambda (arg)
@@ -259,7 +287,7 @@
          (a2 (mutable-set)))
     ;(displayln arg-env)
     ;(displayln arg-vars)
-    (match-define (infer-record a c t e) (infer-types body (set-union env (list->set args))))
+    (match-define (infer-record a c t e) (infer-types body (set-union env (list->set args)) syn-table))
     ;(display a)
     ;(displayln c)
     (set-for-each a (lambda (y)
@@ -275,26 +303,26 @@
                                                   '() arg-env) ,e))))
 
 ; [Let]
-(define (infer-let exp env)
+(define (infer-let exp env syn-table)
   (match-define `(let ,vars ,body) exp)
   (match-define (infer-record a1 c1 t1 te1)
     (foldl (lambda (var res)
              (match var
                [`(,x ,e1)
-                (match-define (infer-record a c t te) (infer-types e1 env))
+                (match-define (infer-record a c t te) (infer-types e1 env syn-table))
                 (match-define (infer-record ares cres tres te-res) res)
                 (set-union! ares a)
                 (set-union! cres c)
                 (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]
                [`(,x : ,t0 ,e1)
-                (match-define (infer-record a c t te) (infer-types e1 env))
+                (match-define (infer-record a c t te) (infer-types e1 env syn-table))
                 (match-define (infer-record ares cres tres te-res) res)
                 (set-union! ares a)
                 (set-union! cres c (set `(== ,t0 ,t)))
                 (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]))
            (infer-record (mutable-set) (mutable-set) 'None '()) vars))
   ;;(match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
-  (match-define (infer-record a2 c2 t2 te2) (infer-types body env))
+  (match-define (infer-record a2 c2 t2 te2) (infer-types body env syn-table))
   ;(displayln body)
   ;(displayln te2)
   ;(set-union! a1 a2)
@@ -418,7 +446,9 @@
 
 (define environment
   '((+ . (-> Int Int Int))
+    (add1 . (-> Int Int))
     (- . (-> Int Int Int))
+    (sub1 . (-> Int Int))
     (* . (-> Int Int Int))
     (/ . (-> Int Int Int))
     (< . (-> Int Int Bool))
@@ -450,17 +480,18 @@
                                                   ,(annotate-expr e subs))) res))) '() vars)
                         ,(annotate-expr b subs))]
     [`(map ,fun ,arr) `(map ,(annotate-expr fun subs) ,(annotate-expr arr subs))]
+    [`(fold ,fun ,res ,arr) `(fold ,(annotate-expr fun subs) ,(annotate-expr res subs) ,(annotate-expr arr subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
                          ,@(map (curryr annotate-expr subs) rand))]
     [else (error 'error type-expr)]))
 
-(define (infer e)
+(define (infer e syn-table)
   (match-define
     (infer-record assumptions constraints type type-expr)
     (infer-types (if (syntax? e)
                      (syntax->datum e)
                      e)
-                 (set)))
+                 (set) syn-table))
   ;;(displayln assumptions)
   ;;(display "FINAL TYPE:") (displayln type)
   (display "CONSTRAINTS: ")(displayln constraints)
@@ -469,9 +500,9 @@
   ;; (print "Infer types done")
   (list assumptions constraints type (solve (set->list constraints)) type-expr))
 
-(define (p-infer exp)
+(define (p-infer exp syn-table)
   (reset-var-cnt)
-  (match-define (list assumptions constraints type substitutions type-expr) (infer exp))
+  (match-define (list assumptions constraints type substitutions type-expr) (infer exp syn-table))
   (displayln "--- Input: ------------------------------------------------------")
   (displayln (syntax->datum exp))
   ;;(displayln "--- Output: -----------------------------------------------------")  
@@ -481,8 +512,8 @@
   (displayln "--- Type Annotated Expression: ----------------------------------")
   (displayln (annotate-expr type-expr substitutions))
   (displayln "-----------------------------------------------------------------")
-  (annotate-expr type-expr substitutions)
-  )
+  (values (substitute substitutions type)
+          (datum->syntax #f (annotate-expr type-expr substitutions))))
 
 (define (p*-infer exp)
   (reset-var-cnt)
@@ -519,29 +550,31 @@
 (define e16 #'(: x (Array 1 Bool)))
 (define e17 #'(acc-array (1 2 3)))
 (define e18 #'(map (lambda (x) x) (acc-array (1 2 3))))
+(define e19 #'(fold (lambda (x y) (add1 y)) 0 (acc-array (1 2 3))))
+(define e20 #'(add1 5))
 
-;; (define e1_ (p-infer e1))
+(p-infer e1 (box '()))
 
-;; (define e2_ (p-infer e2))
-;; (p-infer e3)
-;; (p-infer #`#,(p-infer e4))
-;; (p-infer e5)
-;; (p-infer #`#,(p-infer e6))
-;; (p-infer e7)
-;; (p-infer e8)
-;; (p-infer e9)
-;; (p-infer #`#,(p-infer e9))
-;; (p-infer e10)
-;; (p-infer e11)
-;; (p-infer e12)
-;; (p-infer e13)
-;; (p-infer e14)
-;; (p-infer e15)
-(p-infer e16)
-(p-infer e17)
-
-(p-infer e18)
-
+(p-infer e2 (box '()))
+(p-infer e3 (box '()))
+;;(p-infer #`#,(p-infer e4 (box '())) (box '()))
+(p-infer e5 (box '()))
+;;(p-infer #`#,(p-infer e6 '()) '())
+(p-infer e7 (box '()))
+(p-infer e8 (box '()))
+(p-infer e9 (box '()))
+;;(p-infer #`#,(p-infer e9 '()) '())
+(p-infer e10 (box '()))
+(p-infer e11 (box '()))
+(p-infer e12 (box '()))
+(p-infer e13 (box '()))
+(p-infer e14 (box '()))
+(p-infer e15 (box '()))
+(p-infer e16 (box '()))
+(p-infer e17 (box '()))
+(p-infer e18 (box '()))
+(p-infer e19 (box '()))
+(p-infer e20 (box '()))
 
 ;;(display "Feeding back through:\n")
 ;; (p-infer e2_)

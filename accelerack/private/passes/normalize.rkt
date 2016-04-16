@@ -236,7 +236,7 @@
             (map (lambda(x) (normalize x '()))
                  (list test3 test4 test4a test4b test4c
                        test5 test6 test7 test8 test9))))
-  
+
 
 #;
 ;; Known failures, FIXME FIXME!

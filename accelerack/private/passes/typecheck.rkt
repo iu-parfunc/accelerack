@@ -58,15 +58,15 @@
     ))
 
 (define environment
-  '((+ . (-> Int Int Int))
+  '((+ . (-> "t1" "t1" "t1"))
     (add1 . (-> Int Int))
-    (- . (-> Int Int Int))
+    (- . (-> "t2" "t2" "t2"))
     (sub1 . (-> Int Int))
-    (* . (-> Int Int Int))
-    (/ . (-> Int Int Int))
-    (< . (-> Int Int Bool))
-    (= . (-> Int Int Bool))
-    (eq? . (-> Int Int Bool))))
+    (* . (-> "t3" "t3" "t3"))
+    (/ . (-> "t4" "t4" "t4"))
+    (< . (-> "t5" "t5" Bool))
+    (= . (-> "t6" "t6" Bool))
+    (eq? . (-> "t7" "t7" Bool))))
 
 
 ;; ---------------- Persistent variables and typevariable related stuff ---------------------

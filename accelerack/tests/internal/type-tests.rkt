@@ -1,0 +1,50 @@
+#lang racket
+
+(require rackunit rackunit/text-ui
+         ;; See NOTE below:
+         (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
+                  acc-array?
+                  Int Bool Double use)
+         accelerack/private/passes/typecheck
+         (only-in accelerack/acc-array/private/delayed acc-delayed-array?)
+         )
+
+;; Helper wrappers
+(define (run-get-type e)
+  (let-values (((type ex) (typecheck-expr (box '()) e)))
+    type))
+
+(define user-ifc-invalid-test_cases (test-suite
+  "invalid test cases"
+  ))
+;; ================================================================================
+(define user-ifc-valid-test_cases (test-suite
+  "valid test cases"
+  (test-case "type of scalar items"
+    (check-equal? (run-get-type '9) 'Int)
+    (check-equal? (run-get-type '#t) 'Bool)
+    (check-equal? (run-get-type '#f) 'Bool)
+    (check-equal? (run-get-type '9.333) 'Double))
+
+  (test-case "type of array items"
+    (check-equal? (run-get-type '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
+    (check-equal? (run-get-type '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
+    (check-equal? (run-get-type '(acc-array ((1 2) (2 3) (2 2)))) '(Array 2 (Int Int)))
+    (check-equal? (run-get-type '(acc-array ((1 2.1) (2 3.22) (2 2.33)))) '(Array 2 (Int Double)))
+    )
+  ))
+
+
+; (run-acc (acc-array (1 2 3)))
+
+(display "\n<----------- Invalid test-cases Run ----------->\n")
+(if (run-tests user-ifc-invalid-test_cases)
+    (display "\n!!! Test Run Successfull !!!\n")
+    (begin (display "\n!!! Test Run Failed !!!\n")
+           (exit 1)))
+
+(display "\n<----------- Valid test-cases Run ----------->\n")
+(if (run-tests user-ifc-valid-test_cases)
+    (display "\n!!! Test Run Successfull !!!\n\n")
+    (begin (display "\n!!! Test Run Failed !!!\n\n")
+           (exit 1)))

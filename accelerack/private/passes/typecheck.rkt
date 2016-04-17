@@ -10,8 +10,8 @@
 ;; ---------------------------------------------------------------
 
 (provide
- unify-types
  typecheck-expr
+ unify-types
  )
 (require (for-syntax racket/base
                      syntax/parse)
@@ -29,17 +29,13 @@
 ;;   (2) fully annotated expression
 (define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
-  ;; TODO:
   (with-handlers ([exn:fail? (lambda (exn) (raise-syntax-error 'type-error "Typecheck error" #`#,e))])
-    (infer e syn-table))
-  ;;(values 'Int e)
-  )
+    (infer e syn-table)))
 
 (define (unify-types ty1 ty2)
   ;; FINISHME
   ;;(unify ty1 ty2)
 #t)
-
 ;; Typing environment:
 (define type-env
   '(
@@ -463,30 +459,6 @@
           #`#,(annotate-expr type-expr substitutions)))
 ;; ---------------------------- TEST RELATED funcs ----------------------------
 
-;; (define (inf e)
-;;  (infer-types e (set) 	(box '())))
-
-;; (define (inf_r e)
-;;  (infer e (box '())))
-
-
-
-;;;; SOME TESTS FOR typechecker - MOVE to internal once done
-;; Test for infer lit
-(check-equal? (infer-lit '9) 'Int)
-(check-equal? (infer-lit '#t) 'Bool)
-(check-equal? (infer-lit '#f) 'Bool)
-(check-equal? (infer-lit '9.333) 'Double)
-(check-equal? (infer-lit '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
-(check-equal? (infer-lit '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
-(check-equal? (infer-lit '(acc-array ((1 2) (2 3) (2 2)))) '(Array 2 (Int Int)))
-(check-equal? (infer-lit '(acc-array ((1 2.1) (2 3.22) (2 2.33)))) '(Array 2 (Int Double)))
-
-;; (define (check-record-t f record mtch)
-;;  (match-define (infer-record a b type k) record)
-;;  (f type mtch))
-;; (define (check-ls-t f ls mtch)
-;;  (f (list-ref ls 2) mtch))
 
 ;; ;;Lets check some infer-records now
 ;; (check-record-t check-equal? (inf '9) 'Int)

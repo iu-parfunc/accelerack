@@ -198,7 +198,7 @@
   (match-define `(Array ,n ,ty) t1)
   (set-union! a0 a1)
   (set-union! c0 (set `(== ,a ,ty)) c1)
-  (infer-record a0 c0 `(-> ,t0 ,t1 (Array ,n ,b)) `(map ,te0 ,te1)))
+  (infer-record a0 c0 `(Array ,n ,b) `(map ,te0 ,te1)))
 
 (define (infer-use e t0 env syn-table)
   (match-define (infer-record a1 c1 t1 te1) (infer-types e env syn-table))
@@ -452,31 +452,3 @@
   (define substitutions (solve (set->list constraints)))
   (values (substitute substitutions type)
           #`#,(annotate-expr type-expr substitutions)))
-;; ---------------------------- TEST RELATED funcs ----------------------------
-
-
-;; ;;Lets check some infer-records now
-;; (check-record-t check-equal? (inf '9) 'Int)
-;; (check-record-t check-equal? (inf '#t) 'Bool)
-;; (check-record-t check-equal? (inf '(acc-array (1 2))) '(Array 2 Int))
-;; (check-record-t check-equal? (inf '(if 1 2 3)) 'Int)
-;; (check-record-t check-equal? (inf '(if 1 (acc-array (1 2)) (acc-array (2 3)))) '(Array 2 Int))
-;; ;; FIXME - Record matcher should try to ignore type variable if possible - MAYBE we shouldn't just have such test cases
-;; (check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg1" Int))
-;; (check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg2" Int))
-
-
-;;(check-record-t check-equal? (inf_r '(lambda (x) x)) '(-> "arg3" "arg3"))
-;;(check-record-t check-equal?(inf_r '(let ((x (+ 5 2))) x)) 'Int)
-;;(check-record-t check-equal?(inf_r '(let ((x 2) (y 5)) (+ x y))) 'Int)
-;;(check-record-t check-equal?(inf_r '(let ((x (lambda (x y) (+ x y)))) (x 5 2))) 'Int)
-;;(check-record-t check-equal?(inf_r '(: x (Array 1 Bool))) '(Array 1 Bool))
-;;(check-record-t check-equal?(inf_r '((lambda (x) (+ (use a Int) x)) 5)) 'Int)
-;(check-record-t check-equal?(inf_r '(map (lambda (x) x) (acc-array (1 2 3)))) '(-> (-> Int Int) (Array 3 Int) (Array 3 Int)))
-;(check-record-t check-equal? (inf_r '(map (lambda (x) x) 1)) 'Error)
-
-;; TODO What should happen if 2 arrays are of different size ?????
-
-;; (check-exn (infer-lit '(acc-array ())) '(Array 0 Int))
-;; DUMMY
-;; (check-equal? '(1 2 3) '(1 2 3))

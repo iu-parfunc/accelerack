@@ -62,6 +62,14 @@
   (test-case "application type tests"
     (check-match (run-get-type '((lambda (x y z) y) 1.1 2 1.1))
                  'Int)
+    (check-match (run-get-type '(+ 1 2))
+                 'Int)
+    ;; (check-match (run-get-type '(+ 1.1 2.2))
+    ;;              'Double)
+    )
+  (test-case "map tests"
+    (check-match (run-get-type '(map (lambda (x) (+ x 1)) (acc-array (1 2 3))))
+                 '(Array 1 Int))
     )
   ))
 

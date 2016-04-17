@@ -42,7 +42,13 @@
   (define stripped (verify-acc syn-table e))
   ; (printf "Woo compiler frontend! ~a\n" e)
   ;; TYP
-  (define-values (main-type with-types) (typecheck-expr syn-table e))
+  (define-values (main-type with-types)
+    (with-handlers [(exn:fail? (lambda (exn)
+                                 ;; SUPPRESSING error
+                                 (log-fatal "[WARNING]: Possible type error in ~a" (syntax->datum e))
+                                 ;; some dummy type
+                                 (values 'Int e)))]
+      (typecheck-expr syn-table e)))
 ;(values 'Int e)
   ;    (fprintf (current-error-port)
   ;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
@@ -75,5 +81,3 @@
 
 (define (lookup-acc-expr name)
   (acc-syn-entry-expr (dict-ref (unbox acc-syn-table) name)))
-
-

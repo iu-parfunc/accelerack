@@ -274,18 +274,13 @@
   (infer-record a1 c1 t2 `(let ,te1 ,te2)))
 
 
-
 (define (get-vars ls vars env)
   (cond
-    [(< (length ls) 3) (list (append ls vars) env)]
-    [else (if (eq? ': (cadr ls))
-              (get-vars (cdddr ls)
-                        (cons (car ls) vars)
-                        (cons `(,(car ls) . ,(caddr ls)) env))
-              (get-vars (cdr ls)
-                        (cons (car ls) vars)
-                        env))]))
-
+    [(null? ls) (list (reverse vars) env)]
+    [else (match (car ls)
+            [`(,x : ,t) (get-vars (cdr ls) (cons x vars)
+                                  (cons `(,x . ,t) env))]
+            [`,x (get-vars (cdr ls) (cons x vars) env)])]))
 
 (define (infer-lambda exp env syn-table)
   (match-define `(lambda ,args ,body) exp)

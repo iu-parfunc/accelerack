@@ -6,6 +6,7 @@
                   acc-array?
                   Int Bool Double use)
          accelerack/private/passes/typecheck
+         syntax/macro-testing
          (only-in accelerack/acc-array/private/delayed acc-delayed-array?)
          )
 
@@ -14,8 +15,21 @@
   (let-values (((type ex) (typecheck-expr (box '()) e)))
     type))
 
-(define user-ifc-invalid-test_cases (test-suite
-  "invalid test cases"
+(define user-ifc-invalid-test_cases
+  (test-suite
+   "invalid test cases"
+   ;; (test-case "test-case 1"
+   ;;   "test-case 1"
+   ;;   (check-exn
+   ;;    #rx"typeerror"
+   ;;    (lambda ()
+   ;;      (convert-compile-time-error
+   ;;       (let ()
+   ;;         ;; (define-acc x (acc-array (1 2 3)))
+   ;;         (define q 1)
+   ;;         (define-acc y (map (lambda(y) (+ z (use q))) (acc-array (1 2 3))))
+   ;;         (check-equal? 2 (car (acc-array->list y))))
+   ;;       ))))
   ))
 ;; ================================================================================
 (define user-ifc-valid-test_cases (test-suite
@@ -31,6 +45,23 @@
     (check-equal? (run-get-type '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
     (check-equal? (run-get-type '(acc-array ((1 2) (2 3) (2 2)))) '(Array 2 (Int Int)))
     (check-equal? (run-get-type '(acc-array ((1 2.1) (2 3.22) (2 2.33)))) '(Array 2 (Int Double)))
+    )
+  (test-case "lambda type tests"
+    (check-match (run-get-type '(lambda (x) x))
+                 `(-> ,x ,y) (equal? x y))
+    (check-match (run-get-type '(lambda (x) y))
+                 `(-> ,x ,y) (not (equal? x y)))
+    (check-match (run-get-type '(lambda (x y) y))
+                 `(-> ,x ,y ,z) (equal? y z))
+    (check-match (run-get-type '(lambda (x y z) y))
+                 `(-> ,x ,y ,z ,k) (equal? y k))
+    (check-match (run-get-type '(lambda ((x : Int) y z) y))
+                 `(-> ,x ,y ,z ,k) (equal? x 'Int))
+    )
+
+  (test-case "application type tests"
+    (check-match (run-get-type '((lambda (x y z) y) 1.1 2 1.1))
+                 'Int)
     )
   ))
 

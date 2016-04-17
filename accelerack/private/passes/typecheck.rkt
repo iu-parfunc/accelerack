@@ -30,7 +30,8 @@
 (define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
   ;; TODO:
-  (infer e syn-table)
+  (with-handlers ([exn:fail? (lambda (exn) (raise-syntax-error 'type-error "Typecheck error" #`#,e))])
+    (infer e syn-table))
   ;;(values 'Int e)
   )
 
@@ -150,17 +151,17 @@
     [(? acc-int?) 'Int]
     [(? flonum?) 'Double]
     [(? boolean?) 'Bool]
-    [`(acc-array ,ls) (if (null? ls)
-                          (raise-syntax-error 'infer-lit (format "Empty list in acc-array not permitted " exp) #`#,exp)
-                          (let ((type (foldr (lambda (x y) (if (equal? x y) x #f))
-                                             (infer-lit (car ls))
-                                             (map infer-lit (cdr ls)))))
-                            (if type
-                                `(Array ,(foldr (lambda (t res)
-                                                  (if (list? t)
-                                                      (add1 res)
-                                                      res)) 0 ls) ,type)
-                                (raise-syntax-error 'infer-lit (format "All-vars of Acc-array should be of same type: ~a " exp) #`#,exp))))]
+    [`(acc-array) (raise-syntax-error 'infer-lit (format "Empty list in acc-array not permitted " exp) #`#,exp)]
+    [`(acc-array (,ls ...))
+     (let ((type (foldr (lambda (x y) (if (equal? x y) x #f))
+                        (infer-lit (car ls))
+                        (map infer-lit (cdr ls)))))
+       (if type
+           `(Array ,(if (and (not (null? ls)) (list? (car ls)))
+                        (length (car ls))
+                        1)
+                   ,type)
+           (raise-syntax-error 'infer-lit (format "All-vars of Acc-array should be of same type: ~a " exp) #`#,exp)))]
     ;; Supporting tuples
     [`(,x ...) (map infer-lit x)]
     [else (raise-syntax-error 'infer-lit (format "~a is not supported yet." exp) #`#,exp)]))
@@ -407,7 +408,7 @@
     [(? string?) (string->symbol val)]
     [(? list?) (map str->sym val)]
     [else val]))
-          
+
 (define (annotate-type ty subs)
   (match ty
     [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
@@ -457,46 +458,45 @@
                      (syntax->datum e)
                      e)
                  (set) syn-table))
-  (displayln type)
   (define substitutions (solve (set->list constraints)))
   (values (substitute substitutions type)
           #`#,(annotate-expr type-expr substitutions)))
 ;; ---------------------------- TEST RELATED funcs ----------------------------
 
-;;(define (inf e)
+;; (define (inf e)
 ;;  (infer-types e (set) 	(box '())))
-;;
-;;(define (inf_r e)
+
+;; (define (inf_r e)
 ;;  (infer e (box '())))
 
 
 
 ;;;; SOME TESTS FOR typechecker - MOVE to internal once done
 ;; Test for infer lit
-;;(check-equal? (infer-lit '9) 'Int)
-;;(check-equal? (infer-lit '#t) 'Bool)
-;;(check-equal? (infer-lit '#f) 'Bool)
-;;(check-equal? (infer-lit '9.333) 'Double)
-;;(check-equal? (infer-lit '(acc-array (1.1 2.1 3.1))) '(Array 3 Double))
-;;(check-equal? (infer-lit '(acc-array (1.1 2.1 3.1))) '(Array 3 Double))
-;;(check-equal? (infer-lit '(acc-array ((1 2) (2 3) (2 2)))) '(Array 3 (Int Int)))
-;;(check-equal? (infer-lit '(acc-array ((1 2.1) (2 3.22) (2 2.33)))) '(Array 3 (Int Double)))
+(check-equal? (infer-lit '9) 'Int)
+(check-equal? (infer-lit '#t) 'Bool)
+(check-equal? (infer-lit '#f) 'Bool)
+(check-equal? (infer-lit '9.333) 'Double)
+(check-equal? (infer-lit '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
+(check-equal? (infer-lit '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
+(check-equal? (infer-lit '(acc-array ((1 2) (2 3) (2 2)))) '(Array 2 (Int Int)))
+(check-equal? (infer-lit '(acc-array ((1 2.1) (2 3.22) (2 2.33)))) '(Array 2 (Int Double)))
 
-;;(define (check-record-t f record mtch)
+;; (define (check-record-t f record mtch)
 ;;  (match-define (infer-record a b type k) record)
 ;;  (f type mtch))
-;;(define (check-ls-t f ls mtch)
+;; (define (check-ls-t f ls mtch)
 ;;  (f (list-ref ls 2) mtch))
 
-;; Lets check some infer-records now
-;;(check-record-t check-equal? (inf '9) 'Int)
-;;(check-record-t check-equal? (inf '#t) 'Bool)
-;;(check-record-t check-equal? (inf '(acc-array (1 2))) '(Array 2 Int))
-;;(check-record-t check-equal? (inf '(if 1 2 3)) 'Int)
-;;(check-record-t check-equal? (inf '(if 1 (acc-array (1 2)) (acc-array (2 3)))) '(Array 2 Int))
-;; FIXME - Record matcher should try to ignore type variable if possible - MAYBE we shouldn't just have such test cases
-;;(check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg1" Int))
-;;(check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg2" Int))
+;; ;;Lets check some infer-records now
+;; (check-record-t check-equal? (inf '9) 'Int)
+;; (check-record-t check-equal? (inf '#t) 'Bool)
+;; (check-record-t check-equal? (inf '(acc-array (1 2))) '(Array 2 Int))
+;; (check-record-t check-equal? (inf '(if 1 2 3)) 'Int)
+;; (check-record-t check-equal? (inf '(if 1 (acc-array (1 2)) (acc-array (2 3)))) '(Array 2 Int))
+;; ;; FIXME - Record matcher should try to ignore type variable if possible - MAYBE we shouldn't just have such test cases
+;; (check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg1" Int))
+;; (check-record-t check-equal? (inf '(lambda (x) 1)) '(-> "arg2" Int))
 
 
 ;;(check-record-t check-equal? (inf_r '(lambda (x) x)) '(-> "arg3" "arg3"))

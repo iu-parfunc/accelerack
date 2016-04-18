@@ -29,7 +29,7 @@
 ;;   (2) fully annotated expression
 (define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
-  (with-handlers ([exn:fail? (lambda (exn) (raise-syntax-error 'type-error "Typecheck error" #`#,e))])
+  (with-handlers ()
     (infer e syn-table)))
 
 (define (unify-types ty1 ty2)

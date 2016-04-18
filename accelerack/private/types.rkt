@@ -103,7 +103,8 @@
     [`(Array ,n ,elt) (and (fixnum? n) (acc-element-type? elt))]
     [`#( ,t* ...)     (andmap acc-type? t*)]
     [`(-> ,t* ...)    (andmap acc-type? t*)]
-    ;; [(? string? t) (regexp-match #rx"(arg.*)|(app.*)|(x.*)" t)]
+    [(? acc-scalar-type? t) #t]
+    [(? symbol? t) (let  ((t (symbol->string t))) (regexp-match #rx"(arg.*)|(app.*)|(x.*)" t))]
     [t (acc-element-type? t)]))
 
 

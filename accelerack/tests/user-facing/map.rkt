@@ -22,15 +22,15 @@
   (define-acc x (acc-array (15.15 25.25)))
   (define-acc y (map add1 x))
   (check-equal? '(16.15 26.25) (acc-array->sexp y)))
-  
+
 (test-case "12: map in racket"
   (define x (acc-array (15.15 25.25)))
   (define y (map add1 x))
   ; (printf "X array: ~a, Y array: ~a\n" x y)
   (check-equal? '(16.15 26.25) (acc-array->sexp y)))
 
-(test-case "13: map of use"
-  (define x (acc-array (15.15 25.25)))
-  (define-acc y (map add1 (use x)))
-  ; (printf "X array: ~a, Y array: ~a\n" x y)
-  (check-equal? '(16.15 26.25) (acc-array->sexp y)))
+;; (test-case "13: map of use"
+;;   (define x (acc-array (15.15 25.25)))
+;;   (define-acc y (map add1 (use x (Array 1 Double))))
+;;   ; (printf "X array: ~a, Y array: ~a\n" x y)
+;;   (check-equal? '(16.15 26.25) (acc-array->sexp y)))

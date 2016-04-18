@@ -445,7 +445,7 @@
     [else `(,(cons var type))]))
 
 (define environment
-  '((+ . (-> Int Int Int))
+  '(;;(+ . (-> Int Int Int))
     (add1 . (-> Int Int))
     (- . (-> Int Int Int))
     (sub1 . (-> Int Int))

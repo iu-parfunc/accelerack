@@ -20,7 +20,7 @@
          syntax/to-string
          rackunit rackunit/text-ui
          (only-in accelerack/private/utils pass-output-chatter)
-         (only-in accelerack/private/types acc-scalar? acc-int? acc-type? acc-syn-entry-type)
+         (only-in accelerack/private/types acc-scalar? acc-int? acc-type? acc-syn-entry)
          )
 
 ;; The full type-checking pass.
@@ -59,9 +59,9 @@
 
 (define environment
   '((+ . (-> "t1" "t1" "t1"))
-    (add1 . (-> Int Int))
+    (add1 . (-> "ta" "ta"))
     (- . (-> "t2" "t2" "t2"))
-    (sub1 . (-> Int Int))
+    (sub1 . (-> "ts" "ts"))
     (* . (-> "t3" "t3" "t3"))
     (/ . (-> "t4" "t4" "t4"))
     (< . (-> "t5" "t5" Bool))
@@ -128,11 +128,19 @@
 
 ; [Var]
 ; infer-var: Variable -> InferRecord
-(define (infer-var x syn-table)
+(define (infer-var x env syn-table)
   (let ((simple-type (or (dict-ref environment x #f)
-                         (let ([prev-acc (dict-ref (unbox syn-table) x #f)])
+                         (let ([prev-acc (if (set-member? env x)
+                                             #f
+                                             (assoc x (set-map syn-table (lambda (x)
+                                                                        `(,(syntax->datum (car x)) . ,(cdr x))))))])
+                           ;;(displayln env)
+                           ;;(displayln prev-acc)
                            (if prev-acc
-                               (acc-syn-entry-type prev-acc)
+                               (match-let (((acc-syn-entry ty stmt) (cdr prev-acc)))
+                                 ;;(displayln ty)
+                                 ty)
+                               ;(acc-syn-entry-type (cdr prev-acc))
                                #f)))))
     (if simple-type
         (infer-record (mutable-set) (mutable-set) simple-type x)
@@ -240,7 +248,12 @@
           (set-union! c1 c2)
           (set! te1 (append te1 `(,te2)))
           t2))
-      (set-union! c1 (set `(== ,t1 (-> ,@argtypes ,typevar))))
+      (define ret-c
+        (if (and (pair? t1) (eq? (car t1) '->))
+          (list->set (map (lambda (v1 v2)
+                              `(== ,v1 ,v2)) (cdr t1) `(,@argtypes ,typevar)))
+          (set `(== ,t1 (-> ,@argtypes ,typevar)))))
+      (set-union! c1 ret-c)
       (infer-record a1 c1 typevar te1))))
 
 ; [Let]
@@ -434,7 +447,7 @@
 ;; syntax -> box list -> type
 (define (infer-types e env syn-table)
   (match e
-    [(? symbol?) (infer-var e syn-table)]
+    [(? symbol?) (infer-var e env syn-table)]
     [`(lambda ,x ,b) (infer-lambda e env syn-table)]
     [`(let ,vars ,b) (infer-let e env syn-table)]
     [`(fold ,fun ,res ,arr) (infer-fold e env syn-table)]
@@ -455,6 +468,10 @@
                      (syntax->datum e)
                      e)
                  (set) syn-table))
+  ;;(displayln  (set-map syn-table (lambda (x)
+  ;;                                 `(,(syntax->datum (car x)) . ,(cdr x)))))
+  ;;(displayln constraints)
   (define substitutions (solve (set->list constraints)))
-  (values (substitute substitutions type)
+  ;(displayln substitutions)
+  (values (str->sym (substitute substitutions type))
           #`#,(annotate-expr type-expr substitutions)))

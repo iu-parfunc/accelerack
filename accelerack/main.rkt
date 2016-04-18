@@ -37,10 +37,12 @@
 
     ;; Individual elements plus shapes
     acc-scalar? acc-element?
+    stencil-boundary?
     intersect-shape
     
     ;; Image conversions
     image->acc-array acc-array->image
+    color->acc-element acc-element->color
 
     ;; Types and Typed operations
     acc-type? acc-element-type?

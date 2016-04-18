@@ -43,10 +43,15 @@
       ;; HACK: fix this to the second alternative after typechecking works:
       (if (is-a-lambda? bod)
           #`(define #,name  #,stripped)
-          #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped))))
+          #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped)))))
+      #;
+      (cond
+        [(acc-scalar-type? inferredTy) #`(define #,name #,bod)]
+        ;; FIXME once type check works
+        [(is-a-lambda? bod) #`(define #,name  #,stripped)]
+        [else #`(define #,name (make-acc-array (acc-delayed-array (lambda () #,stripped))))])
           ;; TODO: Need support for delayed scalars:
           ; #`(define #,name (make-acc-scalar (acc-delayed-scalar (lambda () #,stripped))))
-          )
       ;; Lets use this once type check starts working and remove the if above
       ;; (cond
       ;;   [(is-a-lambda? bod) #`(define #,name (make-acc-array #,stripped))]
@@ -95,10 +100,12 @@
     ;; TODO: allow acc-lambda-param, not just identifier:
     [(_ x:identifier e)                     (go #'x #f #'e)]
     [(_ x:identifier : t:acc-type e)        (go #'x #'t #'e)]
-    [(_ (f:identifier x:identifier ...) e)  (go #'f #f #'(lambda (x ...) e))]))
+    [(_ (f:identifier x:identifier ...) e) (with-handlers
+                                             ([exn:fail? (lambda (exn)
+                                                           (raise-syntax-error 'syntax-error "synatax error" #`#,stx))])
+                                             (go #'f #f #'(lambda (x ...) e)))]))
 
 
 ; --------------------------------------------------------------------------------
-
-; (define-acc x (acc-array (1 2 3)))
-; (display (acc-array? x))
+;; (define-acc x (acc-array (1 2 3)))
+;; (define-acc x 1)

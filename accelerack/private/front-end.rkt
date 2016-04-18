@@ -9,7 +9,9 @@
  (only-in accelerack/private/executor launch-accelerack-ast)
  (only-in accelerack/private/utils accelerack-debug-mode?)
  syntax/parse syntax/id-table racket/dict syntax/to-string
- rackunit)
+ rackunit
+ racket/trace
+ )
 
 (provide snap-as-syntax acc-syn-table front-end-compiler snap-as-list
          extend-syn-table apply-to-syn-table lookup-acc-expr)
@@ -39,8 +41,15 @@
                   syn-table)))
   (define stripped (verify-acc syn-table e))
   ; (printf "Woo compiler frontend! ~a\n" e)
-  (define-values (main-type with-types) (typecheck-expr syn-table e))
-
+  ;; TYP
+  (define-values (main-type with-types)
+    (with-handlers [(exn:fail? (lambda (exn)
+                                 ;; SUPPRESSING error
+                                 (log-fatal "[WARNING]: Possible type error in ~a" (syntax->datum e))
+                                 ;; some dummy type
+                                 (values 'Int e)))]
+      (typecheck-expr syn-table e)))
+;(values 'Int e)
   ;    (fprintf (current-error-port)
   ;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
   (values stripped main-type with-types))
@@ -59,8 +68,12 @@
 
 (define (extend-syn-table name type expr)
   (define entry (acc-syn-entry type expr))
-  (set-box! acc-syn-table
-            (dict-set (unbox acc-syn-table) name entry)))
+   (set-box! acc-syn-table
+             (dict-set (unbox acc-syn-table) name entry)))
+  ;; (let ((expr (if (syntax? expr) expr (datum->syntax #f expr))))
+  ;;   (define entry (acc-syn-entry type expr))
+  ;;   (set-box! acc-syn-table
+  ;;             (dict-set (unbox acc-syn-table) name entry))))
 
 (define (lookup-acc-type name)
   (acc-syn-entry-type (dict-ref (unbox acc-syn-table) name)))
@@ -68,5 +81,3 @@
 
 (define (lookup-acc-expr name)
   (acc-syn-entry-expr (dict-ref (unbox acc-syn-table) name)))
-
-

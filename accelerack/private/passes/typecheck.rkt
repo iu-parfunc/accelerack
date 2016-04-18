@@ -142,24 +142,28 @@
                         var
                         x)))))
 
+(define (get-acc-array-type x n)
+  (cond
+    [(null? x) (raise-syntax-error 'infer-lit (format "Empty list in acc-array not permitted " x) #`#,x)]
+    [(and (list? x) (null? (cdr x))) (get-acc-array-type (car x) (add1 n))]
+    [(list? x) (foldr (lambda (x y) (if (equal? x y) x #f))
+                      (get-acc-array-type (car x) (add1 n))
+                      (map (lambda(x) (get-acc-array-type x (add1 n))) (cdr x)))]
+    [else `(,n ,(infer-lit x))]))
+
 (define (infer-lit exp)
   (match exp
-    [(? acc-int?) 'Int]
     [(? flonum?) 'Double]
+    [(? acc-int?) 'Int]
     [(? boolean?) 'Bool]
     [`(acc-array) (raise-syntax-error 'infer-lit (format "Empty list in acc-array not permitted " exp) #`#,exp)]
-    [`(acc-array (,ls ...))
-     (let ((type (foldr (lambda (x y) (if (equal? x y) x #f))
-                        (infer-lit (car ls))
-                        (map infer-lit (cdr ls)))))
+    [`(acc-array ,ls)
+     (let ((type (get-acc-array-type ls 0)))
        (if type
-           `(Array ,(if (and (not (null? ls)) (list? (car ls)))
-                        (length (car ls))
-                        1)
-                   ,type)
+           `(Array ,@type)
            (raise-syntax-error 'infer-lit (format "All-vars of Acc-array should be of same type: ~a " exp) #`#,exp)))]
     ;; Supporting tuples
-    [`(,x ...) (map infer-lit x)]
+    [`#(,x ...)  `,(list->vector (map infer-lit x))]
     [else (raise-syntax-error 'infer-lit (format "~a is not supported yet." exp) #`#,exp)]))
 
 (define (val-fold-fun fun env syn-table)
@@ -179,7 +183,7 @@
   (match-define `(Array ,n ,ty) t2)
   (set-union! a0 a1 a2)
   (set-union! c0 c1 c2 (set `(== ,a3 ,a4)) (set `(== ,a4 ,a5)) (set `(== ,a3 ,ty)))
-  (infer-record a0 c0 `(-> ,t0 ,t1 ,t2 (Array ,(sub1 n) ,ty)) `(fold ,te0 ,te1 ,te2))
+  (infer-record a0 c0 `(Array ,(sub1 n) ,ty) `(fold ,te0 ,te1 ,te2))
   )
 
 
@@ -332,6 +336,8 @@
     [(type_var? type) (dict-ref s type type)]
     [(type_array? type) `(,(car type) ,(cadr type) ,(sub-arr-helper s (last type)))]
     [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
+    ;; TODO fix
+    [(vector? type) type]
     [else (raise-syntax-error 'substitute (format "Unknown type: ~a" type))]))
 
 
@@ -408,7 +414,7 @@
 
 (define (annotate-expr type-expr subs)
   (match type-expr
-    [x #:when (or (symbol? x) (number? x) (boolean? x)) type-expr]
+    [x #:when (or (symbol? x) (number? x) (boolean? x) (vector? x)) type-expr]
     [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
     [`(lambda ,x ,b) `(lambda ,(foldr (lambda (val res)
                                          (append (annotate-expr val subs) res)) '() x)
@@ -422,7 +428,7 @@
     [`(fold ,fun ,res ,arr) `(fold ,(annotate-expr fun subs) ,(annotate-expr res subs) ,(annotate-expr arr subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
                          ,@(map (curryr annotate-expr subs) rand))]
-    [else (error 'error type-expr)]))
+    [else (error 'error "Unable to annotate expression for ~a => ~a" type-expr subs)]))
 
 
 ;; syntax -> box list -> type
@@ -431,8 +437,8 @@
     [(? symbol?) (infer-var e syn-table)]
     [`(lambda ,x ,b) (infer-lambda e env syn-table)]
     [`(let ,vars ,b) (infer-let e env syn-table)]
-    [`(map ,fun ,arr) (infer-map e env syn-table)]
     [`(fold ,fun ,res ,arr) (infer-fold e env syn-table)]
+    [`(map ,fun ,arr) (infer-map e env syn-table)]
     [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
     [`(use ,e ,t0) (infer-use e t0 env syn-table)]
     [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]

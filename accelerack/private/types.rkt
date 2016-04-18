@@ -3,8 +3,6 @@
 ;; Type definitions (structs) used throughout the code base.
 ;; This includes most things EXCEPT the main acc-array datatype,
 ;; which is exported from accelerack/acc-array
-
-
 (provide
          ;; Elements
          acc-scalar? acc-int? acc-element?
@@ -30,9 +28,10 @@
 ;; A scalar here is defined as a single numeric or boolean value.
 (define (acc-scalar? x)
   (or ; (fixnum? x) ;; FIXME: this rules out some numbers at the high ange.
-      (acc-int? x)
-      (boolean? x)
-      (flonum? x)))
+   (vector? x)
+   (acc-int? x)
+   (boolean? x)
+   (flonum? x)))
 
 ;; Confirm that an integer is in the expected range for the acc "Int" type.
 (define (acc-int? x)
@@ -104,6 +103,7 @@
     [`(Array ,n ,elt) (and (fixnum? n) (acc-element-type? elt))]
     [`#( ,t* ...)     (andmap acc-type? t*)]
     [`(-> ,t* ...)    (andmap acc-type? t*)]
+    ;; [(? string? t) (regexp-match #rx"(arg.*)|(app.*)|(x.*)" t)]
     [t (acc-element-type? t)]))
 
 

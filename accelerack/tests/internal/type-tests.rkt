@@ -38,7 +38,9 @@
     (check-equal? (run-get-type '9) 'Int)
     (check-equal? (run-get-type '#t) 'Bool)
     (check-equal? (run-get-type '#f) 'Bool)
-    (check-equal? (run-get-type '9.333) 'Double))
+    (check-equal? (run-get-type '9.333) 'Double)
+    (check-equal? (run-get-type '#(1.1)) '#(Double))
+    )
 
   (test-case "type of array items"
     (check-equal? (run-get-type '(acc-array (1.1 2.1 3.1))) '(Array 1 Double))
@@ -50,8 +52,8 @@
   (test-case "lambda type tests"
     (check-match (run-get-type '(lambda (x) x))
                  `(-> ,x ,y) (equal? x y))
-    (check-match (run-get-type '(lambda (x) y))
-                 `(-> ,x ,y) (not (equal? x y)))
+    ;; (check-match (run-get-type '(lambda (x) y))
+    ;;              `(-> ,x ,y) (not (equal? x y)))
     (check-match (run-get-type '(lambda (x) (+ x x)))
                  `(-> ,x ,y) (equal? x y))
     (check-match (run-get-type '(lambda (x) (* x x)))
@@ -62,6 +64,8 @@
                  `(-> ,x ,y ,z ,k) (equal? y k))
     (check-match (run-get-type '(lambda ((x : Int) y z) y))
                  `(-> ,x ,y ,z ,k) (equal? x 'Int))
+    (check-match (run-get-type '(lambda ((y : Double) z) (+ y z)))
+                 `(-> Double Double Double))
     )
 
   (test-case "application type tests"

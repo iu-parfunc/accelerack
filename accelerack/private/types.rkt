@@ -1,5 +1,7 @@
 #lang racket
 
+(require racket/trace rackunit)
+
 ;; Type definitions (structs) used throughout the code base.
 ;; This includes most things EXCEPT the main acc-array datatype,
 ;; which is exported from accelerack/acc-array
@@ -14,6 +16,7 @@
          
          ;; Types
          acc-type? acc-scalar-type? acc-element-type?
+         numeric-type-var?
          make-type-schema type-schema? type-schema-vars type-schema-monoty
          
          ;; delayed scalars are not fully implemented yet [2016.04.11]:
@@ -102,13 +105,25 @@
 ;; Tests if a value is a valid SExpression encoding an Accelerack type.
 (define (acc-type? t)
   (match t
-    [`(Array ,n ,elt) (and (fixnum? n) (acc-element-type? elt))]
+    [`(Array ,n ,elt) (and (or (symbol? n) (fixnum? n))
+                           (or (symbol? elt) (acc-element-type? elt)))]
     [`#( ,t* ...)     (andmap acc-type? t*)]
     [`(-> ,t* ...)    (andmap acc-type? t*)]
     [(? acc-scalar-type? t) #t]
-    [(? symbol? t) (let  ((t (symbol->string t))) (regexp-match #rx"(arg.*)|(app.*)|(x.*)" t))]
+    [(? symbol? t)
+     ;; RRN: Where does this restriction come from?
+     ; (let  ((t (symbol->string t))) (regexp-match #rx"(arg.*)|(app.*)|(x.*)" t))
+     #t]
     [t (acc-element-type? t)]))
 
+(check-equal? (acc-type? '(Array n a)) #t)
+
+(define (numeric-type-var? t)
+  (match t
+    ; [`(Num ,a) (symbol? a)] ;; First design.
+    [a #:when (symbol? a)
+       (string-prefix? (symbol->string a) "num_")]
+    [else #f]))
 
 ;; TypeSchema:
 (define-struct type-schema

@@ -24,11 +24,14 @@
          (only-in accelerack/private/utils pass-output-chatter)
          accelerack/private/types
          accelerack/private/parse
-         (only-in accelerack/private/syntax acc-array : )
+         (only-in accelerack/private/syntax acc-array : acc-primop-types acc-primop)
          (only-in accelerack/private/wrappers acc-array-ref acc-array-flatref
                   zipwith fold stencil3x3 generate)
 
-         (for-template (only-in accelerack/private/syntax acc-array : ))
+         (for-template (except-in racket/base map))
+         (for-template (only-in accelerack/private/wrappers acc-array-ref
+                                map zipwith fold stencil3x3 generate))
+         (for-template (only-in accelerack/private/syntax acc-array :  ))
          )
 
 ;; Data type definitions and predicates:
@@ -47,6 +50,7 @@
 
 ;; ------------------------------------------------------------
 
+
 ;; The full type-checking pass.
 ;; Returns two values:
 ;;   (1) principal type of expression
@@ -54,12 +58,18 @@
 (define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
   (reset-var-cnt)
-  (define initial-env
-    (for/hasheq ((pr syn-table))
+  (define env0
+    (for/hasheq ([(id ty) acc-primop-types])
+      ;; TODO: could store type schemas a priori:
+      (values id (generalize ty))))
+  (define env1        
+    (for/fold ([env env0])
+              ([pr syn-table])
       (match pr
         [`(,v . ,(acc-syn-entry ty expr))
-         (values v (generalize ty))])))
-  (infer e initial-env))
+         ;; TODO: could store type schemas a priori:
+         (hash-set env v (generalize ty))])))
+  (infer e env1))
 
 
 (define unify-types 'FINISHME-unify-types)
@@ -67,7 +77,7 @@
 ;; Returns two values:
 ;;   (1) principal type of expression
 ;;   (2) fully annotated expression
-(define (infer stx tenv)  
+(trace-define (infer stx tenv)  
   (syntax-parse stx
     #:literals (acc-array acc-array-ref :
                 ;; FIXME: some of these can just be removed when they go to the prim table:
@@ -116,6 +126,15 @@
         (raise-syntax-error 'acc-array-ref
           (format "array reference of non-array type ~a" ty1)
           #'e1)])]
+
+    [(p:acc-primop args ...)
+     (define _ (printf "PERFORMING DICT-REF on ~a\n" acc-primop-types))
+     (define primty (dict-ref acc-primop-types #'p))
+
+     (raise-syntax-error (syntax->datum #'p)
+          (format "primitive application not finished, type ~a" primty)
+          #'stx)]
+       
 
     ;; Generate gets its own typing judgement.  It can't go in the prim table.
 ;    [(generate f es ...)
@@ -173,18 +192,7 @@
      (raise-syntax-error
       'error  "Accelerack keyword used but not imported properly.  Try (require accelerack)" #'keywd)]
 
-   [x:identifier
-    (cond
-      [(ormap (lambda (id) (free-identifier=? id #'x)) env) #'x]
-      [(not (identifier-binding #'x))
-       (raise-syntax-error
-        'error  "undefined variable used in Accelerack expression" #'x)]
-      [else
-       (raise-syntax-error
-        'error
-        (format "\n Regular Racket bound variable used in Accelerack expression: ~a.\n If it is an array variable, maybe you meant (use ~a)?"
-                (syntax->datum #'x) (syntax->datum #'x))
-        )])]
+   [x:identifier ...]
 |#
      ))
 
@@ -199,12 +207,12 @@
 
 ;; free variables: type -> set
 ;; Fetches all the variables in the input given
-(define (free-vars ty)
+(trace-define (free-vars ty)
   (match ty
     [sym #:when (symbol? sym) (list->seteq (list sym))]
     [elt #:when (acc-element-type? elt) (list->seteq '())]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
-    [`(-> ,a ,b) (set-union (free-vars a) (free-vars b))]
+    [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
     [`#(,vs ...) (apply set-union (map free-vars vs))]))
 
 (check-equal? (free-vars '(-> a (-> b a)))
@@ -238,37 +246,7 @@
   ;;(unify ty1 ty2)
 #t)
 
-;; Typing environment:
-(define type-env
-  '(
-    [map  (-> (-> a b) (Array (Num n) a) (Array (Num n) b))]
-    ;; ^ PLUS side condition that a/b don't contain Array
-    [fold (-> (-> a a a) a
-	      (Array (add1 (Num n)) a)
-	      (Array (Num n) b))]
 
-    ;; Shorthands for convenience and simplicity:
-    [fold1 (-> (-> a a a) a (Array 1 a) (Array 0 b))]
-    [fold2 (-> (-> a a a) a (Array 2 a) (Array 1 b))]
-
-					; (generate (lambda () 99))
-					; (generate 3 (lambda (i) i))
-					; (generate 3 4 (lambda (x y) (+ x y)))
-    ;; Psuedo-syntax for the type:
-    [generate (-> Int_1 ... Int_n (-> Int_1 ... Int_n a) (Array n a))]
-
-    ))
-
-(define environment
-  '((+ . (-> "t1" "t1" "t1"))
-    (add1 . (-> "ta" "ta"))
-    (- . (-> "t2" "t2" "t2"))
-    (sub1 . (-> "ts" "ts"))
-    (* . (-> "t3" "t3" "t3"))
-    (/ . (-> "t4" "t4" "t4"))
-    (< . (-> "t5" "t5" Bool))
-    (= . (-> "t6" "t6" Bool))
-    (eq? . (-> "t7" "t7" Bool))))
 
 
 

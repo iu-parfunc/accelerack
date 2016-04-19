@@ -6,17 +6,18 @@
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          accelerack/private/parse
          accelerack/acc-array/private/manifest-array
-         (for-syntax racket/base syntax/parse accelerack/private/parse)
          (prefix-in r: racket/base)
 
          syntax/parse
          (only-in accelerack/acc-array/private make-acc-array)
-         (for-template racket/base)
-         (for-template (only-in racket/contract ->))
 
          ;; Regular require, careful of phasing of these identifiers:
          accelerack/private/keywords
-         (for-template accelerack/private/keywords)
+         (for-template (except-in racket/base map)
+                       (only-in racket/contract ->)
+                       accelerack/private/keywords
+                       (only-in accelerack/private/wrappers map))
+         (for-syntax racket/base syntax/parse accelerack/private/parse)
          (only-in accelerack/private/utils vector->list*)
          (only-in rackunit check-not-false)
          )
@@ -24,6 +25,7 @@
 (provide acc-array
          acc-primop
          acc-primop-lits
+         acc-primop-types
          ; acc-primop-identifier?
 
          acc-scalar-lits
@@ -53,9 +55,29 @@
              ])
   )
 
-;; TODO: Replace with a primop type table:
+;; Maps symbols -> acc-type?
+(define acc-primop-types
+  (make-immutable-hash
+;   '()
+   (list
+    (cons #'+    '(-> num_a num_a num_a))
+    (cons #'add1 '(-> num_a num_a))
+    (cons #'map  '(-> (-> a b) (Array n a) (Array n b)))
+    )
+   ; #'sub1 #'+ #'* #'/ #'-    
+   ))
+
+    ;; ;; Shorthands for convenience and simplicity:
+    ;; [fold1 (-> (-> a a a) a (Array 1 a) (Array 0 b))]
+    ;; [fold2 (-> (-> a a a) a (Array 2 a) (Array 1 b))]
+
+    ;; ;; Psuedo-syntax for the type:
+    ;; [generate (-> (-> Int_1 ... Int_n a) Int_1 ... Int_n (Array n a))]
+
+
+
 (define acc-primop-lits
-  (list #'add1 #'sub1 #'+ #'* #'/ #'-))
+  (dict-keys acc-primop-types))
 
 (define acc-scalar-lits
   (list #'Bool #'Int #'Double))

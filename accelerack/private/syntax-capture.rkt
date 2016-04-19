@@ -19,8 +19,8 @@
          accelerack/acc-array/private/delayed
          (for-syntax racket/base
                      syntax/parse syntax/id-table racket/dict
-                     (only-in accelerack/private/syntax acc-array)
-                     accelerack/private/passes/verify-acc
+                     (only-in accelerack/private/syntax acc-array acc-type)
+                     ; accelerack/private/passes/verify-acc
                      accelerack/private/passes/typecheck
                      accelerack/private/types
 		     accelerack/private/front-end

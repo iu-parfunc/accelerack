@@ -9,8 +9,7 @@
  ; (proc-doc verify-acc (-> (syntax? list?) syntax?) "test")
  (contract-out
   [verify-acc (-> list? syntax? syntax?)]
-  )
- acc-type)
+  ))
 
 (require ; (for-syntax (except-in racket/base map))
          syntax/parse
@@ -25,7 +24,7 @@
  (for-template
   accelerack/private/wrappers
   ;; Keyword symbols come from a mix of three places currently:
-  (only-in accelerack/private/syntax acc-array acc-lambda-param)
+  (only-in accelerack/private/syntax acc-array acc-lambda-param acc-type)
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords : Array Int Bool Double use ->))
 
@@ -55,13 +54,6 @@
   (define res (verify-acc-helper stx initial-env))
   (pass-output-chatter 'verify-acc res)
   res)
-
-(define-syntax-class acc-type
-  #:description "an Accelerack type"
-  #:literals (-> Array)
-  (pattern (-> opera:acc-type ...))
-  (pattern (Array n:integer elt:acc-element-type))
-  (pattern t:acc-element-type))
 
 (define-syntax-class acc-let-bind
   #:description "an Accelerack let-binding with optional type"

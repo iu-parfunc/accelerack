@@ -29,6 +29,7 @@
          acc-primop-types
          ; acc-primop-identifier?
          acc-lambda-param
+         acc-type
          
          acc-scalar-lits
          acc-element-type
@@ -117,6 +118,12 @@
            #:with name #'x
            #:with type (syntax->datum #'t)))
 
+(define-syntax-class acc-type
+  #:description "an Accelerack type"
+  #:literals (-> Array)
+  (pattern (-> opera:acc-type ...))
+  (pattern (Array n:integer elt:acc-element-type))
+  (pattern t:acc-element-type))
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

@@ -102,6 +102,43 @@
                 (replicate () (5)
                            (generate (lambda () 9))))
                '(9 9 9 9 9))
+
+  (test-equal? "replicate2"
+               (acc-array->sexp
+                (replicate (r) (r 5)
+                           (acc-array (1 2))))
+               '((1 1 1 1 1)
+                 (2 2 2 2 2)))
+  
+  (test-equal? "replicate3"
+               (acc-array->sexp
+                (replicate (c) (5 c)
+                           (acc-array (1 2))))
+               '((1 2)
+                 (1 2)
+                 (1 2)
+                 (1 2)
+                 (1 2)))
+
+  (test-equal? "replicate4"
+               (acc-array->sexp
+                (replicate (i) (3 i 3)
+                           (acc-array (1 2))))
+               '(((1 1 1)
+                  (2 2 2))
+                 ((1 1 1)
+                  (2 2 2))
+                 ((1 1 1)
+                  (2 2 2))))
+
+  (test-equal? "replicate zipwith"
+               (acc-array->sexp
+                (zipwith vector
+                         (replicate (c) (3 c) (acc-array (1 2 3)))
+                         (replicate (r) (r 3) (acc-array (1 2 3)))))
+               '((#(1 1) #(2 1) #(3 1))
+                 (#(1 2) #(2 2) #(3 2))
+                 (#(1 3) #(2 3) #(3 3))))
   
   ;; Test case for valid (use v t)
   (test-case "test-case 9"

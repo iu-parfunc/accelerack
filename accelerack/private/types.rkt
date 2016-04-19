@@ -58,11 +58,9 @@
   (or/c pair? number? boolean? null? vector?))
 
 ;; O(N) Something which is SExp data representing Accelerack arrays or elements.
-(define acc-sexp-data?
-  ;; TODO: it should check for consistent nesting depth:
-  (or/c acc-sexp-data-shallow? (listof acc-sexp-data?)))
-
-
+(define (acc-sexp-data? x)
+  (or (acc-sexp-data-shallow? x)
+      ((listof acc-sexp-data?) x)))
 
 
 ;; Valid shapes are just lists of numbers
@@ -117,12 +115,12 @@
   (vars   ;; setof TermVariable
    monoty ;; acc-type?
    )
-  #:guard (lambda (v m)            
+  #:guard (lambda (v m _)
             (unless (set-eq? v)
               (raise-argument-error 'make-type-schema "set-eq?" v))
             (unless (acc-type? m)
-              (raise-argument-error 'make-type-schema "acc-type?" e))
-            (values t e))
+              (raise-argument-error 'make-type-schema "acc-type?" m))
+            (values v m))
   #:transparent)
 
 ;; The same idea, but for scalar data.

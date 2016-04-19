@@ -4,6 +4,7 @@
 
 (require (except-in ffi/unsafe ->)
          racket/contract
+         syntax/parse
          (only-in accelerack/private/types acc-element-type? acc-scalar? acc-int? acc-element?)
          )
 
@@ -11,8 +12,9 @@
   (contract-out
    [validate-literal (-> acc-element-type?
                          (listof exact-nonnegative-integer?)
-                         any/c (or/c #t string?))]
-   ))
+                         any/c (or/c #t string?))])
+  infer-element-type
+  )
 
 ;; Returns #t if everything checks out.  Otherwise returns an
 ;; explanation of the problem in a string.
@@ -86,7 +88,7 @@
   (syntax-parse d
     [_:boolean #'Bool ]
     [_:number (if (flonum? (syntax-e d)) #'Double #'Int)]
-    [#(v ...) #`(#,@(list->vector (map infer-type (syntax->list #'(v ...)))))]
+    [#(v ...) #`(#,@(list->vector (map infer-element-type (syntax->list #'(v ...)))))]
     ;; To get the element type we dig inside any arrays:
-    [(v more ...) (infer-type #'v)]
+    [(v more ...) (infer-element-type #'v)]
     ))

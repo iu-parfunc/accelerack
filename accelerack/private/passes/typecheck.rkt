@@ -29,18 +29,6 @@
 ;; TypeEnv:
 ;; map from:  TermVariable -> type-schema?
 
-;; TypeSchema:
-(struct type-schema (vars   ;; setof TermVariable
-                     monoty ;; acc-type?
-                     )
-  #:guard (lambda (v m)            
-            (unless (set-eq? v)
-              (raise-argument-error 'make-type-schema "set-eq?" v))
-            (unless (acc-type? m)
-              (raise-argument-error 'make-type-schema "acc-type?" e))
-            (values t e))
-  #:transparent)
-
 
 ;; The full type-checking pass.
 ;; Returns two values:

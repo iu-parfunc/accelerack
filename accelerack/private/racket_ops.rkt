@@ -40,6 +40,7 @@
   [acc-stencil5x5 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
 
+  [acc-replicate (-> list? list? acc-manifest-array? acc-manifest-array?)]
 
 ;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
   )
@@ -184,10 +185,34 @@
 ;; While/until loop
 ;; --------------------------------------------------------------------------------
 
-
+;; Scalar until:
 (define (acc-until init predfn bodfn)
   (let loop ((val init))    
     (if (predfn val)
         val
-        (loop (bodfn val)))))
-        
+        (loop (bodfn val)))))        
+
+;; Array Until:
+
+;; --------------------------------------------------------------------------------
+
+(define (acc-replicate pat1 pat2 arr)
+  (define olds (for/list ([v pat1]
+                          [n (in-vector (manifest-array-shape arr))])
+                 (cons v n)))
+  (define new-shape
+    (for/list ([x pat2])
+      (if (symbol? x)
+          (dict-ref olds x)
+          x)))
+  (apply acc-generate
+         (lambda args
+           (define dict (map cons pat2 args))
+           ;; Strip-out & ignore the new/replicated indices:
+           (define olds
+             (map cdr 
+                  (filter (lambda (p)
+                            (member (car p) pat1))
+                          dict)))
+           (apply manifest-array-ref arr olds))
+         new-shape))

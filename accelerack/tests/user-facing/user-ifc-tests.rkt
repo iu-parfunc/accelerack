@@ -96,6 +96,12 @@
                             (until (i 1 (= i 10))
                                    (add1 i)))))
                10)
+
+  (test-equal? "replicate"
+               (acc-array->sexp
+                (replicate () (5)
+                           (generate (lambda () 9))))
+               '(9 9 9 9 9))
   
   ;; Test case for valid (use v t)
   (test-case "test-case 9"

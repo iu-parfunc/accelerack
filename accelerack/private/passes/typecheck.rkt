@@ -13,6 +13,7 @@
  typecheck-expr
  unify-types
  )
+
 (require (for-syntax racket/base
                      syntax/parse)
          ; syntax/parse
@@ -23,6 +24,24 @@
          (only-in accelerack/private/types acc-scalar? acc-int? acc-type? acc-syn-entry)
          )
 
+;; Data type definitions and predicates:
+
+;; TypeEnv:
+;; map from:  TermVariable -> type-schema?
+
+;; TypeSchema:
+(struct type-schema (vars   ;; setof TermVariable
+                     monoty ;; acc-type?
+                     )
+  #:guard (lambda (v m)            
+            (unless (set-eq? v)
+              (raise-argument-error 'make-type-schema "set-eq?" v))
+            (unless (acc-type? m)
+              (raise-argument-error 'make-type-schema "acc-type?" e))
+            (values t e))
+  #:transparent)
+
+
 ;; The full type-checking pass.
 ;; Returns two values:
 ;;   (1) principal type of expression
@@ -32,10 +51,14 @@
   (with-handlers ()
     (infer e syn-table)))
 
+;; RRN: TODO Eliminate syn-table call from infer.  It should take only
+;; expression and type-environment.
+
 (define (unify-types ty1 ty2)
   ;; FINISHME
   ;;(unify ty1 ty2)
 #t)
+
 ;; Typing environment:
 (define type-env
   '(
@@ -99,6 +122,7 @@
              [`(implicit ,v1 ,v2 ,v3) (set-union (free_vars v1) (set-intersect v3 (free_vars v2)) res)]
              [`(explicit ,v1 ,v2) (set-union (free_vars v1) (free_vars v2) res)]))
          (set) constraints))
+
 ;; ---------------- Struct Record ----------------------------
 (struct infer-record ([assumptions #:mutable]
                       [contraints #:mutable]
@@ -112,6 +136,7 @@
               [(not (set-mutable? con))
                (raise-syntax-error type-name (format "Constraints: ~e has to be of the type mutable-set" con))]
               [else (values as con t te)])))
+
 ;; ------------------------ Classifiers ------------------------
 (define type_var? string?)
 (define type_con? symbol?)
@@ -125,6 +150,8 @@
     [else #f]))
 (define (type_scheme? type) (and (pair? type) (eq? (car type) 'scheme)))
 ;; ------------------------ Actual Type inference ------------------------
+
+
 
 ; [Var]
 ; infer-var: Variable -> InferRecord

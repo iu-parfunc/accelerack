@@ -155,18 +155,14 @@
 
 ; [Var]
 ; infer-var: Variable -> InferRecord
-(define (infer-var x env syn-table)
+(define (infer-var x env)
   (let ((simple-type (or (dict-ref environment x #f)
-                         (let ([prev-acc (if (set-member? env x)
-                                             #f
-                                             (assoc x (set-map syn-table (lambda (x)
-                                                                        `(,(syntax->datum (car x)) . ,(cdr x))))))])
+                         (let ([prev-acc (assoc x env)])
                            ;;(displayln env)
                            ;;(displayln prev-acc)
                            (if prev-acc
-                               (match-let (((acc-syn-entry ty stmt) (cdr prev-acc)))
-                                 ;;(displayln ty)
-                                 ty)
+                               (cdr prev-acc)
+                               ;;(displayln ty)
                                ;(acc-syn-entry-type (cdr prev-acc))
                                #f)))))
     (if simple-type
@@ -201,19 +197,19 @@
     [`#(,x ...)  `,(list->vector (map infer-lit x))]
     [else (raise-syntax-error 'infer-lit (format "~a is not supported yet." exp) #`#,exp)]))
 
-(define (val-fold-fun fun env syn-table)
+(define (val-fold-fun fun env)
   (match fun
     [`(lambda ,params ,body) (if (eq? 2 (length (car (get-vars params '() '()))))
-                                 (infer-types fun env syn-table)
+                                 (infer-types fun env)
                                  (raise-syntax-error 'infer-fold "Function Params cant be more than 2" #`#,fun))]
-    [else (infer-types fun env syn-table)]))
+    [else (infer-types fun env)]))
 
 ;;((-> a a a) a (Array (add1 n) a) (Array n a))
-(define (infer-fold e env syn-table)
+(define (infer-fold e env)
   (match-define `(fold ,fun ,res ,arr) e)
-  (match-define (infer-record a0 c0 t0 te0) (val-fold-fun fun env syn-table))
-  (match-define (infer-record a1 c1 t1 te1) (infer-types res env syn-table))
-  (match-define (infer-record a2 c2 t2 te2) (infer-types arr env syn-table))
+  (match-define (infer-record a0 c0 t0 te0) (val-fold-fun fun env))
+  (match-define (infer-record a1 c1 t1 te1) (infer-types res env))
+  (match-define (infer-record a2 c2 t2 te2) (infer-types arr env))
   (match-define `(-> ,a3 ,a4 ,a5) t0)
   (match-define `(Array ,n ,ty) t2)
   (set-union! a0 a1 a2)
@@ -223,10 +219,10 @@
 
 
 ;;((-> a b) (Array n a) (Array n b))
-(define (infer-map e env syn-table)
+(define (infer-map e env)
   (match-define `(map ,fun ,arr) e)
-  (match-define (infer-record a0 c0 t0 te0) (infer-types fun env syn-table))
-  (match-define (infer-record a1 c1 t1 te1) (infer-types arr env syn-table))
+  (match-define (infer-record a0 c0 t0 te0) (infer-types fun env))
+  (match-define (infer-record a1 c1 t1 te1) (infer-types arr env))
   (match t0
      [`(-> ,a ,b) (void)]
      [else (raise-syntax-error 'infer-map (format "The first parameter of map should be a function : ~a" fun) #`#,fun)])
@@ -239,37 +235,37 @@
   (set-union! c0 (set `(== ,a ,ty)) c1)
   (infer-record a0 c0 `(Array ,n ,b) `(map ,te0 ,te1)))
 
-(define (infer-use e t0 env syn-table)
-  (match-define (infer-record a1 c1 t1 te1) (infer-types e env syn-table))
+(define (infer-use e t0 env)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
   (set-union! c1 (set `(== ,t1 ,t0)))
   (infer-record a1 c1 t1 `(use ,te1 ,t0)))
 
 
-(define (infer-asc e t0 env syn-table)
-  (match-define (infer-record a1 c1 t1 te1) (infer-types e env syn-table))
+(define (infer-asc e t0 env)
+  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
   (set-union! c1 (set `(== ,t1 ,t0)))
   (infer-record a1 c1 t1 te1))
 
 ;; Infer type for if statement
-(define (infer-cond e env syn-table)
+(define (infer-cond e env)
   (match-define `(if ,cnd ,thn ,els) e)
-  (match-define (infer-record ac cc tc tec) (infer-types cnd env syn-table))
-  (match-define (infer-record at ct tt tet) (infer-types thn env syn-table))
-  (match-define (infer-record ae ce te tee) (infer-types els env syn-table))
+  (match-define (infer-record ac cc tc tec) (infer-types cnd env))
+  (match-define (infer-record at ct tt tet) (infer-types thn env))
+  (match-define (infer-record ae ce te tee) (infer-types els env))
   (set-union! ac at ae)
   (set-union! cc ct ce (set `(== ,tt ,te)))
   (infer-record ac cc tt `(if ,tec ,tet ,tee)))
 
 ; [App] : Exp Environment -> InferRecord
-(define (infer-app exp env syn-table)
+(define (infer-app exp env)
   (let ((e1 (car exp))
         (args (cdr exp))
         (typevar (fresh "app")))
-    (match-define (infer-record a1 c1 t1 te1) (infer-types e1 env syn-table))
+    (match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
     (let ([te1 `(,te1)])
       (define argtypes
         (for/list [(arg args)]
-          (match-define (infer-record a2 c2 t2 te2) (infer-types arg env syn-table))
+          (match-define (infer-record a2 c2 t2 te2) (infer-types arg env))
           ;(set-add! a1 typevar)
           (set-union! a1 a2)
           (set-union! c1 c2)
@@ -284,26 +280,26 @@
       (infer-record a1 c1 typevar te1))))
 
 ; [Let]
-(define (infer-let exp env syn-table)
+(define (infer-let exp env)
   (match-define `(let ,vars ,body) exp)
   (match-define (infer-record a1 c1 t1 te1)
     (foldl (lambda (var res)
              (match var
                [`(,x ,e1)
-                (match-define (infer-record a c t te) (infer-types e1 env syn-table))
+                (match-define (infer-record a c t te) (infer-types e1 env))
                 (match-define (infer-record ares cres tres te-res) res)
                 (set-union! ares a)
                 (set-union! cres c)
                 (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]
                [`(,x : ,t0 ,e1)
-                (match-define (infer-record a c t te) (infer-types e1 env syn-table))
+                (match-define (infer-record a c t te) (infer-types e1 env))
                 (match-define (infer-record ares cres tres te-res) res)
                 (set-union! ares a)
                 (set-union! cres c (set `(== ,t0 ,t)))
                 (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]))
            (infer-record (mutable-set) (mutable-set) 'None '()) vars))
   ;;(match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
-  (match-define (infer-record a2 c2 t2 te2) (infer-types body env syn-table))
+  (match-define (infer-record a2 c2 t2 te2) (infer-types body env))
   ;(displayln body)
   ;(displayln te2)
   ;(set-union! a1 a2)
@@ -326,7 +322,7 @@
                                   (cons `(,x . ,t) env))]
             [`,x (get-vars (cdr ls) (cons x vars) env)])]))
 
-(define (infer-lambda exp env syn-table)
+(define (infer-lambda exp env)
   (match-define `(lambda ,args ,body) exp)
   (let* ((arg-vals (get-vars args '() '()))
          (arg-env (map (lambda (arg)
@@ -337,7 +333,7 @@
          (arg-vars (map cdr arg-env))
          (c (mutable-set))
          (a2 (mutable-set)))
-    (match-define (infer-record a c t e) (infer-types body (set-union env (list->set (car arg-vals))) syn-table))
+    (match-define (infer-record a c t e) (infer-types body (append arg-env env)))
     (set-for-each a (lambda (y)
                       (let ((lkp (assoc (car y) arg-env)))
                         (if lkp
@@ -468,33 +464,36 @@
     [`(fold ,fun ,res ,arr) `(fold ,(annotate-expr fun subs) ,(annotate-expr res subs) ,(annotate-expr arr subs))]
     [`(,rator . ,rand) `(,(annotate-expr rator subs)
                          ,@(map (curryr annotate-expr subs) rand))]
-    [else (error 'error "Unable to annotate expression for ~a => ~a" type-expr subs)]))
+    [else (raise-syntax-error 'error "Unable to annotate expression for ~a => ~a" type-expr subs)]))
 
 
 ;; syntax -> box list -> type
-(define (infer-types e env syn-table)
+(define (infer-types e env)
   (match e
-    [(? symbol?) (infer-var e env syn-table)]
-    [`(lambda ,x ,b) (infer-lambda e env syn-table)]
-    [`(let ,vars ,b) (infer-let e env syn-table)]
-    [`(fold ,fun ,res ,arr) (infer-fold e env syn-table)]
-    [`(map ,fun ,arr) (infer-map e env syn-table)]
-    [`(: ,e ,t0) (infer-asc e t0 env syn-table)]
-    [`(use ,e ,t0) (infer-use e t0 env syn-table)]
-    [`(if ,cnd ,thn ,els) (infer-cond e env syn-table)]
+    [(? symbol?) (infer-var e env)]
+    [`(lambda ,x ,b) (infer-lambda e env)]
+    [`(let ,vars ,b) (infer-let e env)]
+    [`(fold ,fun ,res ,arr) (infer-fold e env)]
+    [`(map ,fun ,arr) (infer-map e env)]
+    [`(: ,e ,t0) (infer-asc e t0 env)]
+    [`(use ,e ,t0) (infer-use e t0 env)]
+    [`(if ,cnd ,thn ,els) (infer-cond e env)]
     [`(acc-array ,ls) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
     [(? acc-scalar?) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
-    [`(,rator . ,rand) (infer-app e env syn-table)]
+    [`(,rator . ,rand) (infer-app e env)]
     [else (raise-syntax-error 'infer-types (format "unhandled syntax: ~a" e) #'e)]))
 
 
 (define (infer e syn-table)
   (reset-var-cnt)
+  (define env (set-map syn-table (lambda (x)
+                                   (match-define (acc-syn-entry ty code) (cdr x))
+                                   `(,(syntax->datum (car x)) . ,ty))))
   (match-define (infer-record assumptions constraints type type-expr)
     (infer-types (if (syntax? e)
                      (syntax->datum e)
                      e)
-                 (set) syn-table))
+                 env))
   ;;(displayln  (set-map syn-table (lambda (x)
   ;;                                 `(,(syntax->datum (car x)) . ,(cdr x)))))
   ;;(displayln constraints)

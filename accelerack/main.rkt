@@ -8,6 +8,8 @@
          accelerack/private/image-interop
 
          (prefix-in r: racket/base)
+         (only-in racket/base car for/list list syntax->datum)
+         (only-in racket in-dict)
          (for-syntax racket/base syntax/parse)
 
          accelerack/private/wrappers
@@ -31,7 +33,11 @@
     acc-array-size
     acc-array-shape 
     acc-array->sexp
-
+    
+    ;; A list of primitives for reference:
+    acc-prims
+    acc-prim-types
+    
     ;; Data-parallel aggregate operations
     map fold zipwith stencil3x3 generate
 
@@ -55,3 +61,15 @@
     ;; if let lambda
     -> : use
     )
+
+;; Simplify this for exposing to the end user:
+(define acc-prim-types
+  (for/list ([(k v) (in-dict acc-primop-types)])
+    (list (syntax->datum k) v)))
+
+;; This is really only so we can refer to it in
+;; an error message.
+(define acc-prims
+  ;; For documentation purposes we include the special syntaxes:
+  (append (list 'fold 'generate 'acc-array) ;; : use ...
+          (r:map car acc-prim-types)))

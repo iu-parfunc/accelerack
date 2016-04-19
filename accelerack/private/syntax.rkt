@@ -99,7 +99,9 @@
        (member id acc-scalar-lits free-identifier=?)))
 
 (define-syntax-class acc-primop
-  #:description "a primitive function supported by Accelerack (such as +, -, *, map, etc)"
+  #:description (string-append "a primitive function supported by Accelerack.\n"
+                               "Examples include +, -, *, map, etc.\n"
+                               "Evaluate 'acc-prims' for the full list.")
   (pattern p:id #:when (acc-primop-identifier? #'p)))
 
 (define-syntax-class acc-element-type

@@ -3,18 +3,21 @@
 ;; Helper functions used in macros.
 
 (require (except-in ffi/unsafe ->)
+         rackunit
          racket/contract
          syntax/parse
-         (only-in accelerack/private/types acc-element-type? acc-scalar? acc-int? acc-element?)
+         (only-in accelerack/private/types acc-element-type? acc-scalar? acc-int? acc-element?
+                  acc-type?)
          )
 
 (provide
   (contract-out
    [validate-literal (-> acc-element-type?
                          (listof exact-nonnegative-integer?)
-                         any/c (or/c #t string?))])
-  infer-element-type
-  )
+                         any/c (or/c #t string?))]
+   [infer-element-type (-> syntax? syntax?)]
+   [infer-array-type   (-> syntax? syntax?)]
+   ))
 
 ;; Returns #t if everything checks out.  Otherwise returns an
 ;; explanation of the problem in a string.
@@ -84,6 +87,11 @@
 
 
 ; Syntax -> Syntax (acc-element-type?)
+
+;; This works on anything that satisfies acc-element?
+;; Plus, this also currently accepts array literal data, as produced
+;; by acc-array->sexp or used inside the (acc-array ...) form.  In
+;; this case it still returns only the *element* type.
 (define (infer-element-type d)
   (syntax-parse d
     [_:boolean #'Bool ]
@@ -92,3 +100,20 @@
     ;; To get the element type we dig inside any arrays:
     [(v more ...) (infer-element-type #'v)]
     ))
+
+;; This interprets the argument as an array, even if it is zero dimensional.
+(define (infer-array-type d)
+  (define (count d)
+    (syntax-parse d
+      [(v more ...) (add1 (count #'v))]
+      [else 0]))    
+  #`(Array #,(count d) #,(infer-element-type d)))
+
+(test-equal? "infer-array-type1"
+             (syntax->datum (infer-array-type #'((3))))
+             '(Array 2 Int))
+ 
+(test-equal? "infer-array-type2"
+             (syntax->datum (infer-array-type #'( #(3 4.4))))
+             '(Array 1 #(Int Double)))
+

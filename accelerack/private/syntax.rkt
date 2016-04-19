@@ -16,7 +16,8 @@
          (for-template (except-in racket/base map)
                        (only-in racket/contract ->)
                        accelerack/private/keywords
-                       (only-in accelerack/private/wrappers map))
+                       (only-in accelerack/private/wrappers map fold
+                                zipwith generate stencil3x3))
          (for-syntax racket/base syntax/parse accelerack/private/parse)
          (only-in accelerack/private/utils vector->list*)
          (only-in rackunit check-not-false)
@@ -57,13 +58,13 @@
 
 ;; Maps symbols -> acc-type?
 (define acc-primop-types
-  (make-immutable-hash
-;   '()
-   (list
-    (cons #'+    '(-> num_a num_a num_a))
-    (cons #'add1 '(-> num_a num_a))
-    (cons #'map  '(-> (-> a b) (Array n a) (Array n b)))
-    )
+  (dict-set*
+   (make-immutable-custom-hash free-identifier=?)
+   #'+    '(-> num_a num_a num_a)
+   #'add1 '(-> num_a num_a)
+   
+   #'map  '(-> (-> a b) (Array n a) (Array n b))
+   
    ; #'sub1 #'+ #'* #'/ #'-    
    ))
 

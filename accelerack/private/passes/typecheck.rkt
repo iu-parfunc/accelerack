@@ -50,6 +50,36 @@
 
 ;; ------------------------------------------------------------
 
+;; Type Enviroment reference with good errors:
+8
+
+(define (tenv-ref d var)
+  (define res (dict-ref d var #f))
+  (or res
+      (let ([syms (map (lambda (k) (cons (syntax->datum k) k))
+                       (dict-keys d))])
+        (match (assoc (syntax->datum var) syms)
+          [`(,symkey . ,idkey)
+           (raise-syntax-error
+            #f
+            (format (string-append
+                     "Attempt to reference variable ~a inside accelerack code.\n"
+                     "This variable should have been imported from the accelerack module.\n"
+                     "Instead, a different copy of the variable was used, from:\n"
+                     "~a\n"
+                     "Whereas we expected this identifier:\n"
+                     "~a\n")
+                     (syntax->datum var)
+                     var
+                     idkey))]
+          [#f
+           (raise-syntax-error
+            #f
+            (format "Attempt to reference unbound variable ~a inside accelerack code.\n"
+                    (syntax->datum var)))])))) 
+
+;; ------------------------------------------------------------
+
 
 ;; The full type-checking pass.
 ;; Returns two values:
@@ -58,6 +88,10 @@
 (define (typecheck-expr syn-table e)
   (pass-output-chatter 'typecheck-expr e)
   (reset-var-cnt)
+
+  (define env0 (make-immutable-hash))
+  ;; For now handle the primop types separately:
+  #;
   (define env0
     (for/hasheq ([(id ty) acc-primop-types])
       ;; TODO: could store type schemas a priori:
@@ -127,12 +161,12 @@
           (format "array reference of non-array type ~a" ty1)
           #'e1)])]
 
+    ;; This could be handled through the tenv:
     [(p:acc-primop args ...)
-     (define _ (printf "PERFORMING DICT-REF on ~a\n" acc-primop-types))
-     (define primty (dict-ref acc-primop-types #'p))
+     (define primty (tenv-ref acc-primop-types #'p))
 
      (raise-syntax-error (syntax->datum #'p)
-          (format "primitive application not finished, type ~a" primty)
+          (format "FINISHME - primitive application not finished, type ~a" primty)
           #'stx)]
        
 

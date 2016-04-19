@@ -17,7 +17,7 @@
          ;; Types
          acc-type? acc-scalar-type? acc-element-type?
          numeric-type-var?
-         make-type-schema type-schema? type-schema-vars type-schema-monoty
+         make-type-schema type-schema type-schema? type-schema-vars type-schema-monoty
          
          ;; delayed scalars are not fully implemented yet [2016.04.11]:
          acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk

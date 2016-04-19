@@ -37,16 +37,25 @@
 ;; Data type definitions and predicates:
 
 ;; TypeEnv:
-;; dict from:  syntax? (TermVariable) -> type-schema?
+;; ---------
+;; Immutable dict of type:  syntax? (TermVariable) -> type-schema?
 
 (define empty-tenv (make-immutable-hasheq))
 
+;; TypeInst:
+;; ---------
+;; Instantiated types.  This includes everything in acc-type? plus
+;; The tyvar struct.
+
 ;; TyVars are mutable pointers to another type
 (define-struct tyvar
-  ([ptr #:mutable]
-    name    ;; For nicer printing
-    numeric ;; boolean
-   ))
+  ([ptr #:mutable] ;; #f or a TypeInst
+    name           ;; symbol?, For nicer printing
+    numeric        ;; boolean?
+   )
+  ; #:transparent
+  )
+
 
 ;; ------------------------------------------------------------
 
@@ -252,14 +261,35 @@
 (check-equal? (free-vars '(-> a (-> b a)))
               (list->seteq '(a b)))
 
-
-#;
 ;; instantiate: scheme -> type
 (define (instantiate scheme)
-  (match-define `(,_ ,qs ,type) scheme)
-  (substitute (for/list ([q qs]) (cons q (fresh "I"))) type))
+  (match-define (type-schema vars monoty) scheme)
+  (for/fold ([ty monoty])
+            ([q  vars])
+    (define fresh (make-tyvar #f q (numeric-type-var? q)))
+    (subst ty q fresh)))
+  
 
+(define (subst ty var new)
+  (define (go x) (subst x var new))
+  (match ty
+    [(? symbol? t)
+     (if (eq? t var)
+         new t)]
+    [`(Array ,n ,elt)
+     `(Array ,(go n) ,(go elt))]
+    [`#( ,t* ...)     (list->vector (map go t*))]
+    [`(-> ,t* ...)   `(-> ,@(map go t*))]
+    [(? acc-scalar-type? t) t]
+    [(? tyvar? tv)
+     (if (tyvar-ptr tv)
+         (set-tyvar-ptr! tv (go (tyvar-ptr tv)))
+         tv)]
+    ))
 
+(test-case "instantiate"
+  (instantiate (make-type-schema (list->seteq '(a b))
+                                 '(-> (-> a b) (Array n a) (Array n b)))))
 
 #|
 

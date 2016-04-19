@@ -88,6 +88,14 @@
                           x7 x8 x9))
                 `(Constant 0)
 		x))
+
+
+  (test-equal? "until"
+               (acc-array->sexp
+                (generate (lambda ()
+                            (until (i 1 (= i 10))
+                                   (add1 i)))))
+               10)
   
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
@@ -99,6 +107,7 @@
                    (check-equal? 2 (car (acc-array->sexp y))))))
 
 
+  
   ;; WAIT TILL A LATER VERSION:
 
   ; TODO: Scalar support

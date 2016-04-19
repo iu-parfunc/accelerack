@@ -34,6 +34,7 @@
 
     ;; Data-parallel aggregate operations
     map fold zipwith stencil3x3 generate
+    until ; replicate 
 
     ;; Individual elements plus shapes
     acc-scalar? acc-element?

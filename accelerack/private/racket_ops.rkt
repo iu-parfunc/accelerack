@@ -43,7 +43,8 @@
 
 ;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
   )
-  acc-generate
+ acc-generate
+ acc-until
  )
 
 ;; Map a function over every element, irrespective of dimension.
@@ -178,3 +179,15 @@
 		 ;; handle other boundary conditions here
 		 [else (error 'stencil-range2d "Invalid boundary condition")])
 	       (manifest-array-flatref arr ind))))))))
+
+
+;; While/until loop
+;; --------------------------------------------------------------------------------
+
+
+(define (acc-until init predfn bodfn)
+  (let loop ((val init))    
+    (if (predfn val)
+        val
+        (loop (bodfn val)))))
+        

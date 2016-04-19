@@ -2,7 +2,6 @@
 (require accelerack
          rackunit)
 
-#;
 (test-case "plain-racket:: map, change type"
     (define x (map (lambda(x) (>= x 20))
                    (acc-array (10 20 30))))
@@ -12,7 +11,7 @@
   (define-acc x (map (lambda (arg) (+ arg 1))
                      (acc-array (1 2 3))))
   (check-equal? 2 (car (acc-array->sexp x))))
-#|
+
 (test-case "acc: map2, separate def"
   (define-acc x (acc-array (1 2 3)))
   (define-acc y (map (lambda(x) (+ x 1)) x))
@@ -29,7 +28,6 @@
   (define y (map add1 x))
   ; (printf "X array: ~a, Y array: ~a\n" x y)
   (check-equal? '(16.15 26.25) (acc-array->sexp y)))
-|#
 
 ;; Disabled until we support use:
 ;; (test-case "13: map of use"

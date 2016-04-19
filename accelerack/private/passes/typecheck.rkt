@@ -48,14 +48,41 @@
    (lambda (id1 id2) (equal? (syntax->datum id1)
                              (syntax->datum id2)))))
 
-;; TypeInst:
-;; ---------
-;; Instantiated types.  This includes everything in acc-type? plus
-;; The tyvar struct.
+(define empty-set (list->seteq '()))
+(define (make-mono-schema mono) (make-type-schema empty-set mono))
+
+;; Instantiated Tyes:
+;; ------------------
+;; This includes everything in acc-type? plus the tyvar struct.
+(define (instantiated-type? t)
+  (match t
+    ;; Because this is not yet monomorphic we cannot determine for
+    ;; sure whether the "n" and "elt" meet their constraints here:
+    [`(Array ,n ,elt) (and (instantiated-type? n)
+                           (instantiated-type? elt))]
+    ;; Likewise, we may end up with constraints that reference type
+    ;; level numbers:
+    [(? exact-nonnegative-integer?) #t]
+    [`#( ,t* ...)     (andmap instantiated-type? t*)]
+    [`(-> ,t* ...)    (andmap instantiated-type? t*)]
+    [(? tyvar?)
+     (if (tyvar-ptr t)
+         (instantiated-type? (tyvar-ptr t))
+         #t)]
+    [(? symbol?)
+     ;; Can't have zero-char symbols so this should be safe:
+     #:when (char-lower-case? (string-ref (symbol->string t) 0))
+     #t]
+    ['SExp   #t]
+    ['Int    #t]
+    ['Bool   #t]
+    ['Double #t]
+    [_       #f]))
+
 
 ;; TyVars are mutable pointers to another type
 (define-struct tyvar
-  ([ptr #:mutable] ;; #f or a TypeInst
+  ([ptr #:mutable] ;; #f or a instantiated-type?
     name           ;; symbol?, For nicer printing
     numeric        ;; boolean?
    )
@@ -96,7 +123,14 @@
            (raise-syntax-error
             #f
             (format "Attempt to reference unbound variable ~a inside accelerack code.\n"
-                    (syntax->datum var)))])))) 
+                    (syntax->datum var)))]))))
+
+(define/contract (tenv-set te k v)
+  ;; These are type-schemas:
+  (-> dict? identifier? type-schema? dict?)
+  (dict-set te k v))
+
+
 
 ;; ------------------------------------------------------------
 
@@ -113,26 +147,25 @@
     (for/fold ([env empty-tenv])
               ([(id ty) (in-dict acc-primop-types)])
       ;; TODO: could store type schemas a priori:
-      (dict-set env id (generalize ty))))
+      (tenv-set env id (generalize ty))))
   (define env1
     (for/fold ([env env0])
               ([pr syn-table])
       (match pr
         [`(,v . ,(acc-syn-entry ty expr))
          ;; TODO: could store type schemas a priori:
-         (dict-set env v (generalize ty))])))
+         (tenv-set env v (generalize ty))])))
   ;; Rip out the type variable stuff:
   (define-values (ty e2) (infer e env1))
   (values (collapse ty) e2))
 
 
-;; TypeInst TypeInst -> TypeInst
+;; instantiated-type? instantiated-type? -> instantiated-type?
 (define (unify-types ctxt t1 t2)
   (match/values (values t1 t2)
     [((? tyvar?) _)
-
-     (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
-     ;; occurs check here!!     
+     ; (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
+     ;; TODO: occurs check here!!     
      (set-tyvar-ptr! t1 
                      (if (tyvar-ptr t1)                         
                          (unify-types ctxt (tyvar-ptr t1) t2)
@@ -167,7 +200,7 @@
 ;; Returns two values:
 ;;   (1) principal type of expression
 ;;   (2) fully annotated expression
-(trace-define (infer stx tenv)
+(define (infer stx tenv)
 
   ;; Recur on a whole list in the same tenv.
   ;; Handles multiple-value boilerplate:
@@ -201,7 +234,7 @@
                    (for/list ([(k v) (in-dict tenv)])
                      (format "  ~a : ~a\n" k v)))
             #'x)]
-       [ity (values (instantiate ity)
+       [ity (values (instantiate-scheme ity)
                     #'x)])]
     
     ;; Other features, Coming soon:
@@ -250,7 +283,6 @@
      (define primty (instantiate (tenv-ref acc-primop-types #'p)))
      (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
      (define fresh (make-tyvar #f 'res #f))
-     (printf " GOT ARG TYPES: ~a \nFROM ~a\n" argtys (syntax->list #'(args ...)))
      (unify-types stx primty `(-> ,@argtys ,fresh))
      (values fresh
              #`(p #,@newargs))]
@@ -263,10 +295,8 @@
      (define tenv2 (for/fold ([te tenv])
                              ([x xs]
                               [fresh freshes])
-                     (dict-set te x fresh)))
+                     (tenv-set te x (make-mono-schema fresh))))
      (define-values (tbod bod) (infer #'e tenv2))
-     (printf "TENV UNDER LAM:\n  ~a\n" (dict->list tenv2))
-     (printf "RESULT TY: ~a\n" `(-> ,@freshes ,tbod))
      (values `(-> ,@freshes ,tbod)
              ;; TODO: must return annotated here:
              #`(lambda (x.name ...) #,bod))]
@@ -336,13 +366,13 @@
 (define (generalize mono)
   (make-type-schema (free-vars mono) mono))
 
-;; free variables: TypeInst -> seteq?
+;; free variables: instantiated-type? -> seteq?
 ;; Fetches all the variables in the input given
 (define (free-vars ty)
   (match ty
     [sym #:when (symbol? sym) (list->seteq (list sym))]
-    [elt #:when (acc-element-type? elt)            (list->seteq '())]
-    [num #:when (exact-nonnegative-integer? num)   (list->seteq '())]
+    [elt #:when (acc-element-type? elt)            empty-set]
+    [num #:when (exact-nonnegative-integer? num)   empty-set]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
     [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
     [`#(,vs ...) (apply set-union (map free-vars vs))]
@@ -350,21 +380,22 @@
     [(? tyvar?)
      (if (tyvar-ptr ty)
          (free-vars (tyvar-ptr ty))
-         (list->seteq '()))]))
+         empty-set)]))
 
 (check-equal? (free-vars '(-> a (-> b a)))
               (list->seteq '(a b)))
 
 ;; instantiate: scheme -> type
 (define/contract (instantiate-scheme scheme)
-  (-> type-schema? any/c)
+  (-> type-schema? instantiated-type?)
   (match-define (type-schema vars monoty) scheme)
   (for/fold ([ty monoty])
             ([q  vars])
     (define fresh (make-tyvar #f q (numeric-type-var? q)))
     (subst ty q fresh)))
   
-(define (instantiate mono)
+(define/contract (instantiate mono)
+  (-> acc-type? instantiated-type?)
   (instantiate-scheme
    (make-type-schema (free-vars mono) mono)))
 

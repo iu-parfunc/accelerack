@@ -111,9 +111,12 @@
     [`#( ,t* ...)     (andmap acc-type? t*)]
     [`(-> ,t* ...)    (andmap acc-type? t*)]
     [(? acc-scalar-type? t) #t]
-    [(? symbol? t)
-     ;; RRN: Where does this restriction come from?
-     ; (let  ((t (symbol->string t))) (regexp-match #rx"(arg.*)|(app.*)|(x.*)" t))
+    ;; For some special forms like stencil bounds:
+    ['SExp #t]
+    ;; Type variables.  Currently these must start lower case.
+    [(? symbol?)
+     ;; Can't have zero-char symbols so this should be safe:
+     #:when (char-lower-case? (string-ref (symbol->string t) 0))
      #t]
     [t (acc-element-type? t)]))
 
@@ -128,8 +131,8 @@
 
 ;; TypeSchema:
 (define-struct type-schema
-  (vars   ;; setof TermVariable
-   monoty ;; acc-type?
+  (vars   ;; setof TermVariable   
+   monoty ;; acc-type? or instantiated-type? -- decide which
    )
   #:guard (lambda (v m _)
             (unless (set-eq? v)
@@ -155,6 +158,7 @@
 
 ;; The type of self-contained, serializable, Accelerack computations.
 ;; These can be sent across the FFI, or, in principle, even across the network.
+
 (struct acc-portable-package (sexp array-table)
 
   )

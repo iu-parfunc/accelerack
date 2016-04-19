@@ -106,8 +106,9 @@
   (define (count d)
     (syntax-parse d
       [(v more ...) (add1 (count #'v))]
-      [else 0]))    
+      [else 0]))
   #`(Array #,(count d) #,(infer-element-type d)))
+
 
 (test-equal? "infer-array-type1"
              (syntax->datum (infer-array-type #'((3))))

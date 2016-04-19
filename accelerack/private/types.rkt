@@ -117,7 +117,7 @@
      #t]
     [t (acc-element-type? t)]))
 
-(check-equal? (acc-type? '(Array n a)) #t)
+(check-true (acc-type? '(Array n a)))
 
 (define (numeric-type-var? t)
   (match t
@@ -134,8 +134,11 @@
   #:guard (lambda (v m _)
             (unless (set-eq? v)
               (raise-argument-error 'make-type-schema "set-eq?" v))
-            (unless (acc-type? m)
-              (raise-argument-error 'make-type-schema "acc-type?" m))
+
+            ;; Loosening this for now to include instantiated types too:
+            ;; (unless (acc-type? m)
+            ;;   (raise-argument-error 'make-type-schema "acc-type?" m))
+            
             (values v m))
   #:transparent)
 

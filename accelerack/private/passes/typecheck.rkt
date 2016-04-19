@@ -42,7 +42,11 @@
 ;; ---------
 ;; Immutable dict of type:  syntax? (TermVariable) -> type-schema?
 
-(define empty-tenv (make-immutable-hasheq))
+(define empty-tenv
+  (make-immutable-custom-hash
+   ; free-identifier=?
+   (lambda (id1 id2) (equal? (syntax->datum id1)
+                             (syntax->datum id2)))))
 
 ;; TypeInst:
 ;; ---------
@@ -55,7 +59,7 @@
     name           ;; symbol?, For nicer printing
     numeric        ;; boolean?
    )
-  ; #:transparent
+  #:transparent
   )
 
 
@@ -100,10 +104,8 @@
   (pass-output-chatter 'typecheck-expr e)
   (reset-var-cnt)
 
-  ;; For now handle the primop types separately:
-  (define env2 (make-immutable-hash))
   (define env0
-    (for/fold ([env env2])
+    (for/fold ([env empty-tenv])
               ([(id ty) (in-dict acc-primop-types)])
       ;; TODO: could store type schemas a priori:
       (dict-set env id (generalize ty))))
@@ -113,20 +115,28 @@
       (match pr
         [`(,v . ,(acc-syn-entry ty expr))
          ;; TODO: could store type schemas a priori:
-         (hash-set env v (generalize ty))])))
-  (infer e env1))
+         (dict-set env v (generalize ty))])))
+  ;; Rip out the type variable stuff:
+  (define-values (ty e2) (infer e env1))
+  (values (collapse ty) e2))
 
 
 ;; TypeInst TypeInst -> TypeInst
-(define (unify-types ctxt t1 t2)
+(trace-define (unify-types ctxt t1 t2)
   (match/values (values t1 t2)
     [((? tyvar?) _)
      ;; occurs check here!!
      (set-tyvar-ptr! t1 
                      (if (tyvar-ptr t1)
-                         (unify-types (tyvar-ptr t1) t2)
-                         t2))]
-    [(_ (? tyvar?)) (unify-types t2 t1)] ;; Flip!
+                         (unify-types ctxt (tyvar-ptr t1) t2)
+                         t2))
+     t1]
+    [(_ (? tyvar?)) (unify-types ctxt t2 t1)] ;; Flip!
+
+    [(`(Array ,n1 ,e1) `(Array ,n2 ,e2))
+     `(Array ,(unify-types ctxt n1 n2)
+             ,(unify-types ctxt e1 e2))]
+    
     [(`(-> ,as ...) `(-> ,bs ...))
      `(-> ,@(for/list ([a as] [b bs])
               (unify-types ctxt a b)))]
@@ -155,9 +165,13 @@
   ;; Recur on a whole list in the same tenv.
   ;; Handles multiple-value boilerplate:
   (define (infer-list ls)
-    (for/fold ([tys '()] [xs '()])
-              ([x ls])
-      (infer x tenv)))
+   (define-values [ls1 ls2]
+     (for/fold ([tys '()] [xs '()])
+               ([x ls])
+      (define-values [xty xnew] (infer x tenv))
+      (values (cons xty tys)
+              (cons xty xs))))
+   (values (reverse ls1) (reverse ls2)))
     
   (syntax-parse stx
     #:literals (acc-array acc-array-ref :
@@ -180,7 +194,7 @@
                    (for/list ([(k v) (in-dict tenv)])
                      (format "  ~a : ~a\n" k v)))
             #'x)]
-       [pty (values (instantiate-scheme pty)
+       [ity (values (instantiate ity)
                     #'x)])]
     
     ;; Other features, Coming soon:
@@ -229,8 +243,7 @@
      (define primty (instantiate (tenv-ref acc-primop-types #'p)))
      (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
      (define fresh (make-tyvar #f 'arg #f))
-     (trace-define template `(-> ,@argtys ,fresh))
-     (values (unify-types #'stx primty template)
+     (values (unify-types stx primty `(-> ,@argtys ,fresh))
              #`(p #,@newargs))]
 
     ;; Method one, don't match bad params:
@@ -306,20 +319,27 @@
               'Double)
 
 
+;; FIXME: this needs to take the environment and set-difference it.
+;;
 ;; generalize: set(type var) -> type -> scheme
 (define (generalize mono)
   (make-type-schema (free-vars mono) mono))
 
-;; free variables: type -> seteq?
+;; free variables: TypeInst -> seteq?
 ;; Fetches all the variables in the input given
-(trace-define (free-vars ty)
+(define (free-vars ty)
   (match ty
     [sym #:when (symbol? sym) (list->seteq (list sym))]
     [elt #:when (acc-element-type? elt)            (list->seteq '())]
     [num #:when (exact-nonnegative-integer? num)   (list->seteq '())]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
     [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
-    [`#(,vs ...) (apply set-union (map free-vars vs))]))
+    [`#(,vs ...) (apply set-union (map free-vars vs))]
+
+    [(? tyvar?)
+     (if (tyvar-ptr ty)
+         (free-vars (tyvar-ptr ty))
+         (list->seteq '()))]))
 
 (check-equal? (free-vars '(-> a (-> b a)))
               (list->seteq '(a b)))
@@ -333,11 +353,11 @@
     (define fresh (make-tyvar #f q (numeric-type-var? q)))
     (subst ty q fresh)))
   
-(define (instantiate mono)
+(trace-define (instantiate mono)
   (instantiate-scheme
    (make-type-schema (free-vars mono) mono)))
 
-(trace-define (subst ty var new)
+(define (subst ty var new)
   (define (go x) (subst x var new))
   (match ty
     [(? symbol? t)
@@ -353,6 +373,23 @@
      (if (tyvar-ptr tv)
          (set-tyvar-ptr! tv (go (tyvar-ptr tv)))
          tv)]
+    ))
+
+;; Remove type variables:
+;; TyInst -> MonoTy (i.e. acc-type?)
+(define (collapse ty)
+  (match ty
+    [(? tyvar?)     
+     (if (tyvar-ptr ty)
+         (collapse (tyvar-ptr ty))
+         (tyvar-name ty))]
+    [(? symbol?) ty]
+    [`(Array ,n ,elt)
+     `(Array ,(collapse n) ,(collapse elt))]
+    [`#( ,t* ...)     (list->vector (map collapse t*))]
+    [`(-> ,t* ...)   `(-> ,@(map collapse t*))]
+    [(? acc-scalar-type?)           ty]
+    [(? exact-nonnegative-integer?) ty]
     ))
 
 (test-case "instantiate"

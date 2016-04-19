@@ -59,14 +59,19 @@
     name           ;; symbol?, For nicer printing
     numeric        ;; boolean?
    )
-  #:transparent
+  ; #:transparent
+  #:methods gen:custom-write
+  [(define (write-proc v prt mode)
+     (display ; (if mode write print)
+      (if (tyvar-ptr v)
+          (format "~a=~a" (tyvar-name v) (tyvar-ptr v))
+          (format "<~a>" (tyvar-name v)))
+      prt))]
   )
-
 
 ;; ------------------------------------------------------------
 
 ;; Type Enviroment reference with good errors:
-8
 
 (define (tenv-ref d var)
   (define res (dict-ref d var #f))
@@ -122,12 +127,14 @@
 
 
 ;; TypeInst TypeInst -> TypeInst
-(trace-define (unify-types ctxt t1 t2)
+(define (unify-types ctxt t1 t2)
   (match/values (values t1 t2)
     [((? tyvar?) _)
-     ;; occurs check here!!
+
+     (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
+     ;; occurs check here!!     
      (set-tyvar-ptr! t1 
-                     (if (tyvar-ptr t1)
+                     (if (tyvar-ptr t1)                         
                          (unify-types ctxt (tyvar-ptr t1) t2)
                          t2))
      t1]
@@ -242,8 +249,10 @@
     [(p:acc-primop args ...)
      (define primty (instantiate (tenv-ref acc-primop-types #'p)))
      (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
-     (define fresh (make-tyvar #f 'arg #f))
-     (values (unify-types stx primty `(-> ,@argtys ,fresh))
+     (define fresh (make-tyvar #f 'res #f))
+     (printf " GOT ARG TYPES: ~a \nFROM ~a\n" argtys (syntax->list #'(args ...)))
+     (unify-types stx primty `(-> ,@argtys ,fresh))
+     (values fresh
              #`(p #,@newargs))]
 
     ;; Method one, don't match bad params:
@@ -256,6 +265,8 @@
                               [fresh freshes])
                      (dict-set te x fresh)))
      (define-values (tbod bod) (infer #'e tenv2))
+     (printf "TENV UNDER LAM:\n  ~a\n" (dict->list tenv2))
+     (printf "RESULT TY: ~a\n" `(-> ,@freshes ,tbod))
      (values `(-> ,@freshes ,tbod)
              ;; TODO: must return annotated here:
              #`(lambda (x.name ...) #,bod))]
@@ -353,7 +364,7 @@
     (define fresh (make-tyvar #f q (numeric-type-var? q)))
     (subst ty q fresh)))
   
-(trace-define (instantiate mono)
+(define (instantiate mono)
   (instantiate-scheme
    (make-type-schema (free-vars mono) mono)))
 

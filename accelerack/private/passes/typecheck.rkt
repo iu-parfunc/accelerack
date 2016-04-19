@@ -165,7 +165,8 @@
   (match/values (values t1 t2)
     [((? tyvar?) _)
      ; (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
-     ;; TODO: occurs check here!!     
+     ;; TODO: occurs check here!!
+     (check-occurs ctxt (tyvar-name t1) t2)
      (set-tyvar-ptr! t1 
                      (if (tyvar-ptr t1)                         
                          (unify-types ctxt (tyvar-ptr t1) t2)
@@ -196,6 +197,15 @@
                              "Found: ~a\n")
               t1 t2)
       ctxt)]))
+
+;; Var instantiated-type? -> boolean?
+(define/contract (check-occurs stx var type)
+  (-> syntax? symbol? any/c void?)
+  (when (set-member? (free-vars type) var)
+    ;This is an infinite type. Send an error back
+    (raise-syntax-error 'occurs-check
+                        (format "Occurs check failed, ~a occurs in ~a\n" var type)
+                        stx)))
 
 ;; Returns two values:
 ;;   (1) principal type of expression
@@ -366,17 +376,16 @@
 (define (generalize mono)
   (make-type-schema (free-vars mono) mono))
 
-;; free variables: instantiated-type? -> seteq?
+;; free variables: instantiated-type? -> (seteq? of symbol?)
 ;; Fetches all the variables in the input given
 (define (free-vars ty)
-  (match ty
-    [sym #:when (symbol? sym) (list->seteq (list sym))]
+  (match ty    
     [elt #:when (acc-element-type? elt)            empty-set]
     [num #:when (exact-nonnegative-integer? num)   empty-set]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
     [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
     [`#(,vs ...) (apply set-union (map free-vars vs))]
-
+    [sym #:when (symbol? sym) (list->seteq (list sym))]
     [(? tyvar?)
      (if (tyvar-ptr ty)
          (free-vars (tyvar-ptr ty))
@@ -451,14 +460,7 @@
 
 
 ;; ------------------------ SOLVER and UNIFYIER related stuff ------------------------
-;; Var Type -> ((var . type)...)
-(define (occurs-check var type)
-  (cond
-    [(equal? var type) '()]
-    ;This is an infinite type. Send an error back
-    [(set-member? (free_vars type) var)
-     (raise-syntax-error 'occurs-check (format "Occurs check failed, ~a occurs in ~a\n" var type))]
-    [else `(,(cons var type))]))
+
 
 (define (sub-arr-helper s val)
   (match val

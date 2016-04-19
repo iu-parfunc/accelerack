@@ -25,7 +25,7 @@
  (for-template
   accelerack/private/wrappers
   ;; Keyword symbols come from a mix of three places currently:
-  (only-in accelerack/private/syntax acc-array)
+  (only-in accelerack/private/syntax acc-array acc-lambda-param)
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords : Array Int Bool Double use ->))
 
@@ -62,17 +62,6 @@
   (pattern (-> opera:acc-type ...))
   (pattern (Array n:integer elt:acc-element-type))
   (pattern t:acc-element-type))
-
-(define-syntax-class acc-lambda-param
-  #:description "an Accelerack lambda parameter with optional type"
-  #:literals (:)
-  #:attributes (name type)
-  (pattern x:id
-           #:with name #'x
-           #:with type #f)
-  (pattern (x:id : t:acc-type)
-           #:with name #'x
-           #:with type (syntax->datum #'t)))
 
 (define-syntax-class acc-let-bind
   #:description "an Accelerack let-binding with optional type"

@@ -28,7 +28,8 @@
          acc-primop-lits
          acc-primop-types
          ; acc-primop-identifier?
-
+         acc-lambda-param
+         
          acc-scalar-lits
          acc-element-type
 
@@ -104,6 +105,17 @@
   #:description "a type for element data that can go inside an array"
   (pattern p:id #:when (acc-scalar-identifier? #'p))
   (pattern #(t:acc-element-type ...)))
+
+(define-syntax-class acc-lambda-param
+  #:description "an Accelerack lambda parameter with optional type"
+  #:literals (:)
+  #:attributes (name type)
+  (pattern x:id
+           #:with name #'x
+           #:with type #f)
+  (pattern (x:id : t:acc-type)
+           #:with name #'x
+           #:with type (syntax->datum #'t)))
 
 
 ;; A convenient syntax for literal arrays, which does not require the

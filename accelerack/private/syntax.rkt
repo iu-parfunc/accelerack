@@ -28,18 +28,10 @@
 
          acc-scalar-lits
          acc-element-type
+
+         infer-element-type
          )
 (provide (all-from-out accelerack/private/keywords))
-
-; Syntax -> Syntax (acc-element-type?)
-(define-for-syntax (infer-type d)
-  (syntax-parse d
-    [_:boolean #'Bool ]
-    [_:number (if (flonum? (syntax-e d)) #'Double #'Int)]
-    [#(v ...) #`(#,@(list->vector (map infer-type (syntax->list #'(v ...)))))]
-    ;; To get the element type we dig inside any arrays:
-    [(v more ...) (infer-type #'v)]
-    ))
 
 (define-for-syntax (infer-shape d)
   (syntax-parse d
@@ -57,7 +49,7 @@
     #:attributes (shape type)
     [pattern v
              #:with shape (infer-shape #'v)
-             #:with type (infer-type #'v)
+             #:with type (infer-element-type #'v)
              ])
   )
 

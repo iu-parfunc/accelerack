@@ -10,11 +10,12 @@
          acc-element->type
 
          ;; Syntax
-         acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
-
+         acc-syn-entry acc-syn-entry-type acc-syn-entry-expr         
+         
          ;; Types
          acc-type? acc-scalar-type? acc-element-type?
-
+         type-schema? type-schema-vars type-schema-monoty
+         
          ;; delayed scalars are not fully implemented yet [2016.04.11]:
          acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
 
@@ -58,7 +59,10 @@
 
 ;; O(N) Something which is SExp data representing Accelerack arrays or elements.
 (define acc-sexp-data?
-  (or/c acc-sexp-data-shallow? list?))
+  ;; TODO: it should check for consistent nesting depth:
+  (or/c acc-sexp-data-shallow? (listof acc-sexp-data?)))
+
+
 
 
 ;; Valid shapes are just lists of numbers
@@ -107,6 +111,19 @@
     [(? symbol? t) (let  ((t (symbol->string t))) (regexp-match #rx"(arg.*)|(app.*)|(x.*)" t))]
     [t (acc-element-type? t)]))
 
+
+;; TypeSchema:
+(define-struct type-schema
+  (vars   ;; setof TermVariable
+   monoty ;; acc-type?
+   )
+  #:guard (lambda (v m)            
+            (unless (set-eq? v)
+              (raise-argument-error 'make-type-schema "set-eq?" v))
+            (unless (acc-type? m)
+              (raise-argument-error 'make-type-schema "acc-type?" e))
+            (values t e))
+  #:transparent)
 
 ;; The same idea, but for scalar data.
 ;;

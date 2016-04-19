@@ -1,5 +1,7 @@
 #lang racket
 
+;; Helper functions used in macros.
+
 (require (except-in ffi/unsafe ->)
          racket/contract
          (only-in accelerack/private/types acc-element-type? acc-scalar? acc-int? acc-element?)
@@ -78,3 +80,13 @@
                               dat))
             len-check))))
 
+
+; Syntax -> Syntax (acc-element-type?)
+(define (infer-element-type d)
+  (syntax-parse d
+    [_:boolean #'Bool ]
+    [_:number (if (flonum? (syntax-e d)) #'Double #'Int)]
+    [#(v ...) #`(#,@(list->vector (map infer-type (syntax->list #'(v ...)))))]
+    ;; To get the element type we dig inside any arrays:
+    [(v more ...) (infer-type #'v)]
+    ))

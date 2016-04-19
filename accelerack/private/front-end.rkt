@@ -20,6 +20,8 @@
 
 ;; The table in which Accelerack syntax is accumulated so as to
 ;; communicate it between textually separate (acc ..) forms.
+;;
+;; It maps variables (symbols) onto acc-syn-entry records.
 (define acc-syn-table (box (make-immutable-free-id-table)))
 
 (define (snap-as-syntax)

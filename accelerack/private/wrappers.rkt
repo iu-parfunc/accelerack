@@ -5,7 +5,7 @@
 
 (require 
          accelerack/private/racket_ops
-         ;(for-syntax racket/base syntax/parse)
+         (for-syntax racket/base syntax/parse)
          (prefix-in r: racket/base)
          accelerack/private/types
          (only-in accelerack/acc-array/private make-acc-array)
@@ -25,7 +25,9 @@
                               acc-element?)
                           stencil-boundary? acc-array?
                           acc-array?)])
-          generate
+         generate
+         until
+         replicate
          
          ;; Reexported:
          acc-array-ref acc-array-flatref
@@ -59,4 +61,17 @@
 
 (define (generate f . dims)
   (make-acc-array (apply acc-generate f dims)))
+
+(define-syntax (until stx)
+  (syntax-parse stx
+    [(_ (i:id initv pred) bod)
+     #'(acc-until initv
+                  (lambda (i) pred)
+                  (lambda (i) bod))]))
+
+(define-syntax (replicate stx)
+  (syntax-parse stx
+    [(_ pat1 pat2 arr)
+     #'(make-acc-array
+        (acc-replicate (quote pat1) (quote pat2) (force-acc-array! arr)))]))
 

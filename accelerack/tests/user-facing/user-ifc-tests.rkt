@@ -88,6 +88,57 @@
                           x7 x8 x9))
                 `(Constant 0)
 		x))
+
+
+  (test-equal? "until"
+               (acc-array->sexp
+                (generate (lambda ()
+                            (until (i 1 (= i 10))
+                                   (add1 i)))))
+               10)
+
+  (test-equal? "replicate"
+               (acc-array->sexp
+                (replicate () (5)
+                           (generate (lambda () 9))))
+               '(9 9 9 9 9))
+
+  (test-equal? "replicate2"
+               (acc-array->sexp
+                (replicate (r) (r 5)
+                           (acc-array (1 2))))
+               '((1 1 1 1 1)
+                 (2 2 2 2 2)))
+  
+  (test-equal? "replicate3"
+               (acc-array->sexp
+                (replicate (c) (5 c)
+                           (acc-array (1 2))))
+               '((1 2)
+                 (1 2)
+                 (1 2)
+                 (1 2)
+                 (1 2)))
+
+  (test-equal? "replicate4"
+               (acc-array->sexp
+                (replicate (i) (3 i 3)
+                           (acc-array (1 2))))
+               '(((1 1 1)
+                  (2 2 2))
+                 ((1 1 1)
+                  (2 2 2))
+                 ((1 1 1)
+                  (2 2 2))))
+
+  (test-equal? "replicate zipwith"
+               (acc-array->sexp
+                (zipwith vector
+                         (replicate (c) (3 c) (acc-array (1 2 3)))
+                         (replicate (r) (r 3) (acc-array (1 2 3)))))
+               '((#(1 1) #(2 1) #(3 1))
+                 (#(1 2) #(2 2) #(3 2))
+                 (#(1 3) #(2 3) #(3 3))))
   
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
@@ -99,6 +150,7 @@
                    (check-equal? 2 (car (acc-array->sexp y))))))
 
 
+  
   ;; WAIT TILL A LATER VERSION:
 
   ; TODO: Scalar support

@@ -24,14 +24,16 @@
          (only-in accelerack/private/utils pass-output-chatter)
          accelerack/private/types
          accelerack/private/parse
-         (only-in accelerack/private/syntax acc-array : acc-primop-types acc-primop)
+         (only-in accelerack/private/syntax acc-array : acc-primop-types acc-primop
+                  acc-lambda-param acc-type)
          (only-in accelerack/private/wrappers acc-array-ref acc-array-flatref
                   zipwith fold stencil3x3 generate)
 
          (for-template (except-in racket/base map))
          (for-template (only-in accelerack/private/wrappers acc-array-ref
                                 map zipwith fold stencil3x3 generate))
-         (for-template (only-in accelerack/private/syntax acc-array :  ))
+         (for-template (only-in accelerack/private/syntax acc-array :
+                                acc-lambda-param acc-type))
          )
 
 ;; Data type definitions and predicates:
@@ -98,14 +100,14 @@
   (pass-output-chatter 'typecheck-expr e)
   (reset-var-cnt)
 
-  (define env0 (make-immutable-hash))
   ;; For now handle the primop types separately:
-  #;
+  (define env2 (make-immutable-hash))
   (define env0
-    (for/hasheq ([(id ty) acc-primop-types])
+    (for/fold ([env env2])
+              ([(id ty) (in-dict acc-primop-types)])
       ;; TODO: could store type schemas a priori:
-      (values id (generalize ty))))
-  (define env1        
+      (dict-set env id (generalize ty))))
+  (define env1
     (for/fold ([env env0])
               ([pr syn-table])
       (match pr
@@ -115,12 +117,48 @@
   (infer e env1))
 
 
-(define unify-types 'FINISHME-unify-types)
+;; TypeInst TypeInst -> TypeInst
+(define (unify-types ctxt t1 t2)
+  (match/values (values t1 t2)
+    [((? tyvar?) _)
+     ;; occurs check here!!
+     (set-tyvar-ptr! t1 
+                     (if (tyvar-ptr t1)
+                         (unify-types (tyvar-ptr t1) t2)
+                         t2))]
+    [(_ (? tyvar?)) (unify-types t2 t1)] ;; Flip!
+    [(`(-> ,as ...) `(-> ,bs ...))
+     `(-> ,@(for/list ([a as] [b bs])
+              (unify-types ctxt a b)))]
+    
+    [((vector as ...) (vector bs ...))
+     (for/vector ([a as] [b bs])
+       (unify-types ctxt a b))]
+    
+    [((? acc-element-type?) (? acc-element-type?))
+     #:when (equal? t1 t2)
+     t1]
+    [(_ _)
+     (raise-syntax-error
+      'unify-types
+      (format (string-append "Conflicting types.\n"
+                             "Expected: ~a\n"
+                             "Found: ~a\n")
+              t1 t2)
+      ctxt)]))
 
 ;; Returns two values:
 ;;   (1) principal type of expression
 ;;   (2) fully annotated expression
-(trace-define (infer stx tenv)  
+(trace-define (infer stx tenv)
+
+  ;; Recur on a whole list in the same tenv.
+  ;; Handles multiple-value boilerplate:
+  (define (infer-list ls)
+    (for/fold ([tys '()] [xs '()])
+              ([x ls])
+      (infer x tenv)))
+    
   (syntax-parse stx
     #:literals (acc-array acc-array-ref :
                 ;; FIXME: some of these can just be removed when they go to the prim table:
@@ -130,6 +168,21 @@
     [n:number  (values (acc-element->type (syntax->datum #'n)) #'n)]
     [b:boolean (values 'Bool #'n)]
 
+    [x:identifier
+     (match (dict-ref tenv #'x #f)
+       [#f (raise-syntax-error
+            'typecheck-expr
+            (apply string-append
+                   "Internal error, unbound variable should not be found at this point in the compiler.\n"
+                   (format "Unbound variable: ~a\n" (syntax->datum #'x))
+                   (format "Full variable syntax: ~a\n" #'x)
+                   "Full type environment:\n"
+                   (for/list ([(k v) (in-dict tenv)])
+                     (format "  ~a : ~a\n" k v)))
+            #'x)]
+       [pty (values (instantiate-scheme pty)
+                    #'x)])]
+    
     ;; Other features, Coming soon:
     ; [(: e t:acc-type) (verify-type #'t) (loop #'e)]
     ; [(use x:id) ...]
@@ -170,15 +223,30 @@
           (format "array reference of non-array type ~a" ty1)
           #'e1)])]
 
+    ;; FIXME: this can become the general application case:
     ;; This could be handled through the tenv:
     [(p:acc-primop args ...)
-     (define primty (tenv-ref acc-primop-types #'p))
+     (define primty (instantiate (tenv-ref acc-primop-types #'p)))
+     (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
+     (define fresh (make-tyvar #f 'arg #f))
+     (trace-define template `(-> ,@argtys ,fresh))
+     (values (unify-types #'stx primty template)
+             #`(p #,@newargs))]
 
-     (raise-syntax-error (syntax->datum #'p)
-          (format "FINISHME - primitive application not finished, type ~a" primty)
-          #'stx)]
-       
-
+    ;; Method one, don't match bad params:
+    [(lambda (x:acc-lambda-param ...) e)
+     (define xs (syntax->list #'(x ...)))
+     (define freshes (build-list (length xs)
+                                 (lambda (_) (make-tyvar #f 'a #f))))
+     (define tenv2 (for/fold ([te tenv])
+                             ([x xs]
+                              [fresh freshes])
+                     (dict-set te x fresh)))
+     (define-values (tbod bod) (infer #'e tenv2))
+     (values `(-> ,@freshes ,tbod)
+             ;; TODO: must return annotated here:
+             #`(lambda (x.name ...) #,bod))]
+    
     ;; Generate gets its own typing judgement.  It can't go in the prim table.
 ;    [(generate f es ...)
 ;    #`(generate )]
@@ -197,12 +265,6 @@
 
     [#(e* ...)
      (datum->syntax #'(e* ...) (list->vector (r:map loop (syntax->list #'(e* ...)))))]
-
-    ;; Method one, don't match bad params:
-    [(lambda (x:acc-lambda-param ...) e)
-     #`(lambda (x.name ...)
-         #,(verify-acc-helper
-            #'e (extend-env (syntax->list #'(x.name ...)) env)))]
 
     [(let ( lb:acc-let-bind ...) ebod)
      (define xls (syntax->list #'(lb.name ...)))
@@ -248,12 +310,13 @@
 (define (generalize mono)
   (make-type-schema (free-vars mono) mono))
 
-;; free variables: type -> set
+;; free variables: type -> seteq?
 ;; Fetches all the variables in the input given
 (trace-define (free-vars ty)
   (match ty
     [sym #:when (symbol? sym) (list->seteq (list sym))]
-    [elt #:when (acc-element-type? elt) (list->seteq '())]
+    [elt #:when (acc-element-type? elt)            (list->seteq '())]
+    [num #:when (exact-nonnegative-integer? num)   (list->seteq '())]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
     [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
     [`#(,vs ...) (apply set-union (map free-vars vs))]))
@@ -262,15 +325,19 @@
               (list->seteq '(a b)))
 
 ;; instantiate: scheme -> type
-(define (instantiate scheme)
+(define/contract (instantiate-scheme scheme)
+  (-> type-schema? any/c)
   (match-define (type-schema vars monoty) scheme)
   (for/fold ([ty monoty])
             ([q  vars])
     (define fresh (make-tyvar #f q (numeric-type-var? q)))
     (subst ty q fresh)))
   
+(define (instantiate mono)
+  (instantiate-scheme
+   (make-type-schema (free-vars mono) mono)))
 
-(define (subst ty var new)
+(trace-define (subst ty var new)
   (define (go x) (subst x var new))
   (match ty
     [(? symbol? t)
@@ -280,7 +347,8 @@
      `(Array ,(go n) ,(go elt))]
     [`#( ,t* ...)     (list->vector (map go t*))]
     [`(-> ,t* ...)   `(-> ,@(map go t*))]
-    [(? acc-scalar-type? t) t]
+    [(? acc-scalar-type?)           ty]
+    [(? exact-nonnegative-integer?) ty]
     [(? tyvar? tv)
      (if (tyvar-ptr tv)
          (set-tyvar-ptr! tv (go (tyvar-ptr tv)))
@@ -288,8 +356,8 @@
     ))
 
 (test-case "instantiate"
-  (instantiate (make-type-schema (list->seteq '(a b))
-                                 '(-> (-> a b) (Array n a) (Array n b)))))
+  (instantiate-scheme (make-type-schema (list->seteq '(a b))
+                                        '(-> (-> a b) (Array n a) (Array n b)))))
 
 #|
 
@@ -301,253 +369,6 @@
   (pass-output-chatter 'typecheck-expr e)
   (with-handlers ()
     (infer e syn-table)))
-
-;; RRN: TODO Eliminate syn-table call from infer.  It should take only
-;; expression and type-environment.
-
-(define (unify-types ty1 ty2)
-  ;; FINISHME
-  ;;(unify ty1 ty2)
-#t)
-
-
-
-
-
-;; active variables: constraints -> set(type var)
-(define (active_vars constraints)
-  ;(print constraints)
-  (foldl (lambda (constraint res)
-           (match constraint
-             [`(== ,v1 ,v2) (set-union (free_vars v1) (free_vars v2) res)]
-             [`(implicit ,v1 ,v2 ,v3) (set-union (free_vars v1) (set-intersect v3 (free_vars v2)) res)]
-             [`(explicit ,v1 ,v2) (set-union (free_vars v1) (free_vars v2) res)]))
-         (set) constraints))
-
-;; ---------------- Struct Record ----------------------------
-(struct infer-record ([assumptions #:mutable]
-                      [contraints #:mutable]
-                      type
-                      type-expr)
-  #:transparent
-  #:guard (lambda (as con t te type-name)
-            (cond
-              [(not (set-mutable? as))
-               (raise-syntax-error type-name (format "Assumptions: ~e has to be of the type mutable-set" as))]
-              [(not (set-mutable? con))
-               (raise-syntax-error type-name (format "Constraints: ~e has to be of the type mutable-set" con))]
-              [else (values as con t te)])))
-
-;; ------------------------ Classifiers ------------------------
-(define type_var? string?)
-(define type_con? symbol?)
-(define type_array? (lambda (x)
-                      (match x
-                        [`(Array ,len ,ls) #t]
-                        [else #f])))
-(define (type_fun? type)
-  (match type
-    [`(-> . ,t1) #t]
-    [else #f]))
-(define (type_scheme? type) (and (pair? type) (eq? (car type) 'scheme)))
-;; ------------------------ Actual Type inference ------------------------
-
-
-
-; [Var]
-; infer-var: Variable -> InferRecord
-(define (infer-var x env)
-  (let ((simple-type (or (dict-ref environment x #f)
-                         (let ([prev-acc (assoc x env)])
-                           ;;(displayln env)
-                           ;;(displayln prev-acc)
-                           (if prev-acc
-                               (cdr prev-acc)
-                               ;;(displayln ty)
-                               ;(acc-syn-entry-type (cdr prev-acc))
-                               #f)))))
-    (if simple-type
-        (infer-record (mutable-set) (mutable-set) simple-type x)
-        (let ([var (fresh x)])
-          (infer-record (mutable-set (cons x var))
-                        (mutable-set)
-                        var
-                        x)))))
-
-(define (get-acc-array-type x n)
-  (cond
-    [(null? x) (raise-syntax-error 'infer-lit (format "Empty list in acc-array not permitted " x) #`#,x)]
-    [(and (list? x) (null? (cdr x))) (get-acc-array-type (car x) (add1 n))]
-    [(list? x) (foldr (lambda (x y) (if (equal? x y) x #f))
-                      (get-acc-array-type (car x) (add1 n))
-                      (map (lambda(x) (get-acc-array-type x (add1 n))) (cdr x)))]
-    [else `(,n ,(infer-lit x))]))
-
-(define (infer-lit exp)
-  (match exp
-    [(? flonum?) 'Double]
-    [(? acc-int?) 'Int]
-    [(? boolean?) 'Bool]
-    [`(acc-array) (raise-syntax-error 'infer-lit (format "Empty list in acc-array not permitted " exp) #`#,exp)]
-    [`(acc-array ,ls)
-     (let ((type (get-acc-array-type ls 0)))
-       (if type
-           `(Array ,@type)
-           (raise-syntax-error 'infer-lit (format "All-vars of Acc-array should be of same type: ~a " exp) #`#,exp)))]
-    ;; Supporting tuples
-    [`#(,x ...)  `,(list->vector (map infer-lit x))]
-    [else (raise-syntax-error 'infer-lit (format "~a is not supported yet." exp) #`#,exp)]))
-
-(define (val-fold-fun fun env)
-  (match fun
-    [`(lambda ,params ,body) (if (eq? 2 (length (car (get-vars params '() '()))))
-                                 (infer-types fun env)
-                                 (raise-syntax-error 'infer-fold "Function Params cant be more than 2" #`#,fun))]
-    [else (infer-types fun env)]))
-
-;;((-> a a a) a (Array (add1 n) a) (Array n a))
-(define (infer-fold e env)
-  (match-define `(fold ,fun ,res ,arr) e)
-  (match-define (infer-record a0 c0 t0 te0) (val-fold-fun fun env))
-  (match-define (infer-record a1 c1 t1 te1) (infer-types res env))
-  (match-define (infer-record a2 c2 t2 te2) (infer-types arr env))
-  (match-define `(-> ,a3 ,a4 ,a5) t0)
-  (match-define `(Array ,n ,ty) t2)
-  (set-union! a0 a1 a2)
-  (set-union! c0 c1 c2 (set `(== ,a3 ,a4)) (set `(== ,a4 ,a5)) (set `(== ,a3 ,ty)))
-  (infer-record a0 c0 `(Array ,(sub1 n) ,ty) `(fold ,te0 ,te1 ,te2))
-  )
-
-
-;;((-> a b) (Array n a) (Array n b))
-(define (infer-map e env)
-  (match-define `(map ,fun ,arr) e)
-  (match-define (infer-record a0 c0 t0 te0) (infer-types fun env))
-  (match-define (infer-record a1 c1 t1 te1) (infer-types arr env))
-  (match t0
-     [`(-> ,a ,b) (void)]
-     [else (raise-syntax-error 'infer-map (format "The first parameter of map should be a function : ~a" fun) #`#,fun)])
-  (match t1
-     [`(Array ,n ,ty) (void)]
-     [else (raise-syntax-error 'infer-map (format "Invalid array format : ~a. Should be an acc-array." arr) #`#,arr)])
-  (match-define `(-> ,a ,b) t0)
-  (match-define `(Array ,n ,ty) t1)
-  (set-union! a0 a1)
-  (set-union! c0 (set `(== ,a ,ty)) c1)
-  (infer-record a0 c0 `(Array ,n ,b) `(map ,te0 ,te1)))
-
-(define (infer-use e t0 env)
-  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
-  (set-union! c1 (set `(== ,t1 ,t0)))
-  (infer-record a1 c1 t1 `(use ,te1 ,t0)))
-
-
-(define (infer-asc e t0 env)
-  (match-define (infer-record a1 c1 t1 te1) (infer-types e env))
-  (set-union! c1 (set `(== ,t1 ,t0)))
-  (infer-record a1 c1 t1 te1))
-
-;; Infer type for if statement
-(define (infer-cond e env)
-  (match-define `(if ,cnd ,thn ,els) e)
-  (match-define (infer-record ac cc tc tec) (infer-types cnd env))
-  (match-define (infer-record at ct tt tet) (infer-types thn env))
-  (match-define (infer-record ae ce te tee) (infer-types els env))
-  (set-union! ac at ae)
-  (set-union! cc ct ce (set `(== ,tt ,te)))
-  (infer-record ac cc tt `(if ,tec ,tet ,tee)))
-
-; [App] : Exp Environment -> InferRecord
-(define (infer-app exp env)
-  (let ((e1 (car exp))
-        (args (cdr exp))
-        (typevar (fresh "app")))
-    (match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
-    (let ([te1 `(,te1)])
-      (define argtypes
-        (for/list [(arg args)]
-          (match-define (infer-record a2 c2 t2 te2) (infer-types arg env))
-          ;(set-add! a1 typevar)
-          (set-union! a1 a2)
-          (set-union! c1 c2)
-          (set! te1 (append te1 `(,te2)))
-          t2))
-      (define ret-c
-        (if (and (pair? t1) (eq? (car t1) '->))
-          (list->set (map (lambda (v1 v2)
-                              `(== ,v1 ,v2)) (cdr t1) `(,@argtypes ,typevar)))
-          (set `(== ,t1 (-> ,@argtypes ,typevar)))))
-      (set-union! c1 ret-c)
-      (infer-record a1 c1 typevar te1))))
-
-; [Let]
-(define (infer-let exp env)
-  (match-define `(let ,vars ,body) exp)
-  (match-define (infer-record a1 c1 t1 te1)
-    (foldl (lambda (var res)
-             (match var
-               [`(,x ,e1)
-                (match-define (infer-record a c t te) (infer-types e1 env))
-                (match-define (infer-record ares cres tres te-res) res)
-                (set-union! ares a)
-                (set-union! cres c)
-                (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]
-               [`(,x : ,t0 ,e1)
-                (match-define (infer-record a c t te) (infer-types e1 env))
-                (match-define (infer-record ares cres tres te-res) res)
-                (set-union! ares a)
-                (set-union! cres c (set `(== ,t0 ,t)))
-                (infer-record ares cres tres (append `([,(list x ': t) ,te]) te-res))]))
-           (infer-record (mutable-set) (mutable-set) 'None '()) vars))
-  ;;(match-define (infer-record a1 c1 t1 te1) (infer-types e1 env))
-  (match-define (infer-record a2 c2 t2 te2) (infer-types body env))
-  ;(displayln body)
-  ;(displayln te2)
-  ;(set-union! a1 a2)
-  (set-union! c1 c2)
-  (set-for-each a2 (lambda (a)
-                     (let ([aval (assoc (car a) (map (lambda (var)
-                                                       (match-let ((`((,x : ,t) ,b) var))
-                                                         (list x t))) te1))])
-                       (if aval
-                           (set-add! c1 `(implicit ,(cdr a) ,(last aval) ,env))
-                           (set-add! a1 a)))))
-  (infer-record a1 c1 t2 `(let ,te1 ,te2)))
-
-
-(define (get-vars ls vars env)
-  (cond
-    [(null? ls) (list (reverse vars) env)]
-    [else (match (car ls)
-            [`(,x : ,t) (get-vars (cdr ls) (cons x vars)
-                                  (cons `(,x . ,t) env))]
-            [`,x (get-vars (cdr ls) (cons x vars) env)])]))
-
-(define (infer-lambda exp env)
-  (match-define `(lambda ,args ,body) exp)
-  (let* ((arg-vals (get-vars args '() '()))
-         (arg-env (map (lambda (arg)
-                         (let ([env-val (assoc arg (last arg-vals))])
-                          (cons arg (if env-val
-                                        (cdr env-val)
-                                        (fresh "arg"))))) (car arg-vals)))
-         (arg-vars (map cdr arg-env))
-         (c (mutable-set))
-         (a2 (mutable-set)))
-    (match-define (infer-record a c t e) (infer-types body (append arg-env env)))
-    (set-for-each a (lambda (y)
-                      (let ((lkp (assoc (car y) arg-env)))
-                        (if lkp
-                            (set-add! c `(== ,(cdr y) ,(cdr lkp)))
-                            (set-add! a2 y)))))
-    ;(displayln c)
-    (set-union! a2 a)
-    (define ret-type `(-> ,@arg-vars ,t))
-    (infer-record a2 c ret-type `(lambda ,(foldr (lambda (x res)
-                                                    (append `(,(list (car x) ': (cdr x))) res))
-                                                 '() arg-env) ,e))
-    ))
-
 
 
 ;; ------------------------ SOLVER and UNIFYIER related stuff ------------------------

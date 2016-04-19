@@ -97,6 +97,7 @@
     [_ #f]))
 
 ;; The SExp representation for an Accelerack element type.
+;; Note: this is a monotype.  No typevars allowed.
 (define (acc-element-type? t)
   (match t
     [`#( ,t* ...) (andmap acc-element-type? t*)]

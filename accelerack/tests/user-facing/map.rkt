@@ -9,7 +9,7 @@
     (check-equal? (acc-array->sexp x) '(#f #t #t)))
 
 (test-case "acc: map1"
-  (define-acc x (map (lambda(x) (+ x 1))
+  (define-acc x (map (lambda (arg) (+ arg 1))
                      (acc-array (1 2 3))))
   (check-equal? 2 (car (acc-array->sexp x))))
 #|

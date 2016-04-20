@@ -361,8 +361,14 @@
           (values `(Array ,(sub1 n) ,elt)
                   #`(fold #,newF #,newZer #,newArr))]
        [other (raise-syntax-error pass-name
-               (format "Fold is expected to take an array of known dimension.~a~a"
-                       "\nExpected non-negative integer dimension, instead found: " other)
+               (string-append 
+                "Fold is expected to take an array of known dimension.\n"
+                "Expected non-negative integer dimension, instead found "
+                (if (symbol? other)
+                    (format "type variable, '~a'\n" other)
+                    (format "unexpected type, '~a'\n" other))
+                (format "The input to fold had type: ~a" `(Array ,other ,(collapse elt)))
+                )
                stx
                )])]
     

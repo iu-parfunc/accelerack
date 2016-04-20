@@ -24,7 +24,7 @@
          (only-in accelerack/private/utils pass-output-chatter)
          accelerack/private/types
          accelerack/private/parse
-         (only-in accelerack/private/syntax acc-array : acc-primop-types acc-primop
+         (only-in accelerack/private/syntax acc-array : use acc-primop-types acc-primop
                   acc-lambda-param acc-type acc-element-literal acc-let-bind)
          (only-in accelerack/private/wrappers acc-array-ref acc-array-flatref
                   zipwith fold stencil3x3 generate)
@@ -497,7 +497,8 @@
 
 (test-case "instantiate"
   (instantiate-scheme (make-type-schema (list->seteq '(a b))
-                                        '(-> (-> a b) (Array n a) (Array n b)))))
+                                        '(-> (-> a b) (Array n a) (Array n b))))
+  (void))
 
 #|
 

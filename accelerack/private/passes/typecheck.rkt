@@ -36,6 +36,9 @@
                                 acc-lambda-param acc-type))
          )
 
+;; For error messages:
+(define pass-name 'accelerack-typecheck)
+
 ;; Data type definitions and predicates:
 
 ;; TypeEnv:
@@ -95,6 +98,12 @@
           (format "<~a>" (tyvar-name v)))
       prt))]
   )
+
+;; Create a fresh, non-numeric (Num class, i.e. Int/Double) tyvar.
+(define fresh-tyvar 
+  (case-lambda
+    [() (fresh-tyvar 'a)]
+    [(sym) (make-tyvar #f sym #f)]))
 
 ;; ------------------------------------------------------------
 
@@ -161,6 +170,7 @@
 
 
 ;; instantiated-type? instantiated-type? -> instantiated-type?
+;; If one of the two is "expected", it should be the latter.
 (define (unify-types ctxt t1 t2)
   (match/values (values t1 t2)
     [((? tyvar?) _)
@@ -193,10 +203,24 @@
      (raise-syntax-error
       'unify-types
       (format (string-append "Conflicting types.\n"
-                             "Expected: ~a\n"
-                             "Found: ~a\n")
+                             "Found: ~a\n"
+                             "Expected: ~a\n")
               t1 t2)
       ctxt)]))
+
+;; A method of unifying an arrow type that yields better, more
+;; localized error messages.  Specifically, it is better to highlight
+;; the argument of the wrong type than to highlight the whole application.
+(define (gentle-unify-arrow fnty fnstx ls)
+  ;; FINISHME:
+  (unify-types fnstx fnty `(-> ,@(map car ls)))
+  #;
+  (match fnty
+    [`(-> ,args ... ,res) ...]
+    [(? tyvar) (unify-types fnstx fnty `(-> ,@(map car ls)))]
+    [else (raise-syntax-error ...)])    
+  )
+  
 
 ;; Var instantiated-type? -> boolean?
 (define/contract (check-occurs stx var type)
@@ -292,7 +316,7 @@
     [(p:acc-primop args ...)
      (define primty (instantiate (tenv-ref acc-primop-types #'p)))
      (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
-     (define fresh (make-tyvar #f 'res #f))
+     (define fresh (fresh-tyvar 'res))
      (unify-types stx primty `(-> ,@argtys ,fresh))
      (values fresh
              #`(p #,@newargs))]
@@ -301,7 +325,7 @@
     [(lambda (x:acc-lambda-param ...) e)
      (define xs (syntax->list #'(x ...)))
      (define freshes (build-list (length xs)
-                                 (lambda (_) (make-tyvar #f 'a #f))))
+                                 (lambda (_) (fresh-tyvar))))
      (define tenv2 (for/fold ([te tenv])
                              ([x xs]
                               [fresh freshes])
@@ -316,7 +340,31 @@
 ;    #`(generate )]
 
     ;; Fold gets its own typing judgement.  It can't go in the prim table.
-;    [(fold f e1 e2)    #`(fold ...)]
+    [(fold f zer arr)
+     (define-values (arrty newArr) (infer #'arr tenv))
+     (define-values (fty newF)     (infer #'f   tenv))
+     (define-values (zerty newZer) (infer #'zer tenv))
+
+     (define ntv (fresh-tyvar 'n))
+     (define elt (fresh-tyvar))
+     
+     (gentle-unify-arrow fty #'f
+                         `((,zerty . ,#'zer)
+                           (,zerty . ,#'zer)
+                           (,zerty . ,#'zer)))
+     (unify-types #'arr arrty `(Array ,ntv ,elt))
+
+     ;; FIXME: We should defer the final check that the dimensions are concrete.
+     ;; Otherwise, whether it works can depend on the order of type inference.
+     (match (collapse ntv)
+       [n #:when (number? n)
+          (values `(Array ,(sub1 n) ,elt)
+                  #`(fold #,newF #,newZer #,newArr))]
+       [other (raise-syntax-error pass-name
+               (format "Fold is expected to take an array of known dimension.~a~a"
+                       "\nExpected non-negative integer dimension, instead found: " other)
+               stx
+               )])]
     
     #|
 

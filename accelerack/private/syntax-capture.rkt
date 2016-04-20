@@ -100,10 +100,13 @@
     ;; TODO: allow acc-lambda-param, not just identifier:
     [(_ x:identifier e)                     (go #'x #f #'e)]
     [(_ x:identifier : t:acc-type e)        (go #'x #'t #'e)]
-    [(_ (f:identifier x:identifier ...) e) (with-handlers
-                                             ([exn:fail? (lambda (exn)
-                                                           (raise-syntax-error 'syntax-error "synatax error" #`#,stx))])
-                                             (go #'f #f #'(lambda (x ...) e)))]))
+    [(_ (f:identifier x:identifier ...) e)
+     (with-handlers
+       ([exn:fail? (lambda (exn)
+                     (raise-syntax-error 'define-acc
+                                         (format "caught error during compilation:\n\n~a\n" exn)
+                                         stx))])
+       (go #'f #f #'(lambda (x ...) e)))]))
 
 
 ; --------------------------------------------------------------------------------

@@ -64,7 +64,14 @@
   (dict-set*
    (make-immutable-custom-hash free-identifier=?)
    #'+    '(-> num_a num_a num_a)
+   #'-    '(-> num_a num_a num_a)
+   #'*    '(-> num_a num_a num_a)
+   #'/    '(-> num_a num_a num_a)
+   
    #'add1 '(-> num_a num_a)
+   #'sub1 '(-> num_a num_a)
+   #'sqrt '(-> num_a num_a)
+   #'abs  '(-> num_a num_a)
    
    #'map  '(-> (-> a b) (Array n a) (Array n b))
    

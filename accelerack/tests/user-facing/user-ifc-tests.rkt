@@ -109,6 +109,13 @@
                            (generate (lambda () 9))))
                '(9 9 9 9 9))
 
+  (test-equal? "replicate'"
+	       (let ([x 5])
+		 (acc-array->sexp
+		  (replicate () (x)
+			     (generate (lambda () 9)))))
+	       '(9 9 9 9 9))
+
   (test-equal? "replicate2"
                (acc-array->sexp
                 (replicate (r) (r 5)

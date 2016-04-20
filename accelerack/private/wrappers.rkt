@@ -65,6 +65,7 @@
          generate
          until
          replicate
+	 auntil
          
          ;; Reexported:
          acc-array-ref acc-array-flatref
@@ -127,3 +128,9 @@
      #'(make-acc-array
         (acc-replicate (quote pat1) (quote pat2) (force-acc-array! arr)))]))
 
+(define-syntax (auntil stx)
+  (syntax-parse stx
+    [(_ (i:id initv pred) bod)
+     #'(acc-auntil initv
+		   (lambda (i) pred)
+		   (lambda (i) bod))]))

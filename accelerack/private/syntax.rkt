@@ -25,18 +25,23 @@
          (only-in rackunit check-not-false)
          )
 
-(provide acc-array
-         acc-primop
+(provide ;; Functions and macros
+         acc-array
+         ; acc-primop-identifier?
+         infer-element-type
+         
+         ;; Global constants:
          acc-primop-lits
          acc-primop-types
-         ; acc-primop-identifier?
-         acc-lambda-param
-         acc-type
-         
          acc-scalar-lits
+         
+         ;; Syntax classes:
+         acc-primop
+         acc-lambda-param
+         acc-let-bind
+         acc-type
          acc-element-type
-
-         infer-element-type
+         acc-element-literal
          )
 (provide (all-from-out accelerack/private/keywords))
 
@@ -150,6 +155,31 @@
 (check-true (syntax-parse #'(Array 3 Int)
               [t:acc-type #t]
               [else #f]))
+
+;; Syntactic class for literal data that goes inside an array.
+(define-syntax-class acc-element-literal
+  #:description "Accelerack element data (which can go in an array)"
+  (pattern _:boolean)
+  (pattern ns:number #:when
+           (let ((n (syntax->datum #'ns)))
+             (or (flonum? n) (exact-integer? n))))
+  (pattern #( _:acc-element-literal ...)))
+
+
+(define-syntax-class acc-let-bind
+  #:description "an Accelerack let-binding with optional type"
+  #:literals (:)
+  #:attributes (name type rhs)
+  (pattern (x:id expr)
+           #:with name #'x
+           #:with type #f
+           #:with rhs #'expr)
+  (pattern (x:id : t:acc-type expr)
+           #:with name #'x
+           #:with type (syntax->datum #'t)
+           #:with rhs #'expr
+           ) ;; TODO: Could use acc-expr class.  Transform verify-acc into it?
+  )
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

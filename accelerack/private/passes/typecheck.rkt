@@ -25,7 +25,7 @@
          accelerack/private/types
          accelerack/private/parse
          (only-in accelerack/private/syntax acc-array : acc-primop-types acc-primop
-                  acc-lambda-param acc-type)
+                  acc-lambda-param acc-type acc-element-literal acc-let-bind)
          (only-in accelerack/private/wrappers acc-array-ref acc-array-flatref
                   zipwith fold stencil3x3 generate)
 
@@ -162,7 +162,7 @@
 
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(trace-define (unify-types ctxt t1 t2)
+(define (unify-types ctxt t1 t2)
   (match/values (values t1 t2)
     ;; Variables trivially unify with themselves:
     [((? tyvar?) (? tyvar?))
@@ -170,8 +170,7 @@
      t1]
      
     [((? tyvar?) _)
-     (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
-     ;; TODO: occurs check here!!
+     ; (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
      (check-occurs ctxt (tyvar-name t1) t2)
      (set-tyvar-ptr! t1 
                      (if (tyvar-ptr t1)                         
@@ -208,7 +207,7 @@
 ;; localized error messages.  Specifically, it is better to highlight
 ;; the argument of the wrong type than to highlight the whole application.
 (define (gentle-unify-arrow fnty fnstx ls)
-  ;; FINISHME:
+  ;; FINISHME: can do better here.
   (unify-types fnstx fnty `(-> ,@(map car ls)))
   #;
   (match fnty
@@ -221,7 +220,7 @@
 ;; Var instantiated-type? -> boolean?
 (define/contract (check-occurs stx var type)
   (-> syntax? symbol? any/c void?)
-  (printf "CHECk occurs ~a ~a, free ~a\n" var type (set->list (free-vars type)))
+  ; (printf "CHECk occurs ~a ~a, free ~a\n" var type (set->list (free-vars type)))
   (when (set-member? (free-vars type) var)
     ;This is an infinite type. Send an error back
     (raise-syntax-error 'occurs-check
@@ -250,8 +249,12 @@
                 map zipwith fold stencil3x3 generate
                 lambda let if vector vector-ref)
 
-    [n:number  (values (acc-element->type (syntax->datum #'n)) #'n)]
-    [b:boolean (values 'Bool #'n)]
+    ;; Literal data:
+    ;[n:number  (values (acc-element->type (syntax->datum #'n)) #'n)]
+    ;[b:boolean (values 'Bool #'n)]
+    ; [#(e* ...)]
+    
+    [n:acc-element-literal (values (acc-element->type (syntax->datum #'n)) #'n)]
 
     [x:identifier
      (match (dict-ref tenv #'x #f)
@@ -272,7 +275,6 @@
     [(: e t:acc-type)  (raise-syntax-error pass-name "ascription (:) form not yet supported." stx)]
     [(use x:id t:acc-type) (raise-syntax-error pass-name "use form not yet supported." stx)]
     [(use x:id)            (raise-syntax-error pass-name "use form not yet supported." stx)]
-    ; [(use x:id t)          (raise-syntax-error #f "bad type in use form" stx)]
 
     [(acc-array dat) (values (syntax->datum (infer-array-type #'dat))
                              #'(acc-array dat))]
@@ -308,16 +310,6 @@
         (raise-syntax-error 'acc-array-ref
           (format "array reference of non-array type ~a" ty1)
           #'e1)])]
-
-    ;; FIXME: this can become the general application case:
-    ;; This could be handled through the tenv:
-    [(p:acc-primop args ...)
-     (define primty (instantiate (tenv-ref acc-primop-types #'p)))
-     (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
-     (define fresh (fresh-tyvar 'res))
-     (unify-types stx primty `(-> ,@argtys ,fresh))
-     (values fresh
-             #`(p #,@newargs))]
 
     ;; Method one, don't match bad params:
     [(lambda (x:acc-lambda-param ...) e)
@@ -369,52 +361,39 @@
                 )
                stx
                )])]
-    
-    #|
 
-    [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
-    [(zipwith f e1 e2) #`(zipwith #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
-
-    [(stencil3x3 f e1 e2) #`(stencil3x3 #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
-
-    [(if e1 e2 e3) #`(if #,(loop #'e1) #,(loop #'e2) #,(loop #'e3))]
-
-    [#(e* ...)
-     (datum->syntax #'(e* ...) (list->vector (r:map loop (syntax->list #'(e* ...)))))]
+    [(if e1 e2 e3) (error 'typecheck "FINISH if")]
 
     [(let ( lb:acc-let-bind ...) ebod)
      (define xls (syntax->list #'(lb.name ...)))
      (define els (syntax->list #'(lb.rhs ...)))
+
+     (error 'typecheck "FINISH let")
+     #;
      #`(let ([lb.name #,(r:map loop els)] ...)
-         #,(verify-acc-helper
+         #,(....
             #'ebod (extend-env xls env)))]
 
-    [(vector e ...)     #`(vector #,@(r:map loop (syntax->list #'(e ...))))]
-    [(vector-ref e1 e2) #`(vector-ref #,(loop #'e1) #,(loop #'e2))]
-
-    ;; We have to to be careful with how we influence the back-tracking search performed by
-    ;; syntax-parse.
-    [(p:acc-primop e ...)
-     #`(p #,@(r:map loop (syntax->list #'(e ...))))]
-
+    [(vector e ...)     (error 'typecheck "FINISH vector")]
+    [(vector-ref e1 e2) (error 'typecheck "FINISH vector-ref")]
+    
+    #|
     [(rator e ...)
      ;; It's never a good error message when we treat a keyword like a rator:
      #:when (not (memq (syntax->datum #'rator) acc-keywords-sexp-list))
-     ; (printf "RECURRING ON APP, rator ~a ~a \n" #'rator (syntax->datum #'rator))
      #`(#,(loop #'rator) #,@(r:map loop (syntax->list #'(e ...))))]
+    |#
 
-    [p:acc-primop #'p]
-
-    ;; If we somehow mess up the imports we can end up with one of the keywords UNBOUND:
-    [keywd:id
-     #:when (and (not (identifier-binding #'x))
-                 (memq (syntax->datum #'keywd)
-                       acc-keywords-sexp-list))
-     (raise-syntax-error
-      'error  "Accelerack keyword used but not imported properly.  Try (require accelerack)" #'keywd)]
-
-   [x:identifier ...]
-|#
+    ;; FIXME: this can become the general application case:
+    ;; This could be handled through the tenv:
+    [(p:acc-primop args ...)
+     (define primty (instantiate (tenv-ref acc-primop-types #'p)))
+     (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
+     (define fresh (fresh-tyvar 'res))
+     (unify-types stx primty `(-> ,@argtys ,fresh))
+     (values fresh
+             #`(p #,@newargs))]
+    
      ))
 
 (check-equal? (let-values ([(ty expr) (infer #'(acc-array-ref (acc-array ((9.9))) 0 0) empty-tenv)])

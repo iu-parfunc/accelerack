@@ -24,7 +24,8 @@
  (for-template
   accelerack/private/wrappers
   ;; Keyword symbols come from a mix of three places currently:
-  (only-in accelerack/private/syntax acc-array acc-lambda-param acc-type)
+  (only-in accelerack/private/syntax acc-array acc-lambda-param acc-type
+           acc-element-literal acc-let-bind)
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords : Array Int Bool Double use ->))
 
@@ -55,20 +56,6 @@
   (pass-output-chatter 'verify-acc res)
   res)
 
-(define-syntax-class acc-let-bind
-  #:description "an Accelerack let-binding with optional type"
-  #:literals (:)
-  #:attributes (name type rhs)
-  (pattern (x:id expr)
-           #:with name #'x
-           #:with type #f
-           #:with rhs #'expr)
-  (pattern (x:id : t:acc-type expr)
-           #:with name #'x
-           #:with type (syntax->datum #'t)
-           #:with rhs #'expr
-           ) ;; TODO: Could use acc-expr class.  Transform verify-acc into it?
-  )
 
 ;; Make sure a piece of syntax is a valid type.
 ;; If (verify-type s) then (acc-type? (syntax->datum s)),

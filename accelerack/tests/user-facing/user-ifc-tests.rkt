@@ -109,6 +109,14 @@
                            (acc-array (1 2))))
                '((1 1 1 1 1)
                  (2 2 2 2 2)))
+
+  (test-equal? "replicate2'"
+	       (let ([x 5])
+		 (acc-array->sexp
+		  (replicate (r) (r x)
+                           (acc-array (1 2)))))
+               '((1 1 1 1 1)
+                 (2 2 2 2 2)))  
   
   (test-equal? "replicate3"
                (acc-array->sexp

@@ -21,6 +21,7 @@
                                 zipwith generate stencil3x3))
          (for-syntax racket/base syntax/parse accelerack/private/parse)
          (only-in accelerack/private/utils vector->list*)
+         (only-in accelerack/private/types type-var-id?)
          (only-in rackunit check-not-false)
          )
 
@@ -106,9 +107,6 @@
   (and (identifier-binding id) ;; could throw an error for this.
        (member id acc-scalar-lits free-identifier=?)))
 
-(define (lower-case-ident? id)
-  (char-lower-case? (string-ref (symbol->string (syntax->datum id)) 0)))
-
 (define-syntax-class acc-primop
   #:description (string-append "a primitive function supported by Accelerack.\n"
                                "Examples include +, -, *, map, etc.\n"
@@ -118,7 +116,7 @@
 
 (define-syntax-class acc-type-variable
   #:description "a type variable, which starts with a lower-case letter"
-  (pattern p:id #:when (lower-case-ident? #'p)))
+  (pattern p:id #:when (type-var-id? #'p)))
 
 (define-syntax-class acc-element-type
   #:description "a type for element data that can go inside an array"

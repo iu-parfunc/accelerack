@@ -16,7 +16,7 @@
          
          ;; Types
          acc-type? acc-scalar-type? acc-element-type?
-         numeric-type-var?
+         numeric-type-var?  type-var-id? type-var-symbol?
          make-type-schema type-schema type-schema? type-schema-vars type-schema-monoty
          
          ;; delayed scalars are not fully implemented yet [2016.04.11]:
@@ -119,6 +119,17 @@
      #:when (char-lower-case? (string-ref (symbol->string t) 0))
      #t]
     [t (acc-element-type? t)]))
+
+;; Is the identifier a valid type variable (starts with a lower case letter).
+(define (type-var-id? id)
+  (type-var-symbol? (syntax->datum id)))
+
+;; The same as acc-tyvar-ident? but for symbols.
+(define (type-var-symbol? sym)
+  (char-lower-case?
+   ;; Can't have zero-char symbols so this should be safe:
+   (string-ref (symbol->string sym) 0)))
+
 
 (check-true (acc-type? '(Array n a)))
 (check-true (acc-type? '(Array 2 Int)))

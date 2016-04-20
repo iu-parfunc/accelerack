@@ -102,6 +102,8 @@
     [(_ x:identifier : t:acc-type e)        (go #'x #'t #'e)]
     [(_ (f:identifier x:identifier ...) e)
      (with-handlers
+       ()
+       #;
        ([exn:fail? (lambda (exn)
                      (raise-syntax-error 'define-acc
                                          (format "caught error during compilation:\n\n~a\n" exn)

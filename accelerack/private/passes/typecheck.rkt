@@ -72,10 +72,7 @@
      (if (tyvar-ptr t)
          (instantiated-type? (tyvar-ptr t))
          #t)]
-    [(? symbol?)
-     ;; Can't have zero-char symbols so this should be safe:
-     #:when (char-lower-case? (string-ref (symbol->string t) 0))
-     #t]
+    [(? symbol?) #:when (type-var-symbol? t) #t]
     ['SExp   #t]
     ['Int    #t]
     ['Bool   #t]
@@ -98,12 +95,6 @@
           (format "<~a>" (tyvar-name v)))
       prt))]
   )
-
-;; Create a fresh, non-numeric (Num class, i.e. Int/Double) tyvar.
-(define fresh-tyvar 
-  (case-lambda
-    [() (fresh-tyvar 'a)]
-    [(sym) (make-tyvar #f sym #f)]))
 
 ;; ------------------------------------------------------------
 
@@ -171,10 +162,15 @@
 
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(define (unify-types ctxt t1 t2)
+(trace-define (unify-types ctxt t1 t2)
   (match/values (values t1 t2)
+    ;; Variables trivially unify with themselves:
+    [((? tyvar?) (? tyvar?))
+     #:when (eq? (tyvar-name t1) (tyvar-name t2))
+     t1]
+     
     [((? tyvar?) _)
-     ; (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
+     (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
      ;; TODO: occurs check here!!
      (check-occurs ctxt (tyvar-name t1) t2)
      (set-tyvar-ptr! t1 
@@ -225,6 +221,7 @@
 ;; Var instantiated-type? -> boolean?
 (define/contract (check-occurs stx var type)
   (-> syntax? symbol? any/c void?)
+  (printf "CHECk occurs ~a ~a, free ~a\n" var type (set->list (free-vars type)))
   (when (set-member? (free-vars type) var)
     ;This is an infinite type. Send an error back
     (raise-syntax-error 'occurs-check
@@ -434,17 +431,18 @@
 ;; free variables: instantiated-type? -> (seteq? of symbol?)
 ;; Fetches all the variables in the input given
 (define (free-vars ty)
-  (match ty    
+  (match ty
+    [(? tyvar?)
+     (set-add (if (tyvar-ptr ty)
+                  (free-vars (tyvar-ptr ty))
+                  empty-set)
+              (tyvar-name ty))]
     [elt #:when (acc-element-type? elt)            empty-set]
     [num #:when (exact-nonnegative-integer? num)   empty-set]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
     [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
     [`#(,vs ...) (apply set-union (map free-vars vs))]
-    [sym #:when (symbol? sym) (list->seteq (list sym))]
-    [(? tyvar?)
-     (if (tyvar-ptr ty)
-         (free-vars (tyvar-ptr ty))
-         empty-set)]))
+    [sym #:when (symbol? sym) (list->seteq (list sym))]))
 
 (check-equal? (free-vars '(-> a (-> b a)))
               (list->seteq '(a b)))
@@ -639,10 +637,15 @@
 ;; ---------------- Persistent variables and typevariable related stuff ---------------------
 (define var-cnt 0)
 (define (reset-var-cnt) (set! var-cnt 0))
-(define (fresh var)
-  (set! var-cnt (+ var-cnt 1))
-  (string-append (if (symbol? var)
-                     (symbol->string var)
-                     (if (syntax? var) (symbol->string (syntax->datum var)) var))
-                 (number->string var-cnt)))
 
+;; Create a fresh, non-numeric (Num class, i.e. Int/Double) tyvar.
+(define fresh-tyvar 
+  (case-lambda
+    [() (fresh-tyvar 'a)]
+    [(sym)
+     (set! var-cnt (+ var-cnt 1))
+     (define newsym
+       (string->symbol
+        (string-append (symbol->string sym)
+                       (number->string var-cnt))))
+     (make-tyvar #f sym #f)]))

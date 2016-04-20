@@ -121,6 +121,7 @@
     [t (acc-element-type? t)]))
 
 (check-true (acc-type? '(Array n a)))
+(check-true (acc-type? '(Array 2 Int)))
 
 (define (numeric-type-var? t)
   (match t

@@ -76,7 +76,9 @@
 (define (verify-type ty)
   (syntax-parse ty
     [t:acc-type  (void)]
-    [oth (raise-syntax-error 'Accelerack-type "bad type expression" #'oth)]))
+    [oth (raise-syntax-error 'Accelerack-type
+                             (format "bad type expression.\nDetails: ~a" #'oth)
+                             #'oth)]))
 
 ;; TODO: compute this from the list of actual-syntax keywords:
 (define acc-keywords-sexp-list
@@ -88,7 +90,7 @@
   (let loop ((stx stx))
     (syntax-parse stx
       ;; TODO: use literal-sets:
-      #:literals (acc-array acc-array-ref :
+      #:literals (acc-array acc-array-ref : use
                   map zipwith fold stencil3x3 generate
                   lambda let if vector vector-ref)
 
@@ -106,7 +108,7 @@
             'error "Unbound variable used in Accelerack 'use'" #'stx ))]
       ;; TODO - Check for identifier binding may have flaws
       ;; Atleast catches unbound vars correctly but may work weirdly with define on accelerack stuff
-      [(use x:id t:acc-type) (verify-type #'t)
+      [(use x:id t) (verify-type #'t)
        (if (identifier-binding #'x)
            #'x ;; The macro expands to this for the "regular Racket" execution.
            (raise-syntax-error

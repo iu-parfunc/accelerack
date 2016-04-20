@@ -6,6 +6,7 @@
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          accelerack/private/parse
          accelerack/acc-array/private/manifest-array
+         rackunit
          (prefix-in r: racket/base)
 
          syntax/parse
@@ -98,15 +99,24 @@
   (and (identifier-binding id) ;; could throw an error for this.
        (member id acc-scalar-lits free-identifier=?)))
 
+(define (lower-case-ident? id)
+  (char-lower-case? (string-ref (symbol->string (syntax->datum id)) 0)))
+
 (define-syntax-class acc-primop
   #:description (string-append "a primitive function supported by Accelerack.\n"
                                "Examples include +, -, *, map, etc.\n"
                                "Evaluate 'acc-prims' for the full list.")
   (pattern p:id #:when (acc-primop-identifier? #'p)))
 
+
+(define-syntax-class acc-type-variable
+  #:description "a type variable, which starts with a lower-case letter"
+  (pattern p:id #:when (lower-case-ident? #'p)))
+
 (define-syntax-class acc-element-type
   #:description "a type for element data that can go inside an array"
   (pattern p:id #:when (acc-scalar-identifier? #'p))
+  (pattern p:acc-type-variable)
   (pattern #(t:acc-element-type ...)))
 
 (define-syntax-class acc-lambda-param
@@ -124,8 +134,17 @@
   #:description "an Accelerack type"
   #:literals (-> Array)
   (pattern (-> opera:acc-type ...))
-  (pattern (Array n:integer elt:acc-element-type))
+  (pattern (Array n:integer           elt:acc-element-type))
+  (pattern (Array v:acc-type-variable elt:acc-element-type))
   (pattern t:acc-element-type))
+
+(check-true (syntax-parse #'Int
+              [t:acc-type #t]
+              [else #f]))
+
+(check-true (syntax-parse #'(Array 3 Int)
+              [t:acc-type #t]
+              [else #f]))
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

@@ -32,7 +32,7 @@
          (for-template (except-in racket/base map))
          (for-template (only-in accelerack/private/wrappers acc-array-ref
                                 map zipwith fold stencil3x3 generate))
-         (for-template (only-in accelerack/private/syntax acc-array :
+         (for-template (only-in accelerack/private/syntax acc-array : use
                                 acc-lambda-param acc-type))
          )
 
@@ -248,7 +248,7 @@
    (values (reverse ls1) (reverse ls2)))
     
   (syntax-parse stx
-    #:literals (acc-array acc-array-ref :
+    #:literals (use acc-array acc-array-ref :
                 ;; FIXME: some of these can just be removed when they go to the prim table:
                 map zipwith fold stencil3x3 generate
                 lambda let if vector vector-ref)
@@ -272,9 +272,10 @@
                     #'x)])]
     
     ;; Other features, Coming soon:
-    ; [(: e t:acc-type) (verify-type #'t) (loop #'e)]
-    ; [(use x:id) ...]
-    ; [(use x:id t:acc-type) ...]
+    [(: e t:acc-type)  (raise-syntax-error pass-name "ascription (:) form not yet supported." stx)]
+    [(use x:id t:acc-type) (raise-syntax-error pass-name "use form not yet supported." stx)]
+    [(use x:id)            (raise-syntax-error pass-name "use form not yet supported." stx)]
+    ; [(use x:id t)          (raise-syntax-error #f "bad type in use form" stx)]
 
     [(acc-array dat) (values (syntax->datum (infer-array-type #'dat))
                              #'(acc-array dat))]

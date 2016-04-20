@@ -88,14 +88,20 @@
                           x7 x8 x9))
                 `(Constant 0)
 		x))
-  
+
+  ;; Disabled until use is supported:
+#;  
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
              (convert-compile-time-error
                  (let ()
-                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define x (acc-array (1 2 3)))
                    (define q 1)
-                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+                   ;; Scalar use:
+                   #;(define-acc y (map (lambda(y) (+ y  (use q)))
+                                      (acc-array (1 2 3))))
+                   ;; Array use
+                   (define-acc y (map add1 (use x (Array 1 Int))))
                    (check-equal? 2 (car (acc-array->sexp y))))))
 
 

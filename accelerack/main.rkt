@@ -54,7 +54,7 @@
     acc-type? acc-element-type?
 
     define-acc run-gpu
-    Int Bool Double
+    Int Bool Double Array
 
     ;; Not reexporting from base:
     ;; vector vector-ref + * - ...

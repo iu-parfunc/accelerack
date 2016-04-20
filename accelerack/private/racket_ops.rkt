@@ -46,6 +46,7 @@
   )
  acc-generate
  acc-until
+ acc-auntil
  )
 
 ;; Map a function over every element, irrespective of dimension.
@@ -192,7 +193,7 @@
         val
         (loop (bodfn val)))))        
 
-;; Array Until:
+(define acc-auntil acc-until)
 
 ;; --------------------------------------------------------------------------------
 

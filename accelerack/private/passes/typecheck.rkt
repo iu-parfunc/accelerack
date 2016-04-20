@@ -39,6 +39,26 @@
 ;; For error messages:
 (define pass-name 'accelerack-typecheck)
 
+;; ---------------- Persistent variables and typevariable related stuff ---------------------
+(define var-cnt 0)
+(define (reset-var-cnt) (set! var-cnt 0))
+
+;; Create a fresh, non-numeric (Num class, i.e. Int/Double) tyvar.
+(define fresh-tyvar 
+  (case-lambda
+    [() (fresh-tyvar 'a)]
+    [(sym)
+     (set! var-cnt (+ var-cnt 1))
+     (define newsym
+       (string->symbol
+        (string-append (symbol->string sym)
+                       (number->string var-cnt))))
+     (make-tyvar #f newsym
+                 (numeric-type-var? sym))]))
+
+
+;; -------------------------------------------------------------------------------------------
+
 ;; Data type definitions and predicates:
 
 ;; TypeEnv:
@@ -170,7 +190,7 @@
      t1]
      
     [((? tyvar?) _)
-     ; (printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
+     ;(printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
      (check-occurs ctxt (tyvar-name t1) t2)
      (set-tyvar-ptr! t1 
                      (if (tyvar-ptr t1)                         
@@ -432,7 +452,7 @@
   (match-define (type-schema vars monoty) scheme)
   (for/fold ([ty monoty])
             ([q  vars])
-    (define fresh (make-tyvar #f q (numeric-type-var? q)))
+    (define fresh (fresh-tyvar q))
     (subst ty q fresh)))
   
 (define/contract (instantiate mono)
@@ -613,18 +633,3 @@
 
 
 
-;; ---------------- Persistent variables and typevariable related stuff ---------------------
-(define var-cnt 0)
-(define (reset-var-cnt) (set! var-cnt 0))
-
-;; Create a fresh, non-numeric (Num class, i.e. Int/Double) tyvar.
-(define fresh-tyvar 
-  (case-lambda
-    [() (fresh-tyvar 'a)]
-    [(sym)
-     (set! var-cnt (+ var-cnt 1))
-     (define newsym
-       (string->symbol
-        (string-append (symbol->string sym)
-                       (number->string var-cnt))))
-     (make-tyvar #f sym #f)]))

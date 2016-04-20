@@ -150,7 +150,45 @@
   (-> dict? identifier? type-schema? dict?)
   (dict-set te k v))
 
+;; Type Utilities
+;; ------------------------------------------------------------
 
+;; Remove type variables:
+;; TyInst -> MonoTy (i.e. acc-type?)
+(define (collapse ty)
+  (match ty
+    [(? tyvar?)     
+     (if (tyvar-ptr ty)
+         (collapse (tyvar-ptr ty))
+         (tyvar-name ty))]
+    [(? symbol?) ty]
+    [`(Array ,n ,elt)
+     `(Array ,(collapse n) ,(collapse elt))]
+    [`#( ,t* ...)     (list->vector (map collapse t*))]
+    [`(-> ,t* ...)   `(-> ,@(map collapse t*))]
+    [(? acc-scalar-type?)           ty]
+    [(? exact-nonnegative-integer?) ty]
+    ))
+
+
+;; free variables: instantiated-type? -> (seteq? of symbol?)
+;; Fetches all the variables in the input given
+(define (free-vars ty)
+  (match ty
+    [(? tyvar?)
+     (set-add (if (tyvar-ptr ty)
+                  (free-vars (tyvar-ptr ty))
+                  empty-set)
+              (tyvar-name ty))]
+    [elt #:when (acc-element-type? elt)            empty-set]
+    [num #:when (exact-nonnegative-integer? num)   empty-set]
+    [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
+    [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
+    [`#(,vs ...) (apply set-union (map free-vars vs))]
+    [sym #:when (symbol? sym) (list->seteq (list sym))]))
+
+(check-equal? (free-vars '(-> a (-> b a)))
+              (list->seteq '(a b)))
 
 ;; ------------------------------------------------------------
 
@@ -214,6 +252,11 @@
     [((? acc-element-type?) (? acc-element-type?))
      #:when (equal? t1 t2)
      t1]
+    
+    [((? exact-nonnegative-integer?) (? exact-nonnegative-integer?))
+     #:when (equal? t1 t2)
+     t1]
+    
     [(_ _)
      (raise-syntax-error
       'unify-types
@@ -303,33 +346,49 @@
      (define-values (ty1 e1b) (infer #'e1 tenv))
      (define e2ls (syntax->list #'(e2s ...)))
      (define e2slen (length e2ls))
-     (match ty1
-       [`(Array ,dim ,elt)
-        (cond
-          [(symbol? dim)
-           (raise-syntax-error 'acc-array-ref
-            (format "array-ref expected an array with known-dimension ~a, instead found type variable ~a"
-                    e2slen dim)
-            #'e1)]
-          [(exact-nonnegative-integer? dim)
-           (if (equal? dim e2slen)
-               (values elt
-                 (let ([e2news
-                      (for/list ([e2 e2ls])
-                       (define-values (ty enew) (infer e2 tenv))
-                       (if (eq? ty 'Int) enew
-                           (raise-syntax-error 'acc-array-ref
-                             (format "expected all index expressions to have type Int, instead found ~a" ty)
-                             #'e2)))])
-                  #`(acc-array-ref #,e1b #,@e2news)))
-               (raise-syntax-error 'acc-array-ref
-                                   (format "this array has dimension ~a, but ~a indices were provided"
-                                           dim e2slen)
-                                   #'e1))])]
-       [else
-        (raise-syntax-error 'acc-array-ref
-          (format "array reference of non-array type ~a" ty1)
-          #'e1)])]
+     
+     ;; Here we KNOW what dimension to expect, so we put it in.
+     ;; We could alternatively do this unification in stages and try
+     ;; to optimize the errors that come out:     
+     (let ((arrty (unify-types #'e1 ty1 `(Array ,e2slen ,(fresh-tyvar 'elt)))))
+       (match (collapse arrty)
+         #;
+         [(? tyvar?)
+          (if (tyvar-ptr arrty)
+              (loop (tyvar-ptr arrty))
+              (error 'typecheck "Internal error in accelerack typecheck pass. Please report this."))]
+         
+         [`(Array ,dim ,elt)
+          (cond
+            #;
+            [(symbol? dim)
+             (raise-syntax-error 'acc-array-ref
+              (format "\n  Expected an array with known-dimension ~a, instead found type variable ~a"
+                      e2slen dim)
+              #'e1)]
+            [(exact-nonnegative-integer? dim)
+             (if (equal? dim e2slen)
+                 (values elt
+                   (let ([e2news
+                        (for/list ([e2 e2ls])
+                          (define-values (ty enew) (infer e2 tenv))
+                          (unify-types e2 ty 'Int)
+                          enew
+                          #;
+                          (if (eq? ty 'Int) enew
+                             (raise-syntax-error 'acc-array-ref
+                               (format "expected all index expressions to have type Int, instead found ~a" ty)
+                               #'e2))
+                         )])
+                    #`(acc-array-ref #,e1b #,@e2news)))
+                 (raise-syntax-error 'acc-array-ref
+                                     (format "this array has dimension ~a, but ~a indices were provided"
+                                             dim e2slen)
+                                     #'e1))])]
+         [else
+          (raise-syntax-error 'acc-array-ref
+            (format "array reference of non-array type ~a" ty1)
+            #'e1)]))]
 
     ;; Method one, don't match bad params:
     [(lambda (x:acc-lambda-param ...) e)
@@ -382,7 +441,13 @@
                stx
                )])]
 
-    [(if e1 e2 e3) (error 'typecheck "FINISH if")]
+    [(if e1 e2 e3)
+     (define-values (e1ty newe1) (infer #'e1 tenv))
+     (define-values (e2ty newe2) (infer #'e2 tenv))
+     (define-values (e3ty newe3) (infer #'e3 tenv))
+     (unify-types #'e1 e1ty 'Bool)
+     (values (unify-types #'e3 e3ty e2ty)
+             #`(if ,newe1 ,newe2 ,newe3))] 
 
     [(let ( lb:acc-let-bind ...) ebod)
      (define xls (syntax->list #'(lb.name ...)))
@@ -427,25 +492,6 @@
 (define (generalize mono)
   (make-type-schema (free-vars mono) mono))
 
-;; free variables: instantiated-type? -> (seteq? of symbol?)
-;; Fetches all the variables in the input given
-(define (free-vars ty)
-  (match ty
-    [(? tyvar?)
-     (set-add (if (tyvar-ptr ty)
-                  (free-vars (tyvar-ptr ty))
-                  empty-set)
-              (tyvar-name ty))]
-    [elt #:when (acc-element-type? elt)            empty-set]
-    [num #:when (exact-nonnegative-integer? num)   empty-set]
-    [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
-    [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
-    [`#(,vs ...) (apply set-union (map free-vars vs))]
-    [sym #:when (symbol? sym) (list->seteq (list sym))]))
-
-(check-equal? (free-vars '(-> a (-> b a)))
-              (list->seteq '(a b)))
-
 ;; instantiate: scheme -> type
 (define/contract (instantiate-scheme scheme)
   (-> type-schema? instantiated-type?)
@@ -478,22 +524,6 @@
          tv)]
     ))
 
-;; Remove type variables:
-;; TyInst -> MonoTy (i.e. acc-type?)
-(define (collapse ty)
-  (match ty
-    [(? tyvar?)     
-     (if (tyvar-ptr ty)
-         (collapse (tyvar-ptr ty))
-         (tyvar-name ty))]
-    [(? symbol?) ty]
-    [`(Array ,n ,elt)
-     `(Array ,(collapse n) ,(collapse elt))]
-    [`#( ,t* ...)     (list->vector (map collapse t*))]
-    [`(-> ,t* ...)   `(-> ,@(map collapse t*))]
-    [(? acc-scalar-type?)           ty]
-    [(? exact-nonnegative-integer?) ty]
-    ))
 
 (test-case "instantiate"
   (instantiate-scheme (make-type-schema (list->seteq '(a b))

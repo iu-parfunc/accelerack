@@ -25,6 +25,18 @@
                               acc-element?)
                           stencil-boundary? acc-array?
                           acc-array?)]
+          [stencil5x5 (-> (-> acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element?
+                              acc-element?)
+                          stencil-boundary? acc-array?
+                          acc-array?)]
           [stencil5x3 (-> (-> acc-element? acc-element? acc-element?
                               acc-element? acc-element? acc-element?
                               acc-element? acc-element? acc-element?
@@ -80,6 +92,9 @@
 
 (define (stencil3x5 f b x)
   (make-acc-array (acc-stencil3x5 f b (force-acc-array! x))))
+
+(define (stencil5x5 f b x)
+  (make-acc-array (acc-stencil5x5 f b (force-acc-array! x))))
 
 (define (generate f . dims)
   (make-acc-array (apply acc-generate f dims)))

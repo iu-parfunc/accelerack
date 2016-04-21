@@ -447,16 +447,18 @@
 	     #`(generate #,fnew #,@news))]             
 
     ;; Replicate gets its own typing judgement.
-    [(replicate v e arr)
+    [(replicate (v* ...) (e* ...) arr)
      (define-values (arrty newArr) (infer #'arr tenv))
-     (define vs (syntax->list #'v))
-     (define es (syntax->list #'e))
+     (define vs (syntax->list #'(v* ...)))
+     (define es (syntax->list #'(e* ...)))
      (define ntv (fresh-tyvar 'n))
      (define elt (fresh-tyvar))
      (unify-types #'arr arrty `(Array ,ntv ,elt))
      (if (or (not vs) (not es))
-	 (values `(Array ,ntv ,elt) #`(replicate v e #,newArr))
-         ;(raise-syntax-error pass-name "Malformed syntax for replicate.\n")
+         (raise-syntax-error pass-name
+			     (string-append "Malformed syntax for replicate.\n"
+					    (format "Pattern 1: ~a\n" (syntax->datum #'(v* ...)))
+					    (format "Pattern 2: ~a\n" (syntax->datum #'(e* ...)))))
 	 (let ([plus-dim (count not
 				(map (lambda (e)
 				       (and (identifier? e)
@@ -465,7 +467,7 @@
 	   (match (collapse ntv)
 	     [n #:when (number? n)
 		(values `(Array ,(+ plus-dim n) ,elt)
-			#`(replicate v e #,newArr))]
+			#`(replicate #,vs #,es #,newArr))]
 	     [other (raise-syntax-error pass-name
 					(string-append
 					 "Replicate is expected to take an array of known dimension.\n"

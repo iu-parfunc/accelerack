@@ -11,7 +11,6 @@
 
 (printf "Running syntax tests that use define-acc\n")
 
-(define-acc (sqr x) (* x x))
 
 (test-case "defs1"  
   (define-acc num2 (+ (: 3 Int) 4))
@@ -30,9 +29,13 @@
 ) 
 
 (test-case "run sqr"
+  (define-acc (sqr x) (* x x))
+  
   (check-eq? 9 (sqr 3)))
 
-(define-acc num (* 3 (+ 4 (- 5 (add1 2)))))
+(test-case "numa"
+  (define-acc num (* 3 (+ 4 (- 5 (add1 2)))))
+  (void))
 
 ;; (define-acc id1 (lambda (x) x))
 
@@ -48,34 +51,41 @@
 
 ;; ----------------------------------------
 
+(test-case "test01"
 ;; NOTE: This is a bit tricky because if, e.g., array-ref is ever
 ;; unbound... then we get a bad error message here:
 ;;
 ;; We should tweak verify-acc to check the identifier status of the
 ;; supposed special-forms like array-ref/acc-array/etc.
-(define-acc test01 (lambda (x) (acc-array-ref (if #t x x) 0 3)))
+  (define-acc test01 (lambda (x) (acc-array-ref (if #t x x) 0 3)))
+  (void))
 
 ;; (define-acc test01B (test01 (acc-array ((1 2 3 4 5 6)))))
-;; Not working yet, need to sort out first class primitive handling:
-
-(define-acc test02 (lambda (x)
+(test-case "test02"
+  (define-acc test02 (lambda (x)
                      (zipwith + ; * ;; FIXME: * does not work here... huh?
                               (map add1 (fold + 0 (acc-array (1 2 3 4))))
-                              (acc-array (10 10 10 10)))
+                              ;; (acc-array (10 10 10 10))
+                              ;; TODO: ^^ improve the type error for this line.
+                              (acc-array 10))
                      ))
+  (void))
 
 ;; (acc-array->sexp test02)
 ;; (run-eval test02)
 
-(define-acc test03 (vector-ref (vector 1 2 3) 0))
+(test-case "test03"
+  (define-acc test03 (vector-ref (vector 1 2 3) 0))
+  (void))
 
-(define-acc test04 (generate (lambda () (+ 3 4))))
-(define-acc test05 (generate (lambda (x) (+ x 3)) 100))
-(define-acc test06 (generate (lambda (x y) (+ x y)) 100 100))
+(test-case "test04-06"
+  (define-acc test04 (generate (lambda () (+ 3 4))))
+  (define-acc test05 (generate (lambda (x) (+ x 3)) 100))
+  (define-acc test06 (generate (lambda (x y) (+ x y)) 100 100))
 
-(check-pred acc-array? test04)
-(check-pred acc-array? test05)
-(check-pred acc-array? test06)
+  (check-pred acc-array? test04)
+  (check-pred acc-array? test05)
+  (check-pred acc-array? test06))
 
 (define-acc test07 (lambda ((x : Int) (y : Bool)) (if y x 3)))
 (define-acc test08 (lambda ((y : Int)) 3))

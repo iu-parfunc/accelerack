@@ -14,11 +14,11 @@
 
 (provide ;; Our two combinators with name collisions:
          map fold         
-         
+         zipwith        
          ;; These have no name conflict, but still need to be wrapped:
          (contract-out
-          [zipwith (-> (-> acc-element? acc-element? acc-element?)
-                       acc-array? acc-array? acc-array?)]
+;          [zipwith (-> (-> acc-element? acc-element? acc-element?)
+;                       acc-array? acc-array? acc-array?)]
           [stencil3x3 (-> (-> acc-element? acc-element? acc-element?
                               acc-element? acc-element? acc-element?
                               acc-element? acc-element? acc-element?

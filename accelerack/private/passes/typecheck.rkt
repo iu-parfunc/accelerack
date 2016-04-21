@@ -238,9 +238,16 @@
     [(_ (? tyvar?)) (unify-types ctxt t2 t1)] ;; Flip!
 
     [(`(Array ,n1 ,e1) `(Array ,n2 ,e2))
-     `(Array ,(unify-types ctxt n1 n2)
-             ,(unify-types ctxt e1 e2))]
-    
+
+     (match/values (values (collapse n1) (collapse n2))
+       ;; Attempt to improve error messages here:
+       #;
+       [((? number?) (? number?))
+        (raise-syntax-error #f "")]
+       [(_ _)      
+        `(Array ,(unify-types ctxt n1 n2)
+                ,(unify-types ctxt e1 e2))])]
+       
     [(`(-> ,as ...) `(-> ,bs ...))
      `(-> ,@(for/list ([a as] [b bs])
               (unify-types ctxt a b)))]

@@ -80,6 +80,8 @@
    #'abs  '(-> num_a num_a)
    
    #'map  '(-> (-> a b) (Array n a) (Array n b))
+
+   #'zipwith '(-> (-> a b c) (Array n a) (Array n b) (Array n c))
    
    ; #'sub1 #'+ #'* #'/ #'-    
    ))
@@ -99,10 +101,13 @@
 (define acc-scalar-lits
   (list #'Bool #'Int #'Double))
 
-;; [2015.12.11] Huh.. these work when I load this modulue, but fail
-;; when this moudle is imported by syntax-tests.rkt:
-(check-not-false (andmap identifier-binding acc-primop-lits))
-(check-not-false (andmap identifier-binding acc-scalar-lits))
+;; Each of the above #'foo uses occurs at template stage relative to us.
+;; Test that these identifiers are all bound in other modules.
+(test-begin
+ (for ([p acc-primop-lits])
+   (check-pred identifier-template-binding p))
+ (for ([p acc-scalar-lits])
+   (check-pred identifier-template-binding p)))
 
 (define (acc-primop-identifier? id)
   (and (identifier-binding id) ;; could throw an error for this.
@@ -114,8 +119,12 @@
 
 (define-syntax-class acc-primop
   #:description (string-append "a primitive function supported by Accelerack.\n"
-                               "Examples include +, -, *, map, etc.\n"
-                               "Evaluate 'acc-prims' for the full list.")
+                               ; "Examples include +, -, *, map, etc.\n"
+                               ; "Evaluate 'acc-prims' for the full list."
+                               (format "The full list of primitives is:\n  ~a\n"
+                                       (for/list ([(k _) (in-dict acc-primop-types)])
+                                         (syntax->datum k)))
+                               )
   (pattern p:id #:when (acc-primop-identifier? #'p)))
 
 
@@ -148,11 +157,13 @@
   (pattern (Array v:acc-type-variable elt:acc-element-type))
   (pattern t:acc-element-type))
 
-(check-true (syntax-parse #'Int
-              [t:acc-type #t]
-              [else #f]))
+(test-true "parse type 1"
+           (syntax-parse #'Int
+             [t:acc-type #t]
+             [else #f]))
 
-(check-true (syntax-parse #'(Array 3 Int)
+(test-true "parse array type"
+            (syntax-parse #'(Array 3 Int)
               [t:acc-type #t]
               [else #f]))
 

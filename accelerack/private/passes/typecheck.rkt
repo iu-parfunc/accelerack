@@ -10,11 +10,10 @@
 ;; ---------------------------------------------------------------
 
 (provide
- #;
  (contract-out
   [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
                       (values acc-type? syntax?))])
- typecheck-expr
+ ; typecheck-expr ;; If the contract is enforced below.
  unify-types
  )
 
@@ -201,9 +200,9 @@
 ;; Returns two values:
 ;;   (1) principal type of expression
 ;;   (2) fully annotated expression
-(define/contract (typecheck-expr syn-table e)
-  (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
-      (values acc-type? syntax?))
+(define (typecheck-expr syn-table e)
+  ;; (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
+  ;;     (values acc-type? syntax?))
   (pass-output-chatter 'typecheck-expr e)
   (reset-var-cnt)
 
@@ -317,7 +316,7 @@
                ([x ls])
       (define-values [xty xnew] (infer x tenv))
       (values (cons xty tys)
-              (cons xty xs))))
+              (cons xnew xs))))
    (values (reverse ls1) (reverse ls2)))
     
   (syntax-parse stx

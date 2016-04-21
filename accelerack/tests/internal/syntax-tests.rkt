@@ -4,7 +4,9 @@
          ;; See NOTE below:
          (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
                   acc-array?
-                  Int Bool Double use)
+                  ;; If you leave these out, the error messages can be bad:
+                  Int Bool Double use
+                  Array)
          accelerack/private/syntax-capture
          (only-in accelerack/acc-array/private/delayed acc-delayed-array?)
          )
@@ -110,10 +112,7 @@
 
 (test-case "test14"
   (define rktarr (acc-array (1 2 3)))
-  (define-acc test14 (map add1 (use rktarr
-                                    ;; FIXME: (Array 1 Int)
-                                    )))
-  
+  (define-acc test14 (map add1 (use rktarr (Array 1 Int))))
   (check-pred acc-array? test14))
 
 ;; TODO: the story for scalars is not established yet.

@@ -15,6 +15,8 @@
   (let-values (((type ex) (typecheck-expr (box '()) e)))
     type))
 
+#|
+
 (define user-ifc-invalid-test_cases
   (test-suite
    "invalid test cases"
@@ -102,3 +104,4 @@
     (display "\n!!! Test Run Successfull !!!\n\n")
     (begin (display "\n!!! Test Run Failed !!!\n\n")
            (exit 1)))
+|#

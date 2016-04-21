@@ -10,8 +10,10 @@
 ;; ---------------------------------------------------------------
 
 (provide
- typecheck-expr
-  unify-types
+ (contract-out
+  [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
+                      (values acc-type? syntax?))])
+ unify-types
  )
 
 (require (for-syntax racket/base
@@ -205,14 +207,14 @@
     (for/fold ([env empty-tenv])
               ([(id ty) (in-dict acc-primop-types)])
       ;; TODO: could store type schemas a priori:
-      (tenv-set env id (generalize ty))))
+      (tenv-set env id (generalize empty-tenv ty))))
   (define env1
     (for/fold ([env env0])
               ([pr syn-table])
       (match pr
         [`(,v . ,(acc-syn-entry ty expr))
          ;; TODO: could store type schemas a priori:
-         (tenv-set env v (generalize ty))])))
+         (tenv-set env v (generalize empty-tenv ty))])))
   ;; Rip out the type variable stuff:
   (define-values (ty e2) (infer e env1))
   (values (collapse ty) e2))
@@ -347,8 +349,10 @@
      (define-values (ty e2) (infer #'e tenv))
      (values (unify-types stx ty (instantiate (syntax->datum #'t)))
              e2)]
-    [(use x:id t:acc-type) (raise-syntax-error pass-name "use form not yet supported." stx)]
-    [(use x:id)            (raise-syntax-error pass-name "use form not yet supported." stx)]
+    [(use x:id t:acc-type)
+     (values (syntax->datum #'t)
+             stx)]
+    [(use x:id)            (raise-syntax-error pass-name "use form without type not yet supported." stx)]
 
     [(acc-array dat) (values (syntax->datum (infer-array-type #'dat))
                              #'(acc-array dat))]
@@ -480,12 +484,22 @@
     [(let ( lb:acc-let-bind ...) ebod)
      (define xls (syntax->list #'(lb.name ...)))
      (define els (syntax->list #'(lb.rhs ...)))
-
-     (error 'typecheck "FINISH let")
-     #;
-     #`(let ([lb.name #,(r:map loop els)] ...)
-         #,(....
-            #'ebod (extend-env xls env)))]
+     (define-values (etys news) (infer-list els))
+     (define xtys
+       (for/list ([x xls]
+                  [ty etys]
+                  [expected (syntax->datum #'(lb.type ...))])
+           (if expected 
+               (unify-types x ty expected)
+               ty)))
+     (define tenv2
+       (for/fold ([te tenv])
+                 ([x xls] [ty xtys])
+         (tenv-set te x (generalize tenv ty))))
+     (define-values (finalTy newbod) (infer #'ebod tenv2))
+     (values finalTy             
+            #`(let ([lb.name #,news] ...)
+                #,newbod))]
 
     [(vector e* ...)
      (define-values (tys news) (infer-list (syntax->list #'(e* ...))))
@@ -536,12 +550,14 @@
                 ty)
               'Double)
 
-
-;; FIXME: this needs to take the environment and set-difference it.
-;;
 ;; generalize: set(type var) -> type -> scheme
-(define (generalize mono)
+(define (generalize tenv mono)
+  ;; FIXME: this needs to take the environment free vars and set-difference it.
   (make-type-schema (free-vars mono) mono))
+
+(define (tenv-free-vars te)
+  'FINISHME)
+
 
 ;; instantiate: scheme -> type
 (define/contract (instantiate-scheme scheme)

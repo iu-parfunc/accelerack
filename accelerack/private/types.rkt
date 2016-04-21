@@ -12,7 +12,7 @@
          acc-element->type
 
          ;; Syntax
-         acc-syn-entry acc-syn-entry-type acc-syn-entry-expr         
+         acc-syn-entry acc-syn-entry? acc-syn-entry-type acc-syn-entry-expr         
          
          ;; Types
          acc-type? acc-scalar-type? acc-element-type?

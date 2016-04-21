@@ -11,5 +11,4 @@ fi
 # Just in case there are unit tests in the main source tree, we
 # include it too:
 
-raco test ../accelerack/tests/user-facing/
-
+raco test ../accelerack/

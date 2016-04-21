@@ -39,3 +39,14 @@ Expected: c3
 ; (typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
 
 
+(typeit #'(let ([x 3]) (+ 5 x)))
+
+(typeit #'(let ([x #t]) (+ 5 9)))
+
+;; FIXME: spurious error:
+; (typeit #'(if #t 5 9))
+
+; (typeit #'(let ([x #t]) (if x x x)))
+
+; (typeit #'(let ([x : Bool #t]) (if x x x)))
+

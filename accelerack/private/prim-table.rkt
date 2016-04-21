@@ -67,11 +67,9 @@
 
 (define acc-keyword-lits
   (list
-   #'->
-   #':
-   #'use
-   #'generate
-   #'fold
+   #'-> #': #'use
+   #'Array
+   #'generate  #'fold
    ))
 
 (define acc-scalar-lits

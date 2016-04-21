@@ -17,6 +17,7 @@
          scribble/srcdoc
          racket/trace
          (only-in accelerack/private/utils pass-output-chatter)
+         (only-in accelerack/private/prim-table acc-all-bound-syms)
          accelerack/private/syntax
          (prefix-in r: racket/base)
          )
@@ -72,30 +73,28 @@
 (define (examine-symbols ty0)
   (define found-unbound #f)
   ;; These are the symbols that we EXPECT to be bound.
-  (define syms
-    (for/list ([(k _) (in-dict acc-primop-types)])
-      (syntax->datum k)))
+  (define syms (map syntax->datum acc-all-bound-syms))
   (define (loop ty)
     (match (syntax->list ty)
-      [#f (match (syntax->datum ty)            
+      [#f (match (syntax->datum ty)
             [(? symbol? s) #:when (memq s syms)
              (let ([a (and (identifier-binding ty) #t)]
                    [b (and (identifier-transformer-binding ty) #t)]
                    [c (and (identifier-template-binding ty) #t)])
                (set! found-unbound (or found-unbound (not a)))
-               (format "Symbol ~a/~a/~a: ~a\n" a b c ty))]
+               (format "  * Symbol ~a/~a/~a: ~a\n" a b c ty))]
             [else ""])]
       [(list x* ...)
        (apply string-append (map loop x*))]))
   (match (loop ty0)
     ["" ""]
-    [s (string-append "Each symbol below should be imported from accelerack.\n"
-                      "The a/b/c boolean flags below show whether the symbol is bound\n"
-                      "in the normal environment, transformer phase, and template phase respectively.\n"
+    [s (string-append "\n   Each symbol below should be imported from accelerack.\n"
+                      "   The a/b/c boolean flags below show whether the symbol is bound\n"
+                      "   in the normal environment, transformer phase, and template phase respectively.\n\n"
                       s
                       (if found-unbound
                           ""
-                          "At least one symbol was UNBOUND, but should be imported from accelerack.\n"))]))
+                          "\n   At least one symbol was UNBOUND, but should be imported from accelerack.\n"))]))
 
 
 ;; TODO: compute this from the list of actual-syntax keywords:

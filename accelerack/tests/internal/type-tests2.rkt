@@ -2,6 +2,7 @@
 
 (require accelerack)
 (require accelerack/private/passes/typecheck)
+(require accelerack/private/wrappers)
 (require accelerack/private/front-end)
 (require rackunit)
 
@@ -38,18 +39,17 @@ Expected: c3
 
 ; (typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
 
-
-(typeit #'(let ([x 3]) (+ 5 x)))
-
-(typeit #'(let ([x #t]) (+ 5 9)))
+(check-equal? (typeit #'(let ([x 3]) (+ 5 x)))
+              'Int)
+(check-equal? (typeit #'(let ([x #t]) (+ 5 9)))
+              'Int)
 
 ;; FIXME: spurious error:
-; (typeit #'(if #t 5 9))
+(typeit #'(if #t 5 9))
 
 ; (typeit #'(let ([x #t]) (if x x x)))
 
 ; (typeit #'(let ([x : Bool #t]) (if x x x)))
-
 
 (check-equal? (typeit #'(acc-array-ref (acc-array ((9.9))) 0 0))
               'Double)

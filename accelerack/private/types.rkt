@@ -130,10 +130,6 @@
    ;; Can't have zero-char symbols so this should be safe:
    (string-ref (symbol->string sym) 0)))
 
-
-(check-true (acc-type? '(Array n a)))
-(check-true (acc-type? '(Array 2 Int)))
-
 (define (numeric-type-var? t)
   (match t
     ; [`(Num ,a) (symbol? a)] ;; First design.
@@ -174,3 +170,7 @@
 (struct acc-portable-package (sexp array-table)
 
   )
+
+(module+ test
+  (check-true (acc-type? '(Array n a)))
+  (check-true (acc-type? '(Array 2 Int))))

@@ -110,11 +110,12 @@
   #`(Array #,(count d) #,(infer-element-type d)))
 
 
-(test-equal? "infer-array-type1"
-             (syntax->datum (infer-array-type #'((3))))
-             '(Array 2 Int))
- 
-(test-equal? "infer-array-type2"
-             (syntax->datum (infer-array-type #'( #(3 4.4))))
-             '(Array 1 #(Int Double)))
-
+(module+ test
+  
+  (test-equal? "infer-array-type1"
+               (syntax->datum (infer-array-type #'((3))))
+               '(Array 2 Int))
+  
+  (test-equal? "infer-array-type2"
+               (syntax->datum (infer-array-type #'( #(3 4.4))))
+               '(Array 1 #(Int Double))))

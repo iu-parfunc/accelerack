@@ -31,7 +31,7 @@
          (only-in accelerack/private/syntax acc-array : use acc-primop-types acc-primop
                   acc-lambda-param acc-type acc-element-literal acc-let-bind)
          (only-in accelerack/private/wrappers acc-array-ref acc-array-flatref
-                  zipwith fold stencil3x3 generate)
+                  zipwith fold stencil3x3 generate replicate)
 
          (for-template (except-in racket/base map))
          (for-template (only-in accelerack/private/wrappers acc-array-ref
@@ -191,9 +191,6 @@
     [`#(,vs ...) (apply set-union (map free-vars vs))]
     [sym #:when (symbol? sym) (list->seteq (list sym))]))
 
-(check-equal? (free-vars '(-> a (-> b a)))
-              (list->seteq '(a b)))
-
 ;; ------------------------------------------------------------
 
 
@@ -237,7 +234,7 @@
      
     [((? tyvar?) _)
      ;(printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
-     (check-occurs ctxt (tyvar-name t1) t2)
+     (occurs-check ctxt (tyvar-name t1) t2)
      (set-tyvar-ptr! t1 
                      (if (tyvar-ptr t1)                         
                          (unify-types ctxt (tyvar-ptr t1) t2)
@@ -296,7 +293,7 @@
   
 
 ;; Var instantiated-type? -> boolean?
-(define/contract (check-occurs stx var type)
+(define/contract (occurs-check stx var type)
   (-> syntax? symbol? any/c void?)
   ; (printf "CHECk occurs ~a ~a, free ~a\n" var type (set->list (free-vars type)))
   (when (set-member? (free-vars type) var)
@@ -629,11 +626,13 @@
     ))
 
 
-(test-case "instantiate"
-  (instantiate-scheme (make-type-schema (list->seteq '(a b))
-                                        '(-> (-> a b) (Array n a) (Array n b))))
-  (void))
+(module+ test
 
+  (check-equal? (free-vars '(-> a (-> b a)))
+                (list->seteq '(a b)))
 
-
-
+  (test-case "instantiate"
+    (instantiate-scheme (make-type-schema (list->seteq '(a b))
+                                          '(-> (-> a b) (Array n a) (Array n b))))
+    (void))
+)

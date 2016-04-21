@@ -83,7 +83,7 @@
 
 ;; Each of the above #'foo uses occurs at template stage relative to us.
 ;; Test that these identifiers are all bound in other modules.
-(test-begin
+(module+ test
 
   (define (at-least-one-bind? id)    
     (or (identifier-binding id)

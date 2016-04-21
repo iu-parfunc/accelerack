@@ -4,25 +4,20 @@
 ;; Syntax helpers for defining core Accelerate macros and compiler passes.
 
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
-         accelerack/private/parse
-         accelerack/acc-array/private/manifest-array
          rackunit
-         (prefix-in r: racket/base)
 
-         syntax/parse
-         (only-in accelerack/acc-array/private make-acc-array)
-
-         ;; Regular require, careful of phasing of these identifiers:
+         (except-in racket/base map)
+         (only-in racket/contract ->)
          accelerack/private/keywords
+         accelerack/private/wrappers
          (for-template (except-in racket/base map)
                        (only-in racket/contract ->)
                        accelerack/private/keywords
-                       (only-in accelerack/private/wrappers map fold
-                                zipwith generate stencil3x3))
-         (for-syntax racket/base syntax/parse accelerack/private/parse)
-         (only-in accelerack/private/utils vector->list*)
-         (only-in accelerack/private/types type-var-id?)
-         (only-in rackunit check-not-false)
+                       accelerack/private/wrappers)
+         (for-syntax (except-in racket/base map)
+                       (only-in racket/contract ->)
+                       accelerack/private/keywords
+                       accelerack/private/wrappers)
          )
 
 (provide 
@@ -30,7 +25,8 @@
          acc-primop-lits
          acc-primop-types
          acc-scalar-lits
-         
+         acc-keyword-lits
+         acc-all-bound-syms
          )
 
 
@@ -69,9 +65,23 @@
 (define acc-primop-lits
   (dict-keys acc-primop-types))
 
+(define acc-keyword-lits
+  (list
+   #'->
+   #':
+   #'use
+   #'generate
+   #'fold
+   ))
+
 (define acc-scalar-lits
   (list #'Bool #'Int #'Double))
 
+;; All the symbols that we expect to be a-priori bound in acc blocks.
+(define acc-all-bound-syms
+  (append acc-primop-lits
+          acc-scalar-lits
+          acc-keyword-lits))
 
 ;; Each of the above #'foo uses occurs at template stage relative to us.
 ;; Test that these identifiers are all bound in other modules.

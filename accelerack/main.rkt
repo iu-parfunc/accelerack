@@ -56,10 +56,16 @@
     define-acc run-gpu
     Int Bool Double Array
 
-    ;; Not reexporting from base:
+    ;; Other keywords
+    ;; ----------------------------------------
+    ;; (require accelerack) must be sufficient to avoid problems with unbound
+    ;; identifiers in define-acc blocks.
+    
+    -> : use
+    
+    ;; However, not currently reexporting from base:
     ;; vector vector-ref + * - ...
     ;; if let lambda
-    -> : use
     )
 
 ;; Simplify this for exposing to the end user:

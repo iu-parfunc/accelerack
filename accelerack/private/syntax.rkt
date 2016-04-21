@@ -23,7 +23,6 @@
          (for-syntax racket/base syntax/parse accelerack/private/parse)
          (only-in accelerack/private/utils vector->list*)
          (only-in accelerack/private/types type-var-id?)
-         (only-in rackunit check-not-false)
          )
 
 (provide ;; Functions and macros
@@ -35,6 +34,7 @@
          acc-primop-lits
          acc-primop-types
          acc-scalar-lits
+         acc-keyword-lits
          
          ;; Syntax classes:
          acc-primop
@@ -114,6 +114,8 @@
   (pattern (Array n:integer           elt:acc-element-type))
   (pattern (Array v:acc-type-variable elt:acc-element-type))
   (pattern t:acc-element-type))
+
+(pretty-print acc-all-bound-syms)
 
 (test-true "parse type 1"
            (syntax-parse #'Int

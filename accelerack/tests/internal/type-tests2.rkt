@@ -36,5 +36,5 @@ Expected: c3
 |#
 
 
-(typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
+; (typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
 

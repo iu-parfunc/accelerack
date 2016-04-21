@@ -50,3 +50,6 @@ Expected: c3
 
 ; (typeit #'(let ([x : Bool #t]) (if x x x)))
 
+
+(check-equal? (typeit #'(acc-array-ref (acc-array ((9.9))) 0 0))
+              'Double)

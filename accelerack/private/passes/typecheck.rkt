@@ -437,11 +437,12 @@
      (define-values (fty fnew) (infer #'f tenv))
      (define-values (etys news) (infer-list es))
      (define res (fresh-tyvar 'res))
-     (define arrty `(-> ,@etys ,res))
+     (define ufty `(-> ,@etys ,res))
+     (unify-types #'f fty ufty)
      (for ([e es] [ety etys])
        (unify-types e ety 'Int))
-     (values (unify-types #'f fty arrty)
-             #`(generate #,fnew #,@news))]
+     (values `(Array ,(length es) ,res)
+	     #`(generate #,fnew #,@news))]             
 
     ;; Replicate gets its own typing judgement.
     [(replicate v e arr)

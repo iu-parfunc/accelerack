@@ -10,9 +10,11 @@
 ;; ---------------------------------------------------------------
 
 (provide
+ #;
  (contract-out
   [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
                       (values acc-type? syntax?))])
+ typecheck-expr
  unify-types
  )
 
@@ -199,7 +201,9 @@
 ;; Returns two values:
 ;;   (1) principal type of expression
 ;;   (2) fully annotated expression
-(define (typecheck-expr syn-table e)
+(define/contract (typecheck-expr syn-table e)
+  (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
+      (values acc-type? syntax?))
   (pass-output-chatter 'typecheck-expr e)
   (reset-var-cnt)
 

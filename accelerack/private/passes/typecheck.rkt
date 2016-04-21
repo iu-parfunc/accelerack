@@ -440,6 +440,39 @@
      (values (unify-types #'f fty arrty)
              #`(generate #,fnew #,@news))]
 
+    ;; Replicate gets its own typing judgement.
+    [(replicate v e arr)
+     (define-values (arrty newArr) (infer #'arr tenv))
+     (define vs (syntax->list #'v))
+     (define es (syntax->list #'e))
+     (define ntv (fresh-tyvar 'n))
+     (define elt (fresh-tyvar))
+     (unify-types #'arr arrty `(Array ,ntv ,elt))
+     (if (or (not vs) (not es))
+	 (values `(Array ,ntv ,elt) #`(replicate v e #,newArr))
+         ;(raise-syntax-error pass-name "Malformed syntax for replicate.\n")
+	 (let ([plus-dim (count not
+				(map (lambda (e)
+				       (and (identifier? e)
+					    (memf (lambda (v) (free-identifier=? v e)) vs)))
+				     es))])
+	   (match (collapse ntv)
+	     [n #:when (number? n)
+		(values `(Array ,(+ plus-dim n) ,elt)
+			#`(replicate v e #,newArr))]
+	     [other (raise-syntax-error pass-name
+					(string-append
+					 "Replicate is expected to take an array of known dimension.\n"
+					 "Expected non-negative integer dimension, instead found "
+					 (if (symbol? other)
+					     (format "type variable, '~a'\n" other)
+					     (format "unexpected type, '~a'\n" other))
+					 (format "The input to fold had type: ~a" `(Array ,other ,(collapse elt)))
+					 )
+					stx
+					)])))]
+		
+
     ;; Fold gets its own typing judgement.  It can't go in the prim table.
     [(fold f zer arr)
      (define-values (arrty newArr) (infer #'arr tenv))

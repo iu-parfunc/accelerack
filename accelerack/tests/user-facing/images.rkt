@@ -42,6 +42,11 @@
   (define (shape-prop img)
     ; (check-true (image? img))
     (define arr (image->acc-array img))
+
+    ; (acc-array-type arr)
+    
+    (printf "  Element of image: ~a\n" (acc-array-ref arr 0 0))
+    
     (check-equal? (acc-array-shape arr)
                   (vector (image-width img)
                           (image-height img)))

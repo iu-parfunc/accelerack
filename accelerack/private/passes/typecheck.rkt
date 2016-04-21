@@ -478,8 +478,31 @@
          #,(....
             #'ebod (extend-env xls env)))]
 
-    [(vector e ...)     (error 'typecheck "FINISH vector")]
-    [(vector-ref e1 e2) (error 'typecheck "FINISH vector-ref")]
+    [(vector e* ...)
+     (define-values (tys news) (infer-list (syntax->list #'(e* ...))))
+     (values (list->vector tys)
+             #`(vector #,@news))]
+    
+    ;; Special typing rule for polymorphic vector ref:
+    ;; The second argument must be a fixed integer.
+    [(vector-ref e1 n:number)
+     (define-values (e1ty e1new) (infer #'e1 tenv))
+     (define ind (syntax->datum #'n))
+     (match (collapse e1ty)
+       [(vector ts ... )
+        (if (>= ind (length ts))
+            (raise-syntax-error
+             'typecheck (format "Cannot reference position ~a in vector type of length ~a: ~a"
+                                ind (length ts)
+                                (list->vector ts))
+             stx)
+            (values (list-ref ts ind)
+                    #`(vector-ref #,e1new n)))]
+       [oth
+        (raise-syntax-error
+         'typecheck
+         (format "This is expected to have a vector type of known length, instead found: ~a" oth)
+         #'e1)])]
     
     #|
     [(rator e ...)

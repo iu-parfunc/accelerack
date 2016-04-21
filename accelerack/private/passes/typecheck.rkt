@@ -12,8 +12,10 @@
 (provide
  (contract-out
   [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
-                      (values acc-type? syntax?))])
- unify-types
+                      (values acc-type? syntax?))]
+  [unify-types (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)])
+ ; typecheck-expr ;; If the contract is enforced below.
+ ; unify-types
  )
 
 (require (for-syntax racket/base
@@ -29,11 +31,11 @@
          (only-in accelerack/private/syntax acc-array : use acc-primop-types acc-primop
                   acc-lambda-param acc-type acc-element-literal acc-let-bind)
          (only-in accelerack/private/wrappers acc-array-ref acc-array-flatref
-                  zipwith fold stencil3x3 generate)
+                  zipwith fold stencil3x3 generate replicate)
 
          (for-template (except-in racket/base map))
          (for-template (only-in accelerack/private/wrappers acc-array-ref
-                                map zipwith fold stencil3x3 generate))
+                                map zipwith fold stencil3x3 generate replicate))
          (for-template (only-in accelerack/private/syntax acc-array : use
                                 acc-lambda-param acc-type))
          )
@@ -189,9 +191,6 @@
     [`#(,vs ...) (apply set-union (map free-vars vs))]
     [sym #:when (symbol? sym) (list->seteq (list sym))]))
 
-(check-equal? (free-vars '(-> a (-> b a)))
-              (list->seteq '(a b)))
-
 ;; ------------------------------------------------------------
 
 
@@ -199,7 +198,9 @@
 ;; Returns two values:
 ;;   (1) principal type of expression
 ;;   (2) fully annotated expression
-(define (typecheck-expr syn-table e)
+(define/contract (typecheck-expr syn-table e)
+  (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
+      (values acc-type? syntax?))
   (pass-output-chatter 'typecheck-expr e)
   (reset-var-cnt)
 
@@ -223,6 +224,7 @@
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
 (define/contract (unify-types ctxt t1 t2)
+  ;; DEBUGGING:
   (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
     ;; Variables trivially unify with themselves:
@@ -232,7 +234,7 @@
      
     [((? tyvar?) _)
      ;(printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
-     (check-occurs ctxt (tyvar-name t1) t2)
+     (occurs-check ctxt (tyvar-name t1) t2)
      (set-tyvar-ptr! t1 
                      (if (tyvar-ptr t1)                         
                          (unify-types ctxt (tyvar-ptr t1) t2)
@@ -291,7 +293,7 @@
   
 
 ;; Var instantiated-type? -> boolean?
-(define/contract (check-occurs stx var type)
+(define/contract (occurs-check stx var type)
   (-> syntax? symbol? any/c void?)
   ; (printf "CHECk occurs ~a ~a, free ~a\n" var type (set->list (free-vars type)))
   (when (set-member? (free-vars type) var)
@@ -313,13 +315,13 @@
                ([x ls])
       (define-values [xty xnew] (infer x tenv))
       (values (cons xty tys)
-              (cons xty xs))))
+              (cons xnew xs))))
    (values (reverse ls1) (reverse ls2)))
     
   (syntax-parse stx
     #:literals (use acc-array acc-array-ref :
                 ;; FIXME: some of these can just be removed when they go to the prim table:
-                map zipwith fold stencil3x3 generate
+                map zipwith fold stencil3x3 generate replicate
                 lambda let if vector vector-ref)
 
     ;; Literal data:
@@ -434,11 +436,47 @@
      (define-values (fty fnew) (infer #'f tenv))
      (define-values (etys news) (infer-list es))
      (define res (fresh-tyvar 'res))
-     (define arrty `(-> ,@etys ,res))
+     (define ufty `(-> ,@etys ,res))
+     (unify-types #'f fty ufty)
      (for ([e es] [ety etys])
        (unify-types e ety 'Int))
-     (values (unify-types #'f fty arrty)
-             #`(generate #,fnew #,@news))]
+     (values `(Array ,(length es) ,res)
+	     #`(generate #,fnew #,@news))]             
+
+    ;; Replicate gets its own typing judgement.
+    [(replicate (v* ...) (e* ...) arr)
+     (define-values (arrty newArr) (infer #'arr tenv))
+     (define vs (syntax->list #'(v* ...)))
+     (define es (syntax->list #'(e* ...)))
+     (define ntv (fresh-tyvar 'n))
+     (define elt (fresh-tyvar))
+     (unify-types #'arr arrty `(Array ,ntv ,elt))
+     (if (or (not vs) (not es))
+         (raise-syntax-error pass-name
+			     (string-append "Malformed syntax for replicate.\n"
+					    (format "Pattern 1: ~a\n" (syntax->datum #'(v* ...)))
+					    (format "Pattern 2: ~a\n" (syntax->datum #'(e* ...)))))
+	 (let ([plus-dim (count not
+				(map (lambda (e)
+				       (and (identifier? e)
+					    (memf (lambda (v) (free-identifier=? v e)) vs)))
+				     es))])
+	   (match (collapse ntv)
+	     [n #:when (number? n)
+		(values `(Array ,(+ plus-dim n) ,elt)
+			#`(replicate #,vs #,es #,newArr))]
+	     [other (raise-syntax-error pass-name
+					(string-append
+					 "Replicate is expected to take an array of known dimension.\n"
+					 "Expected non-negative integer dimension, instead found "
+					 (if (symbol? other)
+					     (format "type variable, '~a'\n" other)
+					     (format "unexpected type, '~a'\n" other))
+					 (format "The input to fold had type: ~a" `(Array ,other ,(collapse elt)))
+					 )
+					stx
+					)])))]
+		
 
     ;; Fold gets its own typing judgement.  It can't go in the prim table.
     [(fold f zer arr)
@@ -546,10 +584,6 @@
     
      ))
 
-(check-equal? (let-values ([(ty expr) (infer #'(acc-array-ref (acc-array ((9.9))) 0 0) empty-tenv)])
-                ty)
-              'Double)
-
 ;; generalize: set(type var) -> type -> scheme
 (define (generalize tenv mono)
   ;; FIXME: this needs to take the environment free vars and set-difference it.
@@ -592,142 +626,13 @@
     ))
 
 
-(test-case "instantiate"
-  (instantiate-scheme (make-type-schema (list->seteq '(a b))
-                                        '(-> (-> a b) (Array n a) (Array n b))))
-  (void))
+(module+ test
 
-#|
+  (check-equal? (free-vars '(-> a (-> b a)))
+                (list->seteq '(a b)))
 
-;; The full type-checking pass.
-;; Returns two values:
-;;   (1) principal type of expression
-;;   (2) fully annotated expression
-(define (typecheck-expr syn-table e)
-  (pass-output-chatter 'typecheck-expr e)
-  (with-handlers ()
-    (infer e syn-table)))
-
-
-;; ------------------------ SOLVER and UNIFYIER related stuff ------------------------
-
-
-(define (sub-arr-helper s val)
-  (match val
-    [(? null?) val]
-    [(? pair?) #:when(not (eq? '-> (car val))) (cons (sub-arr-helper s (car val)) (sub-arr-helper s (cdr val)))]
-    [else (substitute s val)]))
-
-;; Substitution Type -> Type
-(define (substitute s type)
-  (cond
-    [(type_con? type) type]
-    [(type_var? type) (dict-ref s type type)]
-    [(type_array? type) `(,(car type) ,(cadr type) ,(sub-arr-helper s (last type)))]
-    [(type_fun? type) `(-> ,@(map (curry substitute s) (cdr type)))]
-    ;; TODO fix
-    [(vector? type) type]
-    [else (raise-syntax-error 'substitute (format "Unknown type: ~a" type))]))
-
-
-;; unify : type type -> ?
-(define (unify t1 t2)
-  (cond
-    [(and (pair? t1) (pair? t2))
-     (match-let ((`(-> . ,t1-types) t1)
-                 (`(-> . ,t2-types) t2))
-       (if (not (eq? (length t1-types) (length t2-types)))
-           (error "Types ~a and ~a are incompatible" t1 t2)
-           (foldl (lambda (p1 p2 s)
-                    (set-union (unify (substitute s p1) (substitute s p2)) s))
-                  '() t1-types t2-types)))]
-    [(equal? t1 t2) '()]
-    [(type_var? t1) (occurs-check t1 t2)]
-    [(type_var? t2) (occurs-check t2 t1)]
-    [else (raise-syntax-error 'unify (format "Can't Unify t1: ~s and t2: ~s" t1 t2))]))
-
-(define (subs-union subs1 subs2)
-  (let ((s (map (lambda (v)
-                  (cons (car v) (substitute subs1 (cdr v)))) subs2)))
-    (foldl (lambda (v res)
-             (when (dict-ref subs2 (car v) #f)
-               (raise-syntax-error 'subs-union "Substitutions with same type vars"))
-             (set! s (cons v s))) '() subs1) s))
-;;  substitution -> constraint -> constraint
-(define (sub_constraint s constraint)
-  (match constraint
-    [`(== ,v1 ,v2) `(== ,(substitute s v1) ,(substitute s v2))]
-    [`(implicit ,v1 ,v2 ,v3) `(implicit
-                               ,(substitute s v1)
-                               ,(substitute s v2)
-                               ,(for/set ([var v3])
-                                  (dict-ref s var var)))]
-    [`(explicit ,v1 ,v2) `(explicit ,(substitute s v1) ,(substitute s v2))]))
-
-(define (solve constraints)
-  (cond
-    [(empty? constraints) '()]
-    [else (let ((constraint (car constraints)))
-            (match constraint
-              [`(== ,t1 ,t2) (let ((s (unify t1 t2)))
-                               (subs-union (solve (map (curry sub_constraint s) (cdr constraints))) s))]
-              [`(implicit ,t1 ,t2 ,monos) (if (set-empty? (set-intersect
-                                                           (set-subtract (free_vars t2) monos)
-                                                           (active_vars (cdr constraints))))
-                                              (solve (cons `(explicit ,t1 ,(generalize monos t2))
-                                                           (cdr constraints)))
-                                              (solve (append (cdr constraints) `(,constraint))))]
-              [`(explicit ,t ,s) (solve (cons `(== ,t ,(instantiate s)) (cdr constraints)))]))]))
-
-;; ------------------------ END SOLVER STUFF ----------------------------
-(define (str->sym val)
-  (match val
-    [(? string?) (string->symbol val)]
-    [(? list?) (map str->sym val)]
-    [else val]))
-
-(define (annotate-type ty subs)
-  (match ty
-    [`(-> . ,types) `(-> . ,(map (curryr annotate-type subs) types))]
-    [else (let ([f (assoc ty subs)])
-            (if f (str->sym (cdr f)) (str->sym ty)))]))
-
-(define (annotate-expr type-expr subs)
-  (match type-expr
-    [x #:when (or (symbol? x) (number? x) (boolean? x) (vector? x)) type-expr]
-    [`(,x : ,ty) `(,(annotate-expr x subs) : ,(annotate-type ty subs))]
-    [`(lambda ,x ,b) `(lambda ,(foldr (lambda (val res)
-                                         (append (annotate-expr val subs) res)) '() x)
-                        ,(annotate-expr b subs))]
-    [`(let ,vars ,b) `(let ,(foldr (lambda (var res)
-                                     (match-let ([`(,x ,e) var])
-                                       (append `((,@(annotate-expr x subs)
-                                                  ,(annotate-expr e subs))) res))) '() vars)
-                        ,(annotate-expr b subs))]
-    [`(map ,fun ,arr) `(map ,(annotate-expr fun subs) ,(annotate-expr arr subs))]
-    [`(fold ,fun ,res ,arr) `(fold ,(annotate-expr fun subs) ,(annotate-expr res subs) ,(annotate-expr arr subs))]
-    [`(,rator . ,rand) `(,(annotate-expr rator subs)
-                         ,@(map (curryr annotate-expr subs) rand))]
-    [else (raise-syntax-error 'error "Unable to annotate expression for ~a => ~a" type-expr subs)]))
-
-
-;; syntax -> box list -> type
-(define (infer-types e env)
-  (match e
-    [(? symbol?) (infer-var e env)]
-    [`(lambda ,x ,b) (infer-lambda e env)]
-    [`(let ,vars ,b) (infer-let e env)]
-    [`(fold ,fun ,res ,arr) (infer-fold e env)]
-    [`(map ,fun ,arr) (infer-map e env)]
-    [`(: ,e ,t0) (infer-asc e t0 env)]
-    [`(use ,e ,t0) (infer-use e t0 env)]
-    [`(if ,cnd ,thn ,els) (infer-cond e env)]
-    [`(acc-array ,ls) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
-    [(? acc-scalar?) (infer-record (mutable-set) (mutable-set) (infer-lit e) e)]
-    [`(,rator . ,rand) (infer-app e env)]
-    [else (raise-syntax-error 'infer-types (format "unhandled syntax: ~a" e) #'e)]))
-
-|#
-
-
-
+  (test-case "instantiate"
+    (instantiate-scheme (make-type-schema (list->seteq '(a b))
+                                          '(-> (-> a b) (Array n a) (Array n b))))
+    (void))
+)

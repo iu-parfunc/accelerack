@@ -115,15 +115,6 @@
   (pattern (Array v:acc-type-variable elt:acc-element-type))
   (pattern t:acc-element-type))
 
-(test-true "parse type 1"
-           (syntax-parse #'Int
-             [t:acc-type #t]
-             [else #f]))
-
-(test-true "parse array type"
-            (syntax-parse #'(Array 3 Int)
-              [t:acc-type #t]
-              [else #f]))
 
 ;; Syntactic class for literal data that goes inside an array.
 (define-syntax-class acc-element-literal
@@ -171,4 +162,13 @@
            )]))
 
 
+(module+ test
+  (test-true "parse type 1"
+           (syntax-parse #'Int
+             [t:acc-type #t]
+             [else #f]))
 
+  (test-true "parse array type"
+            (syntax-parse #'(Array 3 Int)
+              [t:acc-type #t]
+              [else #f])))

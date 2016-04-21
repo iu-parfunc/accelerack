@@ -43,6 +43,19 @@
   (define (shape-prop img)
     ; (check-true (image? img))
     (define arr (image->acc-array img))
+
+    ; (acc-array-type arr)
+    
+    (printf "  Element of image: ~a\n" (acc-array-ref arr 0 0))
+    ;; If I REMOVE the above printf, we get nondeterministic failures like this:
+    ;; -----------------------
+    ;;     shape-prop 2
+    ;; ERROR
+    ;; ptr-set!: given value does not fit primitive C type
+    ;;   C type: _double
+    ;;   given value: 255
+    ;; -----------------------
+    
     (check-equal? (acc-array-shape arr)
                   (vector (image-width img)
                           (image-height img)))

@@ -34,3 +34,7 @@ Found: Int
 Expected: c3
  in: (+ 1 (vector-ref x 2))
 |#
+
+
+(typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
+

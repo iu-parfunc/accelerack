@@ -89,7 +89,6 @@
                 `(Constant 0)
 		x))
 
-
   (test-equal? "until"
                (acc-array->sexp
                 (generate (lambda ()
@@ -140,15 +139,19 @@
                  (#(1 2) #(2 2) #(3 2))
                  (#(1 3) #(2 3) #(3 3))))
   
+  ;; Disabled until use is supported:
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
              (convert-compile-time-error
                  (let ()
-                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define x (acc-array (1 2 3)))
                    (define q 1)
-                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+                   ;; Scalar use:
+                   #;(define-acc y (map (lambda(y) (+ y  (use q)))
+                                      (acc-array (1 2 3))))
+                   ;; Array use
+                   (define-acc y (map add1 (use x (Array 1 Int))))
                    (check-equal? 2 (car (acc-array->sexp y))))))
-
 
   
   ;; WAIT TILL A LATER VERSION:

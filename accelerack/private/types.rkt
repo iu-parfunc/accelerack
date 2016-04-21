@@ -1,10 +1,10 @@
 #lang racket
 
+(require racket/trace rackunit)
+
 ;; Type definitions (structs) used throughout the code base.
 ;; This includes most things EXCEPT the main acc-array datatype,
 ;; which is exported from accelerack/acc-array
-
-
 (provide
          ;; Elements
          acc-scalar? acc-int? acc-element?
@@ -12,11 +12,13 @@
          acc-element->type
 
          ;; Syntax
-         acc-syn-entry acc-syn-entry-type acc-syn-entry-expr
-
+         acc-syn-entry acc-syn-entry? acc-syn-entry-type acc-syn-entry-expr         
+         
          ;; Types
          acc-type? acc-scalar-type? acc-element-type?
-
+         numeric-type-var?  type-var-id? type-var-symbol?
+         make-type-schema type-schema type-schema? type-schema-vars type-schema-monoty
+         
          ;; delayed scalars are not fully implemented yet [2016.04.11]:
          acc-delayed-scalar? acc-delayed-scalar acc-delayed-scalar-thunk
 
@@ -30,9 +32,10 @@
 ;; A scalar here is defined as a single numeric or boolean value.
 (define (acc-scalar? x)
   (or ; (fixnum? x) ;; FIXME: this rules out some numbers at the high ange.
-      (acc-int? x)
-      (boolean? x)
-      (flonum? x)))
+   (vector? x)
+   (acc-int? x)
+   (boolean? x)
+   (flonum? x)))
 
 ;; Confirm that an integer is in the expected range for the acc "Int" type.
 (define (acc-int? x)
@@ -58,8 +61,9 @@
   (or/c pair? number? boolean? null? vector?))
 
 ;; O(N) Something which is SExp data representing Accelerack arrays or elements.
-(define acc-sexp-data?
-  (or/c acc-sexp-data-shallow? list?))
+(define (acc-sexp-data? x)
+  (or (acc-sexp-data-shallow? x)
+      ((listof acc-sexp-data?) x)))
 
 
 ;; Valid shapes are just lists of numbers
@@ -93,6 +97,7 @@
     [_ #f]))
 
 ;; The SExp representation for an Accelerack element type.
+;; Note: this is a monotype.  No typevars allowed.
 (define (acc-element-type? t)
   (match t
     [`#( ,t* ...) (andmap acc-element-type? t*)]
@@ -101,11 +106,56 @@
 ;; Tests if a value is a valid SExpression encoding an Accelerack type.
 (define (acc-type? t)
   (match t
-    [`(Array ,n ,elt) (and (fixnum? n) (acc-element-type? elt))]
+    [`(Array ,n ,elt) (and (or (symbol? n) (fixnum? n))
+                           (or (symbol? elt) (acc-element-type? elt)))]
     [`#( ,t* ...)     (andmap acc-type? t*)]
     [`(-> ,t* ...)    (andmap acc-type? t*)]
+    [(? acc-scalar-type? t) #t]
+    ;; For some special forms like stencil bounds:
+    ['SExp #t]
+    ;; Type variables.  Currently these must start lower case.
+    [(? symbol?)
+     ;; Can't have zero-char symbols so this should be safe:
+     #:when (char-lower-case? (string-ref (symbol->string t) 0))
+     #t]
     [t (acc-element-type? t)]))
 
+;; Is the identifier a valid type variable (starts with a lower case letter).
+(define (type-var-id? id)
+  (type-var-symbol? (syntax->datum id)))
+
+;; The same as acc-tyvar-ident? but for symbols.
+(define (type-var-symbol? sym)
+  (char-lower-case?
+   ;; Can't have zero-char symbols so this should be safe:
+   (string-ref (symbol->string sym) 0)))
+
+
+(check-true (acc-type? '(Array n a)))
+(check-true (acc-type? '(Array 2 Int)))
+
+(define (numeric-type-var? t)
+  (match t
+    ; [`(Num ,a) (symbol? a)] ;; First design.
+    [a #:when (symbol? a)
+       (string-prefix? (symbol->string a) "num_")]
+    [else #f]))
+
+;; TypeSchema:
+(define-struct type-schema
+  (vars   ;; setof TermVariable   
+   monoty ;; acc-type? or instantiated-type? -- decide which
+   )
+  #:guard (lambda (v m _)
+            (unless (set-eq? v)
+              (raise-argument-error 'make-type-schema "set-eq?" v))
+
+            ;; Loosening this for now to include instantiated types too:
+            ;; (unless (acc-type? m)
+            ;;   (raise-argument-error 'make-type-schema "acc-type?" m))
+            
+            (values v m))
+  #:transparent)
 
 ;; The same idea, but for scalar data.
 ;;
@@ -120,6 +170,7 @@
 
 ;; The type of self-contained, serializable, Accelerack computations.
 ;; These can be sent across the FFI, or, in principle, even across the network.
+
 (struct acc-portable-package (sexp array-table)
 
   )

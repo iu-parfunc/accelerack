@@ -220,7 +220,8 @@
 
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(define (unify-types ctxt t1 t2)
+(define/contract (unify-types ctxt t1 t2)
+  (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
     ;; Variables trivially unify with themselves:
     [((? tyvar?) (? tyvar?))
@@ -424,8 +425,16 @@
              #`(lambda (x.name ...) #,bod))]
     
     ;; Generate gets its own typing judgement.  It can't go in the prim table.
-;    [(generate f es ...)
-;    #`(generate )]
+    [(generate f e* ...)
+     (define es (syntax->list #'(e* ...)))
+     (define-values (fty fnew) (infer #'f tenv))
+     (define-values (etys news) (infer-list es))
+     (define res (fresh-tyvar 'res))
+     (define arrty `(-> ,@etys ,res))
+     (for ([e es] [ety etys])
+       (unify-types e ety 'Int))
+     (values (unify-types #'f fty arrty)
+             #`(generate #,fnew #,@news))]
 
     ;; Fold gets its own typing judgement.  It can't go in the prim table.
     [(fold f zer arr)

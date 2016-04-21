@@ -54,11 +54,13 @@
 
 (define (apply-to-syn-table maybeType inferredTy name progWithTys)
   (define finalTy (if maybeType
-                      (if (unify-types inferredTy maybeType)
+                      (if (unify-types #f inferredTy (syntax->datum maybeType))
                           (syntax->datum maybeType)
                           ;; TODO: can report a more detailed unification error:
-                          (raise-syntax-error   name "inferred type of binding (~a) did not match declared type"
-                                                inferredTy  maybeType))
+                          (raise-syntax-error  name
+                                               (format "inferred type of binding (~a) did not match declared type"
+                                                       inferredTy)
+                                               maybeType))
                       inferredTy))
   (extend-syn-table name finalTy progWithTys)
   finalTy)

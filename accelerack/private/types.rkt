@@ -5,10 +5,7 @@
 ;; Type definitions (structs) used throughout the code base.
 ;; This includes most things EXCEPT the main acc-array datatype,
 ;; which is exported from accelerack/acc-array
-<<<<<<< HEAD
 
-=======
->>>>>>> master
 (provide
          ;; Elements
          acc-scalar? acc-int? acc-element?

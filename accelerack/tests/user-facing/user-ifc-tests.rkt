@@ -89,7 +89,6 @@
                 `(Constant 0)
 		x))
 
-
   (test-equal? "until"
                (acc-array->sexp
                 (generate (lambda ()
@@ -97,11 +96,24 @@
                                    (add1 i)))))
                10)
 
+  (test-case "auntil"
+	     (define arr (acc-array (1 1 1)))
+	     (define arr2 (auntil (a arr (acc-array=? (fold + 0 a) (acc-array 9)))
+				  (map (lambda (x) (add1 x)) a)))
+	     (check-equal? (acc-array->sexp arr2) '(3 3 3)))
+
   (test-equal? "replicate"
                (acc-array->sexp
                 (replicate () (5)
                            (generate (lambda () 9))))
                '(9 9 9 9 9))
+
+  (test-equal? "replicate'"
+	       (let ([x 5])
+		 (acc-array->sexp
+		  (replicate () (x)
+			     (generate (lambda () 9)))))
+	       '(9 9 9 9 9))
 
   (test-equal? "replicate2"
                (acc-array->sexp
@@ -109,6 +121,14 @@
                            (acc-array (1 2))))
                '((1 1 1 1 1)
                  (2 2 2 2 2)))
+
+  (test-equal? "replicate2'"
+	       (let ([x 5])
+		 (acc-array->sexp
+		  (replicate (r) (r x)
+                           (acc-array (1 2)))))
+               '((1 1 1 1 1)
+                 (2 2 2 2 2)))  
   
   (test-equal? "replicate3"
                (acc-array->sexp
@@ -140,15 +160,19 @@
                  (#(1 2) #(2 2) #(3 2))
                  (#(1 3) #(2 3) #(3 3))))
   
+  ;; Disabled until use is supported:
   ;; Test case for valid (use v t)
   (test-case "test-case 9"
              (convert-compile-time-error
                  (let ()
-                   ;; (define-acc x (acc-array (1 2 3)))
+                   (define x (acc-array (1 2 3)))
                    (define q 1)
-                   (define-acc y (map (lambda(y) (+ y  (use q))) (acc-array (1 2 3))))
+                   ;; Scalar use:
+                   #;(define-acc y (map (lambda(y) (+ y  (use q)))
+                                      (acc-array (1 2 3))))
+                   ;; Array use
+                   (define-acc y (map add1 (use x (Array 1 Int))))
                    (check-equal? 2 (car (acc-array->sexp y))))))
-
 
   
   ;; WAIT TILL A LATER VERSION:

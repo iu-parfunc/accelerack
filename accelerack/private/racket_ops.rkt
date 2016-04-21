@@ -39,13 +39,17 @@
                       acc-manifest-array?)]
   [acc-stencil5x5 (-> procedure? stencil-boundary? acc-manifest-array?
                       acc-manifest-array?)]
-
+  [acc-stencil3   (-> procedure? stencil-boundary? acc-manifest-array?
+                      acc-manifest-array?)]
+  [acc-stencil5   (-> procedure? stencil-boundary? acc-manifest-array?
+                      acc-manifest-array?)]
   [acc-replicate (-> list? list? acc-manifest-array? acc-manifest-array?)]
 
 ;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
   )
  acc-generate
  acc-until
+ acc-auntil
  )
 
 ;; Map a function over every element, irrespective of dimension.
@@ -150,14 +154,32 @@
 (define (acc-stencil5 fn b arr)
   (acc-stencil1d fn b arr 5))
 
-(define (acc-stencil1d fn b arr)
-  (error 'acc-stencil1d "Not implemented yet"))
+(define (acc-stencil1d fn b arr xd)
+  (let* ([len  (manifest-array-size arr)]
+         [ty   (manifest-array-type arr)]
+         [shp  (manifest-array-shape arr)]
+         [nty  (acc-element->type (apply fn (stencil-range1d b 0 xd arr)))]
+         [new  (make-empty-manifest-array shp nty)])
+    (for ((i (range (vector-ref shp 0))))
+      (manifest-array-flatset!
+       new i (apply fn (stencil-range1d b i xd arr))))
+    new))
+
+(define (stencil-range1d b x xd arr)
+  (let ([x-base (- x (floor (/ xd 2)))])
+    (for/list ([i (in-range xd)])
+      (if (or (< i 0) (>= i (manifest-array-size arr)))
+          (match b 
+		 [`(Constant ,v) v]
+		 ;; handle other boundary conditions here
+		 [else (error 'stencil-range2d "Invalid boundary condition")])
+          (manifest-array-flatref arr i)))))
 
 (define (acc-stencil2d fn b arr xd yd)
   (let* ([len  (manifest-array-size arr)]
          [ty   (manifest-array-type arr)]
          [shp  (manifest-array-shape arr)]
-	 [nty  (acc-element->type (apply fn (stencil-range2d b 0 0 3 3 arr)))]
+	 [nty  (acc-element->type (apply fn (stencil-range2d b 0 0 xd yd arr)))]
          [new  (make-empty-manifest-array shp nty)])
   (for ((i (range (vector-ref shp 0))))
     (for ((j (range (vector-ref shp 1))))
@@ -192,7 +214,7 @@
         val
         (loop (bodfn val)))))        
 
-;; Array Until:
+(define acc-auntil acc-until)
 
 ;; --------------------------------------------------------------------------------
 

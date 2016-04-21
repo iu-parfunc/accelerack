@@ -20,6 +20,8 @@
 
 ;; The table in which Accelerack syntax is accumulated so as to
 ;; communicate it between textually separate (acc ..) forms.
+;;
+;; It maps variables (symbols) onto acc-syn-entry records.
 (define acc-syn-table (box (make-immutable-free-id-table)))
 
 (define (snap-as-syntax)
@@ -43,11 +45,7 @@
   ; (printf "Woo compiler frontend! ~a\n" e)
   ;; TYP
   (define-values (main-type with-types)
-    (with-handlers [(exn:fail? (lambda (exn)
-                                 ;; SUPPRESSING error
-                                 (log-fatal "[WARNING]: Possible type error in ~a" (syntax->datum e))
-                                 ;; some dummy type
-                                 (values 'Int e)))]
+    (with-handlers []
       (typecheck-expr syn-table e)))
 ;(values 'Int e)
   ;    (fprintf (current-error-port)
@@ -56,11 +54,13 @@
 
 (define (apply-to-syn-table maybeType inferredTy name progWithTys)
   (define finalTy (if maybeType
-                      (if (unify-types inferredTy maybeType)
+                      (if (unify-types #f inferredTy (syntax->datum maybeType))
                           (syntax->datum maybeType)
                           ;; TODO: can report a more detailed unification error:
-                          (raise-syntax-error   name "inferred type of binding (~a) did not match declared type"
-                                                inferredTy  maybeType))
+                          (raise-syntax-error  name
+                                               (format "inferred type of binding (~a) did not match declared type"
+                                                       inferredTy)
+                                               maybeType))
                       inferredTy))
   (extend-syn-table name finalTy progWithTys)
   finalTy)

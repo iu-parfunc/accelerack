@@ -9,8 +9,7 @@
  ; (proc-doc verify-acc (-> (syntax? list?) syntax?) "test")
  (contract-out
   [verify-acc (-> list? syntax? syntax?)]
-  )
- acc-type)
+  ))
 
 (require ; (for-syntax (except-in racket/base map))
          syntax/parse
@@ -18,6 +17,7 @@
          scribble/srcdoc
          racket/trace
          (only-in accelerack/private/utils pass-output-chatter)
+         (only-in accelerack/private/prim-table acc-all-bound-syms)
          accelerack/private/syntax
          (prefix-in r: racket/base)
          )
@@ -25,7 +25,8 @@
  (for-template
   accelerack/private/wrappers
   ;; Keyword symbols come from a mix of three places currently:
-  (only-in accelerack/private/syntax acc-array)
+  (only-in accelerack/private/syntax acc-array acc-lambda-param acc-type
+           acc-element-literal acc-let-bind)
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords : Array Int Bool Double use ->))
 
@@ -56,38 +57,6 @@
   (pass-output-chatter 'verify-acc res)
   res)
 
-(define-syntax-class acc-type
-  #:description "an Accelerack type"
-  #:literals (-> Array)
-  (pattern (-> opera:acc-type ...))
-  (pattern (Array n:integer elt:acc-element-type))
-  (pattern t:acc-element-type))
-
-(define-syntax-class acc-lambda-param
-  #:description "an Accelerack lambda parameter with optional type"
-  #:literals (:)
-  #:attributes (name type)
-  (pattern x:id
-           #:with name #'x
-           #:with type #f)
-  (pattern (x:id : t:acc-type)
-           #:with name #'x
-           #:with type (syntax->datum #'t)))
-
-(define-syntax-class acc-let-bind
-  #:description "an Accelerack let-binding with optional type"
-  #:literals (:)
-  #:attributes (name type rhs)
-  (pattern (x:id expr)
-           #:with name #'x
-           #:with type #f
-           #:with rhs #'expr)
-  (pattern (x:id : t:acc-type expr)
-           #:with name #'x
-           #:with type (syntax->datum #'t)
-           #:with rhs #'expr
-           ) ;; TODO: Could use acc-expr class.  Transform verify-acc into it?
-  )
 
 ;; Make sure a piece of syntax is a valid type.
 ;; If (verify-type s) then (acc-type? (syntax->datum s)),
@@ -95,7 +64,38 @@
 (define (verify-type ty)
   (syntax-parse ty
     [t:acc-type  (void)]
-    [oth (raise-syntax-error 'Accelerack-type "bad type expression" #'oth)]))
+    [oth (raise-syntax-error 'Accelerack-type
+                             (format "bad type expression.\nDetails: ~a\n~a" #'oth
+                                     (examine-symbols #'oth))
+                             #'oth)]))
+
+;; Attempt better error messages:
+(define (examine-symbols ty0)
+  (define found-unbound #f)
+  ;; These are the symbols that we EXPECT to be bound.
+  (define syms (map syntax->datum acc-all-bound-syms))
+  (define (loop ty)
+    (match (syntax->list ty)
+      [#f (match (syntax->datum ty)
+            [(? symbol? s) #:when (memq s syms)
+             (let ([a (and (identifier-binding ty) #t)]
+                   [b (and (identifier-transformer-binding ty) #t)]
+                   [c (and (identifier-template-binding ty) #t)])
+               (set! found-unbound (or found-unbound (not a)))
+               (format "  * Symbol ~a/~a/~a: ~a\n" a b c ty))]
+            [else ""])]
+      [(list x* ...)
+       (apply string-append (map loop x*))]))
+  (match (loop ty0)
+    ["" ""]
+    [s (string-append "\n   Each symbol below should be imported from accelerack.\n"
+                      "   The a/b/c boolean flags below show whether the symbol is bound\n"
+                      "   in the normal environment, transformer phase, and template phase respectively.\n\n"
+                      s
+                      (if found-unbound
+                          ""
+                          "\n   At least one symbol was UNBOUND, but should be imported from accelerack.\n"))]))
+
 
 ;; TODO: compute this from the list of actual-syntax keywords:
 (define acc-keywords-sexp-list
@@ -107,7 +107,7 @@
   (let loop ((stx stx))
     (syntax-parse stx
       ;; TODO: use literal-sets:
-      #:literals (acc-array acc-array-ref :
+      #:literals (acc-array acc-array-ref : use
                   map zipwith fold stencil3x3 generate
                   lambda let if vector vector-ref)
 
@@ -125,7 +125,7 @@
             'error "Unbound variable used in Accelerack 'use'" #'stx ))]
       ;; TODO - Check for identifier binding may have flaws
       ;; Atleast catches unbound vars correctly but may work weirdly with define on accelerack stuff
-      [(use x:id t:acc-type) (verify-type #'t)
+      [(use x:id t) (verify-type #'t)
        (if (identifier-binding #'x)
            #'x ;; The macro expands to this for the "regular Racket" execution.
            (raise-syntax-error

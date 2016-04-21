@@ -28,3 +28,14 @@
         (define-acc y (map (lambda(y) (+ y (use q))) (acc-array (1 2 3))))
         (check-equal? 2 (car (acc-array->sexp y))))
                  ))))
+
+(test-case "fold of unknown dimension"
+  (check-exn
+   #rx"array of known dimension"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (define-acc f (lambda (arr) (fold + 0 arr)))
+        (void))
+      ))))
+

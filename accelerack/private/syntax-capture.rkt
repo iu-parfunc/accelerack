@@ -19,8 +19,8 @@
          accelerack/acc-array/private/delayed
          (for-syntax racket/base
                      syntax/parse syntax/id-table racket/dict
-                     (only-in accelerack/private/syntax acc-array)
-                     accelerack/private/passes/verify-acc
+                     (only-in accelerack/private/syntax acc-array acc-type)
+                     ; accelerack/private/passes/verify-acc
                      accelerack/private/passes/typecheck
                      accelerack/private/types
 		     accelerack/private/front-end
@@ -100,10 +100,15 @@
     ;; TODO: allow acc-lambda-param, not just identifier:
     [(_ x:identifier e)                     (go #'x #f #'e)]
     [(_ x:identifier : t:acc-type e)        (go #'x #'t #'e)]
-    [(_ (f:identifier x:identifier ...) e) (with-handlers
-                                             ([exn:fail? (lambda (exn)
-                                                           (raise-syntax-error 'syntax-error "synatax error" #`#,stx))])
-                                             (go #'f #f #'(lambda (x ...) e)))]))
+    [(_ (f:identifier x:identifier ...) e)
+     (with-handlers
+       ()
+       #;
+       ([exn:fail? (lambda (exn)
+                     (raise-syntax-error 'define-acc
+                                         (format "caught error during compilation:\n\n~a\n" exn)
+                                         stx))])
+       (go #'f #f #'(lambda (x ...) e)))]))
 
 
 ; --------------------------------------------------------------------------------

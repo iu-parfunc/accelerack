@@ -5,41 +5,46 @@
 
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          accelerack/private/parse
+         accelerack/private/prim-table
          accelerack/acc-array/private/manifest-array
-         (for-syntax racket/base syntax/parse accelerack/private/parse)
+         rackunit
          (prefix-in r: racket/base)
 
          syntax/parse
          (only-in accelerack/acc-array/private make-acc-array)
-         (for-template racket/base)
-         (for-template (only-in racket/contract ->))
 
          ;; Regular require, careful of phasing of these identifiers:
          accelerack/private/keywords
-         (for-template accelerack/private/keywords)
+         (for-template (except-in racket/base map)
+                       (only-in racket/contract ->)
+                       accelerack/private/keywords
+                       (only-in accelerack/private/wrappers map fold
+                                zipwith generate stencil3x3))
+         (for-syntax racket/base syntax/parse accelerack/private/parse)
          (only-in accelerack/private/utils vector->list*)
-         (only-in rackunit check-not-false)
+         (only-in accelerack/private/types type-var-id?)
          )
 
-(provide acc-array
-         acc-primop
-         acc-primop-lits
+(provide ;; Functions and macros
+         acc-array
          ; acc-primop-identifier?
-
+         infer-element-type
+         
+         ;; Global constants:
+         acc-primop-lits
+         acc-primop-types
          acc-scalar-lits
+         acc-keyword-lits
+         
+         ;; Syntax classes:
+         acc-primop
+         acc-lambda-param
+         acc-let-bind
+         acc-type
          acc-element-type
+         acc-element-literal
          )
 (provide (all-from-out accelerack/private/keywords))
-
-; Syntax -> Syntax (acc-element-type?)
-(define-for-syntax (infer-type d)
-  (syntax-parse d
-    [_:boolean #'Bool ]
-    [_:number (if (flonum? (syntax-e d)) #'Double #'Int)]
-    [#(v ...) #`(#,@(list->vector (map infer-type (syntax->list #'(v ...)))))]
-    ;; To get the element type we dig inside any arrays:
-    [(v more ...) (infer-type #'v)]
-    ))
 
 (define-for-syntax (infer-shape d)
   (syntax-parse d
@@ -57,21 +62,10 @@
     #:attributes (shape type)
     [pattern v
              #:with shape (infer-shape #'v)
-             #:with type (infer-type #'v)
+             #:with type (infer-element-type #'v)
              ])
   )
 
-;; TODO: Replace with a primop type table:
-(define acc-primop-lits
-  (list #'add1 #'sub1 #'+ #'* #'/ #'-))
-
-(define acc-scalar-lits
-  (list #'Bool #'Int #'Double))
-
-;; [2015.12.11] Huh.. these work when I load this modulue, but fail
-;; when this moudle is imported by syntax-tests.rkt:
-(check-not-false (andmap identifier-binding acc-primop-lits))
-(check-not-false (andmap identifier-binding acc-scalar-lits))
 
 (define (acc-primop-identifier? id)
   (and (identifier-binding id) ;; could throw an error for this.
@@ -82,14 +76,79 @@
        (member id acc-scalar-lits free-identifier=?)))
 
 (define-syntax-class acc-primop
-  #:description "a primitive function supported by Accelerack (such as +, -, *, map, etc)"
+  #:description (string-append "a primitive function supported by Accelerack.\n"
+                               ; "Examples include +, -, *, map, etc.\n"
+                               ; "Evaluate 'acc-prims' for the full list."
+                               (format "The full list of primitives is:\n  ~a\n"
+                                       (for/list ([(k _) (in-dict acc-primop-types)])
+                                         (syntax->datum k)))
+                               )
   (pattern p:id #:when (acc-primop-identifier? #'p)))
+
+
+(define-syntax-class acc-type-variable
+  #:description "a type variable, which starts with a lower-case letter"
+  (pattern p:id #:when (type-var-id? #'p)))
 
 (define-syntax-class acc-element-type
   #:description "a type for element data that can go inside an array"
   (pattern p:id #:when (acc-scalar-identifier? #'p))
+  (pattern p:acc-type-variable)
   (pattern #(t:acc-element-type ...)))
 
+(define-syntax-class acc-lambda-param
+  #:description "an Accelerack lambda parameter with optional type"
+  #:literals (:)
+  #:attributes (name type)
+  (pattern x:id
+           #:with name #'x
+           #:with type #f)
+  (pattern (x:id : t:acc-type)
+           #:with name #'x
+           #:with type (syntax->datum #'t)))
+
+(define-syntax-class acc-type
+  #:description "an Accelerack type"
+  #:literals (-> Array)
+  (pattern (-> opera:acc-type ...))
+  (pattern (Array n:integer           elt:acc-element-type))
+  (pattern (Array v:acc-type-variable elt:acc-element-type))
+  (pattern t:acc-element-type))
+
+(test-true "parse type 1"
+           (syntax-parse #'Int
+             [t:acc-type #t]
+             [else #f]))
+
+(test-true "parse array type"
+            (syntax-parse #'(Array 3 Int)
+              [t:acc-type #t]
+              [else #f]))
+
+;; Syntactic class for literal data that goes inside an array.
+(define-syntax-class acc-element-literal
+  #:description "Accelerack element data (which can go in an array)"
+  (pattern _:boolean)
+  (pattern ns:number #:when
+           (let ((n (syntax->datum #'ns)))
+             (or (flonum? n) (exact-integer? n))))
+  (pattern #( _:acc-element-literal ...)))
+
+
+(define-syntax-class acc-let-bind
+  #:description "an Accelerack let-binding with optional type"
+  #:literals (:)
+  #:attributes (name type rhs)
+  (pattern (x:id expr)
+           #:with name #'x
+           #:with type #f
+           #:with rhs #'expr)
+  (pattern (x:id : t:acc-type expr)
+           #:with name #'x
+           #:with type (syntax->datum #'t)
+           #:with rhs #'expr
+           ) ;; TODO: Could use acc-expr class.  Transform verify-acc into it?
+  )
 
 ;; A convenient syntax for literal arrays, which does not require the
 ;; user to provide type/shape information.

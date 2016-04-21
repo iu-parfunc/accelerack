@@ -41,6 +41,7 @@
     ;; Data-parallel aggregate operations
     map fold zipwith stencil3x3 generate
     until
+    auntil
     replicate 
 
     ;; Individual elements plus shapes

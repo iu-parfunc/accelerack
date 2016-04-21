@@ -96,11 +96,24 @@
                                    (add1 i)))))
                10)
 
+  (test-case "auntil"
+	     (define arr (acc-array (1 1 1)))
+	     (define arr2 (auntil (a arr (acc-array=? (fold + 0 a) (acc-array 9)))
+				  (map (lambda (x) (add1 x)) a)))
+	     (check-equal? (acc-array->sexp arr2) '(3 3 3)))
+
   (test-equal? "replicate"
                (acc-array->sexp
                 (replicate () (5)
                            (generate (lambda () 9))))
                '(9 9 9 9 9))
+
+  (test-equal? "replicate'"
+	       (let ([x 5])
+		 (acc-array->sexp
+		  (replicate () (x)
+			     (generate (lambda () 9)))))
+	       '(9 9 9 9 9))
 
   (test-equal? "replicate2"
                (acc-array->sexp
@@ -108,6 +121,14 @@
                            (acc-array (1 2))))
                '((1 1 1 1 1)
                  (2 2 2 2 2)))
+
+  (test-equal? "replicate2'"
+	       (let ([x 5])
+		 (acc-array->sexp
+		  (replicate (r) (r x)
+                           (acc-array (1 2)))))
+               '((1 1 1 1 1)
+                 (2 2 2 2 2)))  
   
   (test-equal? "replicate3"
                (acc-array->sexp

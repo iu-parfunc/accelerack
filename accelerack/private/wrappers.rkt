@@ -24,10 +24,48 @@
                               acc-element? acc-element? acc-element?
                               acc-element?)
                           stencil-boundary? acc-array?
-                          acc-array?)])
+                          acc-array?)]
+          [stencil5x5 (-> (-> acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element?
+                              acc-element?)
+                          stencil-boundary? acc-array?
+                          acc-array?)]
+          [stencil5x3 (-> (-> acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element?)
+                          stencil-boundary? acc-array?
+                          acc-array?)]
+          [stencil3x5 (-> (-> acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element? acc-element? acc-element?
+                              acc-element?)
+                          stencil-boundary? acc-array?
+                          acc-array?)]
+          [stencil3    (-> (-> acc-element? acc-element? acc-element?
+                               acc-element?)
+                           stencil-boundary? acc-array?
+                           acc-array?)]
+          [stencil5    (-> (-> acc-element? acc-element? acc-element?
+                               acc-element? acc-element?
+                               acc-element?)
+                           stencil-boundary? acc-array?
+                           acc-array?)])
          generate
          until
          replicate
+	 auntil
          
          ;; Reexported:
          acc-array-ref acc-array-flatref
@@ -59,6 +97,21 @@
 (define (stencil3x3 f b x)
   (make-acc-array (acc-stencil3x3 f b (force-acc-array! x))))
 
+(define (stencil5x3 f b x)
+  (make-acc-array (acc-stencil5x3 f b (force-acc-array! x))))
+
+(define (stencil3x5 f b x)
+  (make-acc-array (acc-stencil3x5 f b (force-acc-array! x))))
+
+(define (stencil5x5 f b x)
+  (make-acc-array (acc-stencil5x5 f b (force-acc-array! x))))
+
+(define (stencil3 f b x)
+  (make-acc-array (acc-stencil3 f b (force-acc-array! x))))
+
+(define (stencil5 f b x)
+  (make-acc-array (acc-stencil5 f b (force-acc-array! x))))
+
 (define (generate f . dims)
   (make-acc-array (apply acc-generate f dims)))
 
@@ -69,9 +122,27 @@
                   (lambda (i) pred)
                   (lambda (i) bod))]))
 
+;; (define-syntax (replicate stx)
+;;   (syntax-parse stx
+;;     [(_ pat1 pat2 arr)
+;;      #'(make-acc-array
+;;         (acc-replicate (quote pat1) (quote pat2) (force-acc-array! arr)))]))
+
 (define-syntax (replicate stx)
   (syntax-parse stx
-    [(_ pat1 pat2 arr)
-     #'(make-acc-array
-        (acc-replicate (quote pat1) (quote pat2) (force-acc-array! arr)))]))
+    [(replicate pat1 pat2 arr)
+     (let* ([qpat1 (map syntax->datum (syntax-e #'pat1))]
+	    [qpat2 (map (lambda (s) (if (member (syntax->datum s) qpat1)
+					#`(quote #,(syntax->datum s)) s))
+			(syntax-e #'pat2))]
+	    [spat1 (datum->syntax stx (cons #'list (map (lambda (s) #`(quote #,s)) qpat1)) #'srcloc)]
+	    [spat2 (datum->syntax stx (cons #'list qpat2) #'srcloc)])
+     #`(make-acc-array
+	(acc-replicate #,spat1 #,spat2 (force-acc-array! arr))))]))
 
+(define-syntax (auntil stx)
+  (syntax-parse stx
+    [(_ (i:id initv pred) bod)
+     #'(acc-auntil initv
+		   (lambda (i) pred)
+		   (lambda (i) bod))]))

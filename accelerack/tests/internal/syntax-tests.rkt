@@ -5,8 +5,7 @@
          (only-in accelerack acc-array acc-array-ref fold map zipwith generate :
                   acc-array?
                   ;; If you leave these out, the error messages can be bad:
-                  Int Bool Double use
-                  Array)
+                  Int Bool Double use Array)
          accelerack/private/syntax-capture
          (only-in accelerack/acc-array/private/delayed acc-delayed-array?)
          )

@@ -86,7 +86,14 @@
 ;; Each of the above #'foo uses occurs at template stage relative to us.
 ;; Test that these identifiers are all bound in other modules.
 (test-begin
+
+  (define (at-least-one-bind? id)    
+    (or (identifier-binding id)
+        (identifier-template-binding id)
+        (identifier-template-binding id)))
+  
  (for ([p acc-primop-lits])
-   (check-pred identifier-template-binding p))
+   (check-pred at-least-one-bind? p))
  (for ([p acc-scalar-lits])
-   (check-pred identifier-template-binding p)))
+   (check-pred at-least-one-bind? p)))
+

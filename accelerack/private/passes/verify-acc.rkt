@@ -64,8 +64,39 @@
   (syntax-parse ty
     [t:acc-type  (void)]
     [oth (raise-syntax-error 'Accelerack-type
-                             (format "bad type expression.\nDetails: ~a" #'oth)
+                             (format "bad type expression.\nDetails: ~a\n~a" #'oth
+                                     (examine-symbols #'oth))
                              #'oth)]))
+
+;; Attempt better error messages:
+(define (examine-symbols ty0)
+  (define found-unbound #f)
+  ;; These are the symbols that we EXPECT to be bound.
+  (define syms
+    (for/list ([(k _) (in-dict acc-primop-types)])
+      (syntax->datum k)))
+  (define (loop ty)
+    (match (syntax->list ty)
+      [#f (match (syntax->datum ty)            
+            [(? symbol? s) #:when (memq s syms)
+             (let ([a (and (identifier-binding ty) #t)]
+                   [b (and (identifier-transformer-binding ty) #t)]
+                   [c (and (identifier-template-binding ty) #t)])
+               (set! found-unbound (or found-unbound (not a)))
+               (format "Symbol ~a/~a/~a: ~a\n" a b c ty))]
+            [else ""])]
+      [(list x* ...)
+       (apply string-append (map loop x*))]))
+  (match (loop ty0)
+    ["" ""]
+    [s (string-append "Each symbol below should be imported from accelerack.\n"
+                      "The a/b/c boolean flags below show whether the symbol is bound\n"
+                      "in the normal environment, transformer phase, and template phase respectively.\n"
+                      s
+                      (if found-unbound
+                          ""
+                          "At least one symbol was UNBOUND, but should be imported from accelerack.\n"))]))
+
 
 ;; TODO: compute this from the list of actual-syntax keywords:
 (define acc-keywords-sexp-list

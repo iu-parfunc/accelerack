@@ -115,8 +115,6 @@
   (pattern (Array v:acc-type-variable elt:acc-element-type))
   (pattern t:acc-element-type))
 
-(pretty-print acc-all-bound-syms)
-
 (test-true "parse type 1"
            (syntax-parse #'Int
              [t:acc-type #t]

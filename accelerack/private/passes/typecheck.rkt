@@ -342,7 +342,10 @@
                     #'x)])]
     
     ;; Other features, Coming soon:
-    [(: e t:acc-type)  (raise-syntax-error pass-name "ascription (:) form not yet supported." stx)]
+    [(: e t:acc-type)
+     (define-values (ty e2) (infer #'e tenv))
+     (values (unify-types stx ty (instantiate (syntax->datum #'t)))
+             e2)]
     [(use x:id t:acc-type) (raise-syntax-error pass-name "use form not yet supported." stx)]
     [(use x:id)            (raise-syntax-error pass-name "use form not yet supported." stx)]
 
@@ -399,14 +402,23 @@
 
     ;; Method one, don't match bad params:
     [(lambda (x:acc-lambda-param ...) e)
-     (define xs (syntax->list #'(x ...)))
+     (define xs (syntax->list #'(x.name ...)))
      (define freshes (build-list (length xs)
                                  (lambda (_) (fresh-tyvar))))
+
+     ;; Enforce the user type annotations BEFORE normal inference.
+     ;; The main reason for this order is that it may prevent an Array
+     ;; dimension ambiguity until we fix those constraints to be deferred.
+     (for ([x xs] [infrd freshes]
+           [expected (syntax->datum #'(x.type ...))])
+       (when expected
+         (unify-types x infrd (instantiate expected))))
+     
      (define tenv2 (for/fold ([te tenv])
                              ([x xs]
                               [fresh freshes])
                      (tenv-set te x (make-mono-schema fresh))))
-     (define-values (tbod bod) (infer #'e tenv2))
+     (define-values (tbod bod) (infer #'e tenv2))     
      (values `(-> ,@freshes ,tbod)
              ;; TODO: must return annotated here:
              #`(lambda (x.name ...) #,bod))]

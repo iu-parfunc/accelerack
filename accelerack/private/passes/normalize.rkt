@@ -21,7 +21,7 @@
 
 (define lambda-first-primitive-ls '(map fold zipwith generate stencil3x3))
 (define primitive-ls '(vector vector-ref map fold zipwith generate stencil3x3
-                       add1 + * - / sqrt))
+                              add1 + * - / sqrt))
 (define (returns-lambda? exp)
   (match exp
     (`(let ,xls ,y ... ,z) (returns-lambda? z))
@@ -55,7 +55,7 @@
     (`(let ,xls ,a ... ,b)
      `(let ,xls ,@a
            ,(normalize-to-lambda e b x env)))
-    ))
+    (else (raise-syntax-error 'normalize "normalize-to-lambda: no matching expression" x))))
 
 ;; Environment contains only lambda's for now
 ;; Anything more ??
@@ -63,7 +63,7 @@
   (let loop ((exp exp) (env env))
     (match exp
       (x #:when (assq x env) (values (cadr (assq x env)) env))
-      (x #:when (or (symbol? x) (number? x) (boolean? x)) (values x env))
+      (x #:when (or (symbol? x) (number? x) (boolean? x) (vector? x)) (values x env))
       (`(let ,xls ,b)
        (let*-values (((exp env) (normalize-exp-let xls env)))
 	 (let ((bexp (normalize b env)))
@@ -83,6 +83,7 @@
       (`((lambda (,x ...) ,y ... ,z) ,e ...) (let ((lenv (add-to-env x e env)))
                                                (values (normalize z lenv) env)))
       (`(,x ...) (values `,(map (lambda(x) (normalize x env)) x) env))
+      (else (raise-syntax-error 'normalize "normalize-exp: no matching expression" exp))
       )))
 
 
@@ -177,6 +178,14 @@
 			    (acc-array (1 2 3))
 			    (acc-array (2 3 4)))))
 		 (map f g)))
+(define test7a '(let ((f (let ((x 1))
+                          (if (eq? x 1)
+                              ((lambda (x) x) (lambda(x) x))
+                              (lambda (x) (* 2 x)))))
+		     (g (if (eq? 1 1)
+			    (acc-array (#(1 1) #(2 2) #(3 3)))
+			    (acc-array (#(1 1) #(2 2) #(3 3))))))
+                  (map f g)))
 
 
 (define test8
@@ -215,6 +224,7 @@
                  (error 'is-normalized "unexpected expression: ~a\n" x))
              )) ns))
 
+
 (module+ test
 
   (test-case "Run eval-and-check tests"
@@ -237,7 +247,7 @@
                 (check-pred is-normalized? x))
               (map (lambda(x) (normalize x '()))
                    (list test3 test4 test4a test4b test4c
-                         test5 test6 test7 test8 test9))))
+                         test5 test6 test7 test7a test8 test9))))
 
 
   #;

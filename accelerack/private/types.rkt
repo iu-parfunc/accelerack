@@ -15,7 +15,7 @@
          acc-syn-entry acc-syn-entry? acc-syn-entry-type acc-syn-entry-expr         
          
          ;; Types
-         acc-type? acc-scalar-type? acc-element-type?
+         acc-type? acc-scalar-type? acc-num-type? acc-element-type?
          numeric-type-var?  type-var-id? type-var-symbol?
          make-type-schema type-schema type-schema? type-schema-vars type-schema-monoty
          
@@ -91,8 +91,15 @@
 ;; The SExp representation for an Accelerack scalar type.
 (define (acc-scalar-type? t)
   (match t
-    ['Int #t]
     ['Bool #t]
+    [(? acc-num-type?) #t]
+    [_ #f]))
+
+;; These are the numeric types to which numeric type variables can be
+;; instantiated.
+(define (acc-num-type? t)
+  (match t
+    ['Int #t]
     ['Double #t]
     [_ #f]))
 
@@ -126,9 +133,10 @@
 
 ;; The same as acc-tyvar-ident? but for symbols.
 (define (type-var-symbol? sym)
-  (char-lower-case?
-   ;; Can't have zero-char symbols so this should be safe:
-   (string-ref (symbol->string sym) 0)))
+  (and (symbol? sym)
+       (char-lower-case?
+        ;; Can't have zero-char symbols so this should be safe:
+        (string-ref (symbol->string sym) 0))))
 
 (define (numeric-type-var? t)
   (match t

@@ -14,17 +14,6 @@
 
 
 (test-case "vec+"
-  ;; FIXME:
-  #;
-  (define-acc (vec+ (v1 : #(Int Int Int))
-                    (v2 : #(Int Int Int)))
-    (vector (+ (vector-ref v1 0)
-               (vector-ref v2 0))
-            (+ (vector-ref v1 1)
-               (vector-ref v2 1))
-            (+ (vector-ref v1 2)
-               (vector-ref v2 2))))
-
   (define-acc vec+
     (lambda ((v1 : #(Int Int Int))
              (v2 : #(Int Int Int)))
@@ -38,6 +27,13 @@
   (check-true (procedure? vec+))
   )
 
-
-
-
+(test-case "vec+ 2"
+  (define-acc (vec+ (v1 : #(Int Int Int))
+                    (v2 : #(Int Int Int)))
+    (vector (+ (vector-ref v1 0)
+               (vector-ref v2 0))
+            (+ (vector-ref v1 1)
+               (vector-ref v2 1))
+            (+ (vector-ref v1 2)
+               (vector-ref v2 2))))
+  (void))

@@ -234,12 +234,16 @@
   (define rhs (if (tyvar-ptr t1)                         
                   (unify-types ctxt (tyvar-ptr t1) t2)
                   t2))
+  (define rhs2 (collapse rhs))
   (when (and (tyvar-numeric? t1)
-             (not (acc-scalar-type? rhs)))
+             (not (or (acc-num-type? rhs2)
+                      ;; It is OK to equate with a non-numeric type var..
+                      ;; We defer judgement.
+                      (type-var-symbol? rhs2))))
     (raise-syntax-error
      'unify-types
      (format "error\n  Expected a numeric type, instead found ~a" (show-type rhs))
-     ctxt))             
+     ctxt))
   (set-tyvar-ptr! t1 rhs))
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?

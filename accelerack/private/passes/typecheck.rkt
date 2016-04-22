@@ -108,7 +108,7 @@
 (define-struct tyvar
   ([ptr #:mutable] ;; #f or a instantiated-type?
     name           ;; symbol?, For nicer printing
-    numeric        ;; boolean?
+    numeric?        ;; boolean?
    )
   ; #:transparent
   #:methods gen:custom-write
@@ -221,6 +221,27 @@
   (values (collapse ty) e2))
 
 
+;; Put a type into a human-readable form for error messages.
+(define (show-type ty)
+  (match (collapse ty)
+    [(? symbol? s)
+     (format "type variable '~a'" s)]
+    [oth (format "~a" oth)]))
+
+;; Safely set a type variable while respecting whether or not it is a
+;; numeric-only (num_) type variable.
+(define (set-tyvar! ctxt t1 t2)
+  (define rhs (if (tyvar-ptr t1)                         
+                  (unify-types ctxt (tyvar-ptr t1) t2)
+                  t2))
+  (when (and (tyvar-numeric? t1)
+             (not (acc-scalar-type? rhs)))
+    (raise-syntax-error
+     'unify-types
+     (format "error\n  Expected a numeric type, instead found ~a" (show-type rhs))
+     ctxt))             
+  (set-tyvar-ptr! t1 rhs))
+  
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
 (define/contract (unify-types ctxt t1 t2)
@@ -235,10 +256,7 @@
     [((? tyvar?) _)
      ;(printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
      (occurs-check ctxt (tyvar-name t1) t2)
-     (set-tyvar-ptr! t1 
-                     (if (tyvar-ptr t1)                         
-                         (unify-types ctxt (tyvar-ptr t1) t2)
-                         t2))
+     (set-tyvar! ctxt t1 t2)
      t1]
     [(_ (? tyvar?)) (unify-types ctxt t2 t1)] ;; Flip!
 

@@ -42,12 +42,9 @@
              (map (lambda (x) (list (car x) (cdr x)))
                   syn-table)))
   (define stripped (verify-acc syn-table e))
-  ; (printf "Woo compiler frontend! ~a\n" e)
-  ;; TYP
   (define-values (main-type with-types)
     (with-handlers []
       (typecheck-expr syn-table e)))
-;(values 'Int e)
   ;    (fprintf (current-error-port)
   ;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
   (values stripped main-type with-types))

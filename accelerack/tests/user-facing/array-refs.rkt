@@ -47,3 +47,16 @@
   (check-exn exn:fail?
              (lambda () (acc-array-flatref x 1))
              "array ref past end"))
+
+
+(test-true "Array equality 1 "
+           (equal? (acc-array (1 2 3))
+                   (acc-array (1 2 3))))
+
+(test-false "Array equality 2"
+            (equal? (acc-array (1 2 3))
+                    (acc-array (1 2))))
+
+(test-false "Array equality 3 - different dimension"
+            (equal? (acc-array (1 2 3))
+                    (acc-array 99)))

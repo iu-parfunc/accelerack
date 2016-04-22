@@ -39,3 +39,12 @@
         (void))
       ))))
 
+
+(test-case "plus 5 function definition"
+  (check-exn
+   #rx"numeric type"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (define-acc (f x) (+ x #t))
+        (void))))))

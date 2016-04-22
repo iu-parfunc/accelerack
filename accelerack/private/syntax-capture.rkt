@@ -14,12 +14,12 @@
          accelerack/private/wrappers
          accelerack/private/types
          ; accelerack/private/racket_ops
-         (only-in accelerack/private/syntax acc-array :)
+         (only-in accelerack/private/syntax acc-array  :)
          (only-in accelerack/acc-array/private make-acc-array)
          accelerack/acc-array/private/delayed
          (for-syntax racket/base
                      syntax/parse syntax/id-table racket/dict
-                     (only-in accelerack/private/syntax acc-array acc-type)
+                     (only-in accelerack/private/syntax acc-array acc-type acc-lambda-param)
                      ; accelerack/private/passes/verify-acc
                      accelerack/private/passes/typecheck
                      accelerack/private/types
@@ -97,10 +97,9 @@
   ;; Infers the type of the given expression and adds that type and
   ;; the expression to the syntax table.
   (syntax-parse stx
-    ;; TODO: allow acc-lambda-param, not just identifier:
     [(_ x:identifier e)                     (go #'x #f #'e)]
     [(_ x:identifier : t:acc-type e)        (go #'x #'t #'e)]
-    [(_ (f:identifier x:identifier ...) e)
+    [(_ (f:identifier x:acc-lambda-param ...) e)
      (with-handlers
        ()
        #;

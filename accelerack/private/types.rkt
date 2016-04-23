@@ -9,6 +9,7 @@
          ;; Elements
          acc-scalar? acc-int? acc-element?
          acc-sexp-data? acc-sexp-data-shallow?
+         acc-sexp-data->type acc-sexp-data->shape
          acc-element->type
 
          ;; Syntax
@@ -65,6 +66,25 @@
   (or (acc-sexp-data-shallow? x)
       ((listof acc-sexp-data?) x)))
 
+
+;; This assumes an array type:
+(define (acc-sexp-data->type sexp)
+  (let loop ([dim 0] [x sexp])
+    (cond
+      [(acc-element? x)
+       `(Array ,dim ,(acc-element->type x))]
+      [(pair? x) (loop (add1 dim) (car x))]
+      [else 'acc-sexp-data->type "unexpected input: ~a" sexp])))
+
+;; Assumes array data:
+(define (acc-sexp-data->shape sexp)
+  (list->vector
+   (let loop ([x sexp])
+     (cond
+       [(acc-element? x) `()]
+       [(pair? x) (cons (length x)
+                        (loop (car x)))]
+       [else 'acc-sexp-data->shape "unexpected input: ~a" sexp]))))
 
 ;; Valid shapes are just lists of numbers
 (define acc-shape? (vectorof exact-nonnegative-integer?))

@@ -36,6 +36,7 @@
     acc-array-size
     acc-array-shape 
     acc-array->sexp
+    sexp->acc-array
     
     ;; A list of primitives for reference:
     acc-prims
@@ -99,4 +100,3 @@
 
     ))
 
-  

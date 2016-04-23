@@ -54,13 +54,18 @@
                                                      inferredTy)
                                              maybeType))
                     inferredTy))
-  (acc-syn-entry-type
-   (extend-syn-table name
+  (define entry (extend-syn-table name
                     (lambda (t)
                       (if t
                           (unify-monos name newTy t)
                           newTy))
-                    progWithTys)))
+                    progWithTys))
+  (when (accelerack-debug-mode?)
+    (fprintf (current-error-port)
+             "\n --=< syntax table size: ~a: ~a >=-- \n"
+             (dict-count (unbox acc-syn-table))
+             (map syntax->datum (dict-keys (unbox acc-syn-table)))))
+  (acc-syn-entry-type entry))
 
 (define (unify-monos ctxt t1 t2)
   (collapse (unify-types ctxt (instantiate t1)

@@ -108,7 +108,7 @@
 (define-struct tyvar
   ([ptr #:mutable] ;; #f or a instantiated-type?
     name           ;; symbol?, For nicer printing
-    numeric?        ;; boolean?
+    [numeric #:mutable]  ;; boolean?, can change through unification
    )
   ; #:transparent
   #:methods gen:custom-write
@@ -157,14 +157,27 @@
 ;; Type Utilities
 ;; ------------------------------------------------------------
 
+;; Take a tyvar used during unification and make it visible to the
+;; user.  In the future could remap the suffix renaming.
+(define (export-tyvar t)
+  (if (tyvar-numeric t)
+      (if (numeric-type-var? (tyvar-name t))
+          (tyvar-name t)
+          (symbol-append 'num_ (tyvar-name t)))
+      (tyvar-name t)))
+
+(define (symbol-append a b)
+  (string->symbol (string-append (symbol->string a) (symbol->string b))))
+
 ;; Remove type variables:
 ;; TyInst -> MonoTy (i.e. acc-type?)
 (define (collapse ty)
   (match ty
     [(? tyvar?)     
      (if (tyvar-ptr ty)
+         ;; policy: if its a chain of variables, which name to use?
          (collapse (tyvar-ptr ty))
-         (tyvar-name ty))]
+         (export-tyvar ty))]
     [(? symbol?) ty]
     [`(Array ,n ,elt)
      `(Array ,(collapse n) ,(collapse elt))]
@@ -228,6 +241,18 @@
      (format "type variable '~a'" s)]
     [oth (format "~a" oth)]))
 
+(define (is-numeric? t)
+  (if (tyvar? t)
+      (or (tyvar-numeric t)
+          (is-numeric? (tyvar-ptr t)) ;; This should be redundant.
+          )
+      #f))
+
+(define (make-numeric! t)
+  (when (and t (tyvar? t))
+    (set-tyvar-numeric! t #t)
+    (make-numeric! (tyvar-ptr t))))
+
 ;; Safely set a type variable while respecting whether or not it is a
 ;; numeric-only (num_) type variable.
 (define (set-tyvar! ctxt t1 t2)
@@ -235,8 +260,12 @@
                   (unify-types ctxt (tyvar-ptr t1) t2)
                   t2))
   (define rhs2 (collapse rhs))
-  (printf " unify to tyvar:  ~a  -> ~a\n" (tyvar-name t1) t2)
-  (when (and (tyvar-numeric? t1)
+  #;
+  (printf " unify to tyvar:  ~a(~a)  -> ~a / ~a, num-type? ~a, type var? ~a\n"
+          (tyvar-name t1) (tyvar-numeric t1) rhs rhs2
+          (acc-num-type? rhs2)
+          (type-var-symbol? rhs2))
+  (when (and (tyvar-numeric t1)
              (not (or (acc-num-type? rhs2)
                       ;; It is OK to equate with a non-numeric type var..
                       ;; We defer judgement.
@@ -245,6 +274,10 @@
      'unify-types
      (format "error\n  Expected a numeric type, instead found ~a" (show-type rhs))
      ctxt))
+
+  ;; Propagate numeric-ness in both directions:
+  (when (is-numeric? rhs) (set-tyvar-numeric! t1 #t))
+  (when (tyvar-numeric t1) (make-numeric! rhs))
   (set-tyvar-ptr! t1 rhs))
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?

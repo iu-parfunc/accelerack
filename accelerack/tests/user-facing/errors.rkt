@@ -50,7 +50,8 @@
         (void))))))
 
 
-#; ; FINISHME
+
+; (acc-echo-types)
 (test-case "app sqr / bad arg"
   (check-exn
    #rx"numeric type"

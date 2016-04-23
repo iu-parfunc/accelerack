@@ -38,7 +38,8 @@
       (typecheck-expr syn-table e)))
   ;    (fprintf (current-error-port)
   ;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
-  (values (normalize (strip-ast stripped) syn-table) main-type with-types))
+  ;; (values (datum->syntax stripped (normalize (strip-ast stripped) syn-table)) main-type with-types)
+  (values stripped main-type with-types))
 
 ;; Return the new type associated with the entry.
 (define (apply-to-syn-table maybeType inferredTy name progWithTys)

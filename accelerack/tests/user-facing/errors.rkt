@@ -70,3 +70,21 @@
         (: sqr (-> num_a Int))
         (define-acc (sqr x) (* x x))
         (void))))))
+
+(test-case "expects a type"
+  (convert-compile-time-error
+   (let ()  
+     (: x Int)
+     (define-acc x 3)
+     (void))))
+
+(test-case "scalar definition / err"
+  (check-exn
+   #rx"Bool"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (define-acc x 3)
+        (define-acc y (if #t x #t))
+        (void))))))
+

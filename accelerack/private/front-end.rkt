@@ -14,8 +14,11 @@
  racket/trace
  )
 
-(provide  front-end-compiler
-          apply-to-syn-table)
+(provide
+ front-end-compiler
+ apply-to-syn-table
+ (contract-out
+  ))
 
 
 ;; Just the front-end part of the compiler.
@@ -35,6 +38,7 @@
   ;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
   (values stripped main-type with-types))
 
+;; Return the new type associated with the entry.
 (define (apply-to-syn-table maybeType inferredTy name progWithTys)
   (define newTy (if maybeType
                     (if (unify-monos name inferredTy

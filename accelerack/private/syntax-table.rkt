@@ -1,6 +1,6 @@
 #lang racket
 
-(require  syntax/id-table
+(require syntax/id-table racket/trace
          accelerack/private/types
          (for-syntax syntax/parse)
  )

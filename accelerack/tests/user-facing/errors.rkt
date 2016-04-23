@@ -39,3 +39,52 @@
         (void))
       ))))
 
+
+(test-case "plus 5 function definition"
+  (check-exn
+   #rx"numeric type"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (define-acc (f x) (+ x #t))
+        (void))))))
+
+
+
+; (acc-echo-types)
+(test-case "app sqr / bad arg"
+  (check-exn
+   #rx"numeric type"
+   (lambda ()
+     (convert-compile-time-error
+      (let () (define-acc (sqr x) (* x x))
+           (define-acc y (sqr #t))
+           (void))))))
+
+(test-case "sqr function with bad signature"
+  (check-exn
+   #rx"rigid"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (: sqr (-> num_a Int))
+        (define-acc (sqr x) (* x x))
+        (void))))))
+
+(test-case "expects a type"
+  (convert-compile-time-error
+   (let ()  
+     (: x Int)
+     (define-acc x 3)
+     (void))))
+
+(test-case "scalar definition / err"
+  (check-exn
+   #rx"Bool"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (define-acc x 3)
+        (define-acc y (if #t x #t))
+        (void))))))
+

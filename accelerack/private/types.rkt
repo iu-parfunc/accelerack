@@ -9,13 +9,14 @@
          ;; Elements
          acc-scalar? acc-int? acc-element?
          acc-sexp-data? acc-sexp-data-shallow?
+         acc-sexp-data->type acc-sexp-data->shape
          acc-element->type
 
          ;; Syntax
          acc-syn-entry acc-syn-entry? acc-syn-entry-type acc-syn-entry-expr         
          
          ;; Types
-         acc-type? acc-scalar-type? acc-element-type?
+         acc-type? acc-scalar-type? acc-num-type? acc-element-type?
          numeric-type-var?  type-var-id? type-var-symbol?
          make-type-schema type-schema type-schema? type-schema-vars type-schema-monoty
          
@@ -66,6 +67,25 @@
       ((listof acc-sexp-data?) x)))
 
 
+;; This assumes an array type:
+(define (acc-sexp-data->type sexp)
+  (let loop ([dim 0] [x sexp])
+    (cond
+      [(acc-element? x)
+       `(Array ,dim ,(acc-element->type x))]
+      [(pair? x) (loop (add1 dim) (car x))]
+      [else 'acc-sexp-data->type "unexpected input: ~a" sexp])))
+
+;; Assumes array data:
+(define (acc-sexp-data->shape sexp)
+  (list->vector
+   (let loop ([x sexp])
+     (cond
+       [(acc-element? x) `()]
+       [(pair? x) (cons (length x)
+                        (loop (car x)))]
+       [else 'acc-sexp-data->shape "unexpected input: ~a" sexp]))))
+
 ;; Valid shapes are just lists of numbers
 (define acc-shape? (vectorof exact-nonnegative-integer?))
 
@@ -83,7 +103,7 @@
   #:guard (lambda (t e _)
             (unless (acc-type? t)
               (raise-argument-error 'acc-syn-entry "acc-type?" t))
-            (unless (syntax? e)
+            (unless (or (syntax? e) (eq? e #f))
               (raise-argument-error 'acc-syn-entry "syntax?" e))
             (values t e))
   #:transparent)
@@ -91,8 +111,15 @@
 ;; The SExp representation for an Accelerack scalar type.
 (define (acc-scalar-type? t)
   (match t
-    ['Int #t]
     ['Bool #t]
+    [(? acc-num-type?) #t]
+    [_ #f]))
+
+;; These are the numeric types to which numeric type variables can be
+;; instantiated.
+(define (acc-num-type? t)
+  (match t
+    ['Int #t]
     ['Double #t]
     [_ #f]))
 
@@ -126,9 +153,10 @@
 
 ;; The same as acc-tyvar-ident? but for symbols.
 (define (type-var-symbol? sym)
-  (char-lower-case?
-   ;; Can't have zero-char symbols so this should be safe:
-   (string-ref (symbol->string sym) 0)))
+  (and (symbol? sym)
+       (char-lower-case?
+        ;; Can't have zero-char symbols so this should be safe:
+        (string-ref (symbol->string sym) 0))))
 
 (define (numeric-type-var? t)
   (match t

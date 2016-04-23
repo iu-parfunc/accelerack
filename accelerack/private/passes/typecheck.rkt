@@ -357,7 +357,7 @@
     [`(-> ,e* ... ,en)
      ;; FIXME: Pass more context info / extra messages to unify-types:
      (with-handlers
-       ([exn:fail?
+       () #;([exn:fail?
          (lambda (exn)
            (fprintf (current-error-port)
                     "Type Error: Function argument did not have expected type.\n")

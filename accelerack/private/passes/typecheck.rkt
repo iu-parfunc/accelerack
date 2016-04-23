@@ -235,6 +235,7 @@
                   (unify-types ctxt (tyvar-ptr t1) t2)
                   t2))
   (define rhs2 (collapse rhs))
+  (printf " unify to tyvar:  ~a  -> ~a\n" (tyvar-name t1) t2)
   (when (and (tyvar-numeric? t1)
              (not (or (acc-num-type? rhs2)
                       ;; It is OK to equate with a non-numeric type var..
@@ -258,7 +259,6 @@
      t1]
      
     [((? tyvar?) _)
-     ;(printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
      (occurs-check ctxt (tyvar-name t1) t2)
      (set-tyvar! ctxt t1 t2)
      t1]
@@ -300,12 +300,17 @@
               t1 t2)
       ctxt)]))
 
-;; A method of unifying an arrow type that yields better, more
-;; localized error messages.  Specifically, it is better to highlight
-;; the argument of the wrong type than to highlight the whole application.
-(define (gentle-unify-arrow fnty fnstx ls)
+;; A method of unifying an arrow type that yields better-localized
+;; error messages.  Specifically, it is better to highlight the
+;; argument of the wrong type than to highlight the whole application.
+;;
+(define/contract (gentle-unify-arrow fnty fnstx args ret)
+  (-> instantiated-type? syntax?
+      (listof (cons/c instantiated-type? (or/c syntax? #f)))
+      (cons/c instantiated-type? (or/c syntax? #f))
+      instantiated-type?)
   ;; FINISHME: can do better here.
-  (unify-types fnstx fnty `(-> ,@(map car ls)))
+  (unify-types fnstx fnty `(-> ,@(map car args) ,(car ret)))
   #;
   (match fnty
     [`(-> ,args ... ,res) ...]
@@ -317,7 +322,6 @@
 ;; Var instantiated-type? -> boolean?
 (define/contract (occurs-check stx var type)
   (-> syntax? symbol? any/c void?)
-  ; (printf "CHECk occurs ~a ~a, free ~a\n" var type (set->list (free-vars type)))
   (when (set-member? (free-vars type) var)
     ;This is an infinite type. Send an error back
     (raise-syntax-error 'occurs-check
@@ -459,7 +463,9 @@
      (define-values (etys news) (infer-list es))
      (define res (fresh-tyvar 'res))
      (define ufty `(-> ,@etys ,res))
-     (unify-types #'f fty ufty)
+     (gentle-unify-arrow fty #'f 
+                         (map cons etys es)
+                         (cons res #f))
      (for ([e es] [ety etys])
        (unify-types e ety 'Int))
      (values `(Array ,(length es) ,res)
@@ -511,8 +517,8 @@
      
      (gentle-unify-arrow fty #'f
                          `((,zerty . ,#'zer)
-                           (,zerty . ,#'zer)
-                           (,zerty . ,#'zer)))
+                           (,zerty . ,#'zer))
+                         `(,zerty . ,#'zer))
      (unify-types #'arr arrty `(Array ,ntv ,elt))
 
      ;; FIXME: We should defer the final check that the dimensions are concrete.
@@ -587,22 +593,16 @@
          (format "This is expected to have a vector type of known length, instead found: ~a" oth)
          #'e1)])]
     
-    #|
-    [(rator e ...)
-     ;; It's never a good error message when we treat a keyword like a rator:
-     #:when (not (memq (syntax->datum #'rator) acc-keywords-sexp-list))
-     #`(#,(loop #'rator) #,@(r:map loop (syntax->list #'(e ...))))]
-    |#
-
-    ;; FIXME: this can become the general application case:
-    ;; This could be handled through the tenv:
-    [(p:acc-primop args ...)
-     (define primty (instantiate (tenv-ref acc-primop-types #'p)))
-     (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
+    [(rator args ...)
+     (define argls (syntax->list #'(args ...)))
+     (define-values (ratorty newrator) (infer #'rator tenv))
+     (define-values (argtys newargs) (infer-list argls))
      (define fresh (fresh-tyvar 'res))
-     (unify-types stx primty `(-> ,@argtys ,fresh))
+     (gentle-unify-arrow ratorty stx 
+                         (map cons argtys argls)
+                         (cons fresh #f))
      (values fresh
-             #`(p #,@newargs))]
+             #`(#,newrator #,@newargs))]
     
      ))
 

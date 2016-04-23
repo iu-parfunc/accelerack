@@ -48,3 +48,14 @@
       (let ()
         (define-acc (f x) (+ x #t))
         (void))))))
+
+
+#; ; FINISHME
+(test-case "app sqr / bad arg"
+  (check-exn
+   #rx"numeric type"
+   (lambda ()
+     (convert-compile-time-error
+      (let () (define-acc (sqr x) (* x x))
+           (define-acc y (sqr #t))
+           (void))))))

@@ -13,8 +13,6 @@
   (check-true (procedure? f))
   (check-equal? 8 (f 3)))
 
-; (acc-echo-types)
-
 (test-case "vec+"
   (define-acc vec+
     (lambda ((v1 : #(Int Int Int))
@@ -41,4 +39,11 @@
   (void))
 
 
+; (acc-echo-types)
+
+(test-case "app sqr"
+  (define-acc (sqr x) (* x x))
+  (define-acc y (sqr 3))
+  ; (define-acc z (generate (lambda () (sqr #t))))
+  y)
 

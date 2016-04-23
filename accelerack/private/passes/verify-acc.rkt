@@ -56,7 +56,7 @@
 (define (verify-acc syn-table stx)
   (define initial-env (make-env (r:map car syn-table)))
   (define res (verify-acc-helper stx initial-env))
-  (pass-output-chatter 'verify-acc res)
+  (pass-output-chatter 'verify-acc (syntax->datum res))
   res)
 
 
@@ -193,7 +193,9 @@
       [(let ( lb:acc-let-bind ...) ebod)
        (define xls (syntax->list #'(lb.name ...)))
        (define els (syntax->list #'(lb.rhs ...)))
-       #`(let ([lb.name #,(r:map loop els)] ...)
+       (define binds (for/list ([x xls] [e els])
+                       (list x (loop e))))
+       #`(let (#,@binds)
            #,(verify-acc-helper
               #'ebod (extend-env xls env)))]
 

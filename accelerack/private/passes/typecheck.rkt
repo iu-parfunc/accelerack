@@ -105,6 +105,12 @@
     [_       #f]))
 
 
+(define (make-array-type dim elt)
+  (match elt
+    [`(Array ,_ ,_) (error 'make-array-type "cannot build array type containing array elements ~a"
+                           `(Array ,dim ,elt))]
+    [else `(Array ,dim ,elt)]))
+
 ;; TyVars are mutable pointers to another type
 (define-struct tyvar
   ([ptr #:mutable] ;; #f or a instantiated-type?
@@ -187,7 +193,7 @@
          (export-tyvar ty))]
     [(? symbol?) ty]
     [`(Array ,n ,elt)
-     `(Array ,(collapse n) ,(collapse elt))]
+     (make-array-type (collapse n) (collapse elt))]
     [`#( ,t* ...)     (list->vector (map collapse t*))]
     [`(-> ,t* ...)   `(-> ,@(map collapse t*))]
     [(? acc-scalar-type?)           ty]
@@ -222,10 +228,10 @@
 ;; Returns two values:
 ;;   (1) principal type of expression
 ;;   (2) fully annotated expression
-(define/contract (typecheck-expr syn-table e)
-  (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
+(define (typecheck-expr syn-table e)
+  #;(-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
       (values acc-type? syntax?))
-  (pass-output-chatter 'typecheck-expr e)
+  (pass-output-chatter 'typecheck-expr (syntax->datum e))
   (reset-var-cnt)
 
   (define env0
@@ -320,8 +326,8 @@
        [((? number?) (? number?))
         (raise-syntax-error #f "")]
        [(_ _)      
-        `(Array ,(unify-types ctxt n1 n2)
-                ,(unify-types ctxt e1 e2))])]
+        (make-array-type (unify-types ctxt n1 n2)
+                         (unify-types ctxt e1 e2))])]
        
     [(`(-> ,as ...) `(-> ,bs ...))
      `(-> ,@(for/list ([a as] [b bs])
@@ -451,8 +457,9 @@
                    (for/list ([(k v) (in-dict tenv)])
                      (format "  ~a : ~a\n" k v)))
             #'x)]
-       [ity (values (instantiate-scheme ity)
-                    #'x)])]
+       [ity
+        (values (instantiate-scheme ity)
+                #'x)])]
     
     ;; Other features, Coming soon:
     [(: e t:acc-type)
@@ -475,7 +482,7 @@
      ;; Here we KNOW what dimension to expect, so we put it in.
      ;; We could alternatively do this unification in stages and try
      ;; to optimize the errors that come out:     
-     (let ((arrty (unify-types #'e1 ty1 `(Array ,e2slen ,(fresh-tyvar 'elt)))))
+     (let ((arrty (unify-types #'e1 ty1 (make-array-type e2slen (fresh-tyvar 'elt)))))
        (match (collapse arrty)
          #;
          [(? tyvar?)
@@ -550,8 +557,8 @@
                          (cons res #f))
      (for ([e es] [ety etys])
        (unify-types e ety 'Int))
-     (values `(Array ,(length es) ,res)
-	     #`(generate #,fnew #,@news))]             
+     (values (make-array-type (length es) res)
+	     #`(generate #,fnew #,@news))]
 
     ;; Replicate gets its own typing judgement.
     [(replicate (v* ...) (e* ...) arr)

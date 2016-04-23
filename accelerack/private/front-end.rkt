@@ -8,7 +8,7 @@
  accelerack/private/types
  accelerack/private/syntax-table
  (only-in accelerack/private/executor launch-accelerack-ast)
- (only-in accelerack/private/utils accelerack-debug-mode?)
+ (only-in accelerack/private/utils accelerack-debug-mode? pass-output-chatter)
  syntax/parse syntax/id-table racket/dict syntax/to-string
  rackunit
  racket/trace
@@ -29,7 +29,8 @@
     (fprintf (current-error-port)
              "\nInvoking compiler front-end, given syntax table: ~a\n"
              (map (lambda (x) (list (car x) (cdr x)))
-                  syn-table)))
+                  syn-table))
+    (pass-output-chatter 'initial-program (syntax->datum e)))
   (define stripped (verify-acc syn-table e))
   (define-values (main-type with-types)
     (with-handlers []

@@ -7,6 +7,7 @@
                   ;; If you leave these out, the error messages can be bad:
                   Int Bool Double use Array)
          accelerack/private/syntax-capture
+         syntax/macro-testing
          (only-in accelerack/acc-array/private/delayed acc-delayed-array?)
          )
 
@@ -26,7 +27,7 @@
 (test-case "pred1"
   (define-acc ac 3)
   (define-acc foo (+ ac 4)) ;; Use a previous binding.
-  (check-pred acc-array? ac) ;; TEMP: this needs to be a scalar.
+  (check-pred number? ac)
 ) 
 
 (test-case "run sqr"
@@ -98,15 +99,24 @@
   (check-pred procedure? test08)
   (check-pred procedure? test09))
 
-(test-case "test10-13"
-  (define-acc test10 : Int (let ([x 3] [y : Int 4]) (+ x y )))
+(test-case "test10"     
+  (define-acc test10 : Int
+    (let ([x 3] [y : Int 4])
+      (+ x y )))
+  (void))
 
+(test-case "test11"  
   (define-acc test11 (: (lambda (x) x) (-> Double Double)))
-  (define-acc test12 (: (lambda ((x : Double)) x) (-> Double Double)))
-  (define-acc test13 (lambda ((x : Double)) (: x Double)))
-  
+  (void))
   ; (check-pred procedure? test11)  ;; FIXME... we need to be smart about how we handle these.
-  ; (check-pred procedure? test12)
+
+(test-case "test12"
+  (define-acc test12 (: (lambda ((x : Double)) x) (-> Double Double)))
+  (void))
+; (check-pred procedure? test12)
+
+(test-case "test13"
+  (define-acc test13 (lambda ((x : Double)) (: x Double)))  
   (check-pred procedure? test13))
 
 (test-case "test14"

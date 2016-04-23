@@ -6,11 +6,12 @@
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          accelerack/private/parse
          accelerack/private/prim-table
+         accelerack/private/syntax-table
          accelerack/acc-array/private/manifest-array
          rackunit
          (prefix-in r: racket/base)
 
-         syntax/parse
+         syntax/parse         
          (only-in accelerack/acc-array/private make-acc-array)
 
          ;; Regular require, careful of phasing of these identifiers:
@@ -18,6 +19,7 @@
          (for-template (except-in racket/base map)
                        (only-in racket/contract ->)
                        accelerack/private/keywords
+                       (only-in accelerack/private/syntax-table :)
                        (only-in accelerack/private/wrappers map fold
                                 zipwith generate stencil3x3))
          (for-syntax racket/base syntax/parse accelerack/private/parse)
@@ -26,7 +28,7 @@
          )
 
 (provide ;; Functions and macros
-         acc-array
+         acc-array :
          ; acc-primop-identifier?
          infer-element-type
          
@@ -159,8 +161,7 @@
            #`(make-acc-array (list->manifest-array '#,typ (list->vector '#,shp) '#,dat))
            (raise-syntax-error 'acc-array
                                (string-append "bad array literal.\n" ver) stx))
-           )]))
-
+       )]))
 
 (module+ test
   (test-true "parse type 1"

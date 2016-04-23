@@ -6,6 +6,7 @@
  accelerack/private/passes/verify-acc
  accelerack/private/passes/typecheck
  accelerack/private/types
+ accelerack/private/syntax-table
  (only-in accelerack/private/executor launch-accelerack-ast)
  (only-in accelerack/private/utils accelerack-debug-mode?)
  syntax/parse syntax/id-table racket/dict syntax/to-string
@@ -13,28 +14,10 @@
  racket/trace
  )
 
-(provide snap-as-syntax acc-syn-table echo-types-param
-         front-end-compiler snap-as-list
+(provide 
+         front-end-compiler 
          extend-syn-table apply-to-syn-table lookup-acc-expr)
 
-
-
-;; The table in which Accelerack syntax is accumulated so as to
-;; communicate it between textually separate (acc ..) forms.
-;;
-;; It maps variables (symbols) onto acc-syn-entry records.
-(define acc-syn-table (box (make-immutable-free-id-table)))
-
-;; Another piece of syntax-time global state.
-(define echo-types-param (make-parameter #f))
-
-(define (snap-as-syntax)
-  (with-syntax ((((k . v) ...)
-		 (dict-map (unbox acc-syn-table) cons)))
-    #'(list (list (quote-syntax k) (quote-syntax v)) ...)))
-
-
-(define (snap-as-list) (dict-map (unbox acc-syn-table) cons))
 
 ;; Just the front-end part of the compiler.
 ;; Returns three values.

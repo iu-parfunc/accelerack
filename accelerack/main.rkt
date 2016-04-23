@@ -12,9 +12,8 @@
          (only-in racket in-dict)
          (for-syntax racket/base syntax/parse)
 
-         (for-syntax (only-in accelerack/private/front-end echo-types-param))
-         ;(for-template (only-in accelerack/private/front-end echo-types))
-         (only-in accelerack/private/front-end echo-types-param)
+         (for-syntax (only-in accelerack/private/syntax-table echo-types-param))
+                     (only-in accelerack/private/syntax-table echo-types-param)
          
          accelerack/private/wrappers
          accelerack/private/types

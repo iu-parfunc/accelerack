@@ -13,15 +13,15 @@
 (require
          ;; We use the identifiers from "wrappers" as our names for map/fold/etc
          accelerack/private/wrappers
-         accelerack/private/types
+         accelerack/private/types         
          ; accelerack/private/racket_ops
          (only-in accelerack/private/syntax acc-array  :)
          (only-in accelerack/acc-array/private make-acc-array)
          accelerack/acc-array/private/delayed
-         (for-syntax racket/base racket/trace
+         (for-syntax racket/base racket/trace                     
                      syntax/parse syntax/id-table racket/dict
                      (only-in accelerack/private/syntax acc-array acc-type acc-lambda-param)
-                     ; accelerack/private/passes/verify-acc
+                     accelerack/private/syntax-table
                      accelerack/private/passes/typecheck
                      accelerack/private/types
 		     accelerack/private/front-end

@@ -14,7 +14,7 @@
  ->
 
  ;; Syntax for type ascription and other forms:
- : use
+ use
  )
 
 (require (only-in racket/contract ->))
@@ -30,9 +30,6 @@
 
 ;(define-syntax (-> stx)
 ;  (raise-syntax-error 'error "function (->) type constructor used outside of Accelerate block" stx))
-
-(define-syntax (: stx)
-  (raise-syntax-error 'error "colon (:) syntax for type annotation should be used in an Accelerate block" stx))
 
 (define-syntax (use stx)
   (raise-syntax-error 'error "use keyword outside of Accelerate block" stx))

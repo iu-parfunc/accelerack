@@ -60,3 +60,13 @@
       (let () (define-acc (sqr x) (* x x))
            (define-acc y (sqr #t))
            (void))))))
+
+(test-case "sqr function with bad signature"
+  (check-exn
+   #rx"rigid"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (: sqr (-> num_a Int))
+        (define-acc (sqr x) (* x x))
+        (void))))))

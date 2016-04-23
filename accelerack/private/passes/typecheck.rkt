@@ -158,6 +158,12 @@
   (-> dict? identifier? type-schema? dict?)
   (dict-set te k v))
 
+(define (tenv-free-vars te)
+  (define ls (for/list ([(_ sch) (in-dict te)])
+               (schema-free-vars sch)))
+  (if (null? ls) empty-set
+      (apply set-union ls)))
+            
 ;; Type Utilities
 ;; ------------------------------------------------------------
 
@@ -191,6 +197,9 @@
     [(? exact-nonnegative-integer?) ty]
     ))
 
+(define (schema-free-vars x)
+  (match-define (type-schema quantified ty) x)
+  (set-subtract (free-vars ty) quantified))
 
 ;; free variables: instantiated-type? -> (seteq? of symbol?)
 ;; Fetches all the variables in the input given
@@ -207,6 +216,7 @@
     [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
     [`#(,vs ...) (apply set-union (map free-vars vs))]
     [sym #:when (symbol? sym) (list->seteq (list sym))]))
+
 
 ;; ------------------------------------------------------------
 
@@ -283,7 +293,7 @@
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(define (unify-types ctxt t1 t2)
+(trace-define (unify-types ctxt t1 t2)
   ;; DEBUGGING:
   ; (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
@@ -326,11 +336,28 @@
     
     [((? acc-element-type?) (? acc-element-type?))
      #:when (equal? t1 t2)
-     t1]
-    
+     t1]    
     [((? exact-nonnegative-integer?) (? exact-nonnegative-integer?))
      #:when (equal? t1 t2)
      t1]
+    ;; Rigid (uninstantiated) type variables:
+    [((? type-var-symbol?) (? type-var-symbol?))
+     #:when (equal? t1 t2)
+     t1]
+    
+    [((? type-var-symbol?) _) #:when (not (equal? t1 t2))
+     (raise-syntax-error
+      'unify-types
+      (format "Found a rigid type variable ~a, whereas expected type ~a\n"
+              (collapse t1) (collapse t2))
+      ctxt)]
+
+    [(_ (? type-var-symbol?)) #:when (not (equal? t1 t2))
+     (raise-syntax-error
+      'unify-types
+      (format "Couldn't match type ~a against expected type, which was a rigid type variable ~a\n"
+              (collapse t1) (collapse t2))
+      ctxt)]
     
     [(_ _)
      (raise-syntax-error
@@ -338,7 +365,7 @@
       (format (string-append "Conflicting types.\n"
                              "Found: ~a\n"
                              "Expected: ~a\n")
-              t1 t2)
+              (collapse t1) (collapse t2))
       ctxt)]))
 
 ;; A method of unifying an arrow type that yields better-localized
@@ -666,12 +693,11 @@
 
 ;; generalize: set(type var) -> type -> scheme
 (define (generalize tenv mono)
-  ;; FIXME: this needs to take the environment free vars and set-difference it.
-  (make-type-schema (free-vars mono) mono))
-
-(define (tenv-free-vars te)
-  'FINISHME)
-
+  ;; Tyvars mentioned in the environment are "rigid" and NOT generalized.
+  (define free-env (tenv-free-vars tenv))
+    ;; FIXME: this needs to take the environment free vars and set-difference it.
+  (make-type-schema (set-subtract (free-vars mono) free-env)
+                    mono))
 
 ;; instantiate: scheme -> type
 (define/contract (instantiate-scheme scheme)

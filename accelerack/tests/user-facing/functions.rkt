@@ -14,6 +14,12 @@
   (check-true (procedure? f))
   (check-equal? 8 (f 3)))
 
+(test-case "add1 function definition"
+           "add1 function definition"
+  (define-acc (f x) (add1 x))
+  (check-true (procedure? f))
+  (check-equal? 4 (f 3)))
+
 (test-case "vec+"
   (define-acc vec+
     (lambda ((v1 : #(Int Int Int))

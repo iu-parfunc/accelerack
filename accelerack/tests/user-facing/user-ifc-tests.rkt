@@ -189,7 +189,7 @@
   ; (check-equal? )
   )
 
-#;
+
 (test-case "array ascription"
            "array ascription"
            (define-acc x
@@ -198,7 +198,8 @@
                 (Array 2 Bool)))
            (check-equal? '((#f #f #f) (#t #t #t))
                          (acc-array->sexp x)))
-#;
+
+#; ;; Bogus error here: [2016.04.23]
 (test-case "use a scalar in an array expression"
            "use a scalar in an array expression"
   (define-acc x 4)
@@ -208,13 +209,6 @@
                 (acc-array->sexp y))
   )
 
-
-#; ;; [2016.03.31] This is getting a totally bogus error
-(test-case "add1 function definition"
-           "add1 function definition"
-  (define-acc (f x) (add1 x))
-  (check-true (procedure? f))
-  (check-equal? 4 (f 3)))
 
 (test-case "scalar definition"
   (define-acc x 3)

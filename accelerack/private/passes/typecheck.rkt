@@ -72,9 +72,11 @@
 
 (define empty-tenv
   (make-immutable-custom-hash
-   ; free-identifier=?
+   free-identifier=?
+   #; ;; Dumb comparison:
    (lambda (id1 id2) (equal? (syntax->datum id1)
-                             (syntax->datum id2)))))
+                             (syntax->datum id2)))
+   ))
 
 (define empty-set (list->seteq '()))
 (define (make-mono-schema mono) (make-type-schema empty-set mono))
@@ -446,6 +448,9 @@
     [n:acc-element-literal (values (acc-element->type (syntax->datum #'n)) #'n)]
 
     [x:identifier
+     (values (instantiate-scheme (tenv-ref tenv #'x))
+             #'x)
+     #;
      (match (dict-ref tenv #'x #f)
        [#f (raise-syntax-error
             'typecheck-expr

@@ -60,3 +60,12 @@
 (test-false "Array equality 3 - different dimension"
             (equal? (acc-array (1 2 3))
                     (acc-array 99)))
+
+(check-equal? (sexp->acc-array '99)
+              (acc-array 99))
+
+(check-equal? (sexp->acc-array '(1 2 3))
+              (acc-array (1 2 3)))
+
+(check-equal? (sexp->acc-array '((1 2) (3 4)))
+              (acc-array ((1 2) (3 4))))

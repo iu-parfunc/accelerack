@@ -7,8 +7,7 @@
 
 (require accelerack/acc-array
          (only-in accelerack/acc-array/private make-acc-array)
-         (only-in accelerack/private/types acc-element?
-                  acc-element->type stencil-boundary? acc-shape?)
+         accelerack/private/types
          racket/trace)
 
 ;; TODO: REMOVE ANY DEPENDENCE ON NON-PUBLIC ARRAY INTERFACES:
@@ -45,8 +44,9 @@
                       acc-manifest-array?)]
   [acc-replicate (-> list? list? acc-manifest-array? acc-manifest-array?)]
 
-;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
+  ;  [acc-generate (-> acc-shape? procedure? acc-manifest-array?)]
   )
+  sexp->acc-array
  acc-generate
  acc-until
  acc-auntil
@@ -238,3 +238,9 @@
                           dict)))
            (apply manifest-array-ref arr olds))
          new-shape))
+
+
+(define (sexp->acc-array s)
+  (match-define `(Array ,_ ,elt) (acc-sexp-data->type s))
+  (define shp  (acc-sexp-data->shape s))
+  (make-acc-array (list->manifest-array elt shp s)))

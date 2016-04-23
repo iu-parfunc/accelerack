@@ -38,7 +38,7 @@
       [(lambda rest ...) #t]
       [else #f]))
 
-  (define (go name maybeType bod)
+  (define (create-binding! name maybeType bod)
     (let-values ([(stripped inferredTy progWithTys) (front-end-compiler bod)])
       (when (echo-types-param)
         (printf " define-acc ~a : ~a\n" (syntax->datum name) inferredTy))
@@ -101,8 +101,8 @@
   ;; Infers the type of the given expression and adds that type and
   ;; the expression to the syntax table.
   (syntax-parse stx
-    [(_ x:identifier e)                     (go #'x #f #'e)]
-    [(_ x:identifier : t:acc-type e)        (go #'x #'t #'e)]
+    [(_ x:identifier e)                     (create-binding! #'x #f #'e)]
+    [(_ x:identifier : t:acc-type e)        (create-binding! #'x #'t #'e)]
     [(_ (f:identifier x:acc-lambda-param ...) e)
      (with-handlers
        ()
@@ -111,7 +111,7 @@
                      (raise-syntax-error 'define-acc
                                          (format "caught error during compilation:\n\n~a\n" exn)
                                          stx))])
-       (go #'f #f #'(lambda (x ...) e)))]))
+       (create-binding! #'f #f #'(lambda (x ...) e)))]))
 
 
 ; --------------------------------------------------------------------------------

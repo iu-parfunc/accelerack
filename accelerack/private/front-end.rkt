@@ -6,6 +6,8 @@
  accelerack/private/passes/verify-acc
  accelerack/private/passes/typecheck
  accelerack/private/types
+ accelerack/private/passes/strip
+ accelerack/private/passes/normalize
  accelerack/private/syntax-table
  (only-in accelerack/private/executor launch-accelerack-ast)
  (only-in accelerack/private/utils accelerack-debug-mode? pass-output-chatter)
@@ -37,7 +39,8 @@
       (typecheck-expr syn-table e)))
   ;    (fprintf (current-error-port)
   ;             "TODO: May run normalize on ~a\n" (syntax->datum with-types))
-  (values stripped main-type with-types))
+  ;; (values (datum->syntax stripped (normalize (strip-ast stripped) syn-table)) main-type with-types)
+  (values stripped main-type with-types (normalize (strip-ast stripped) syn-table)))
 
 ;; Return the new type associated with the entry.
 (define (apply-to-syn-table maybeType inferredTy name progWithTys)

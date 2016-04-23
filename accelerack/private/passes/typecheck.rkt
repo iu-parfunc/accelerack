@@ -14,12 +14,9 @@
   [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
                       (values acc-type? syntax?))]
   [unify-types (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)]
-  [collapse (-> instantiated-type? acc-type?)])
- 
- instantiate
- 
- ; typecheck-expr ;; If the contract is enforced below.
- ; unify-types
+  [collapse (-> instantiated-type? acc-type?)]
+  [freshen-type-vars (-> acc-type? acc-type?)]
+  [instantiate (-> acc-type? instantiated-type?)])
  )
 
 (require (for-syntax racket/base
@@ -293,7 +290,7 @@
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(trace-define (unify-types ctxt t1 t2)
+(define (unify-types ctxt t1 t2)
   ;; DEBUGGING:
   ; (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
@@ -709,10 +706,19 @@
     (subst ty q fresh)))
 
 ;; Takes a normal SExpression mono-type.
-(define/contract (instantiate mono)
-  (-> acc-type? instantiated-type?)
+(define (instantiate mono)
   (instantiate-scheme
    (make-type-schema (free-vars mono) mono)))
+
+;; Even if we are not instantiating type variabes, we still need to
+;; make sure we don't have name collissions between *separate* type
+;; annotations provided by the user.
+(define (freshen-type-vars ty0)
+  (define free (free-vars ty0))
+  ;; Inefficient, super-linear:
+  (for/fold ([ty ty0])
+            ([v (in-set free)])
+    (subst ty v (tyvar-name (fresh-tyvar v)))))
 
 (define (subst ty var new)
   (define (go x) (subst x var new))

@@ -58,5 +58,5 @@
   (collapse (unify-types ctxt (instantiate t1)
                          ;; Leaving these user type signatures uninstantiated makes
                          ;; the explicitly mentioned variabes rigid and enforces parametricity.
-                         t2
+                         (freshen-type-vars t2)
                          )))

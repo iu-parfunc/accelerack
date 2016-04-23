@@ -39,7 +39,7 @@
       [else #f]))
 
   (define (create-binding! name maybeType bod)
-    (let-values ([(stripped inferredTy progWithTys) (front-end-compiler bod)])
+    (let-values ([(stripped inferredTy progWithTys normalized-sexp) (front-end-compiler bod)])
       (when (echo-types-param)
         (printf " define-acc ~a : ~a\n" (syntax->datum name) inferredTy))
       (define finalTy (apply-to-syn-table maybeType inferredTy name progWithTys))

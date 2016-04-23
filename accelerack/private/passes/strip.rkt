@@ -6,7 +6,7 @@
 ;; ---------------------------------------------------------------
 
 (provide (contract-out
-          [strip-ast (-> syntax? list?)]
+          [strip-ast (-> syntax? any/c)]
           ))
 
 (require (only-in accelerack/private/utils pass-output-chatter))

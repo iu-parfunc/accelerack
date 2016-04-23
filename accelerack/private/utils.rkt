@@ -30,9 +30,9 @@
 (define (pass-output-chatter name res)
   (when (accelerack-debug-mode?)
     (fprintf (current-error-port)
-             "\nPass output, ~a:\n~a\n~a\n" name
-             "================================================================================"
-             res)))
+             "\nPass output, ~a:\n~a\n" name
+             "================================================================================")
+    (pretty-print res (current-error-port))))
 
 ;; DEPRECATED:
 ;; It is a bad sign if you need this.

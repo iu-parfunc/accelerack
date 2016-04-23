@@ -189,33 +189,6 @@
   ; (check-equal? )
   )
 
-#;
-(test-case "array ascription"
-           "array ascription"
-           (define-acc x
-             (: (acc-array ((#f #f #f)
-                            (#t #t #t)))
-                (Array 2 Bool)))
-           (check-equal? '((#f #f #f) (#t #t #t))
-                         (acc-array->sexp x)))
-#;
-(test-case "use a scalar in an array expression"
-           "use a scalar in an array expression"
-  (define-acc x 4)
-  (define-acc y (map (lambda (_) x)
-                     (acc-array (1 2 3))))
-  (check-equal? '(4 4 4)
-                (acc-array->sexp y))
-  )
-
-
-#; ;; [2016.03.31] This is getting a totally bogus error
-(test-case "add1 function definition"
-           "add1 function definition"
-  (define-acc (f x) (add1 x))
-  (check-true (procedure? f))
-  (check-equal? 4 (f 3)))
-
 (test-case "scalar definition"
   (define-acc x 3)
   ;; No deferred scalars for now:
@@ -230,3 +203,23 @@
      (check-equal? x 3))))
 
 
+(test-case "array ascription"
+           (define-acc x
+             (: (acc-array ((#f #f #f)
+                            (#t #t #t)))
+                (Array 2 Bool)))
+           (check-equal? '((#f #f #f) (#t #t #t))
+                         (acc-array->sexp x)))
+
+(test-case "use a scalar in an array expression"
+  (define-acc foo 4)
+  (define-acc bar (map (lambda (_) foo)
+                     (acc-array (1 2 3))))
+  (check-equal? '(4 4 4)
+                (acc-array->sexp bar))
+  )
+
+(test-case "lexical scoping"
+  (let () (define-acc foo 4) (void))
+  (let () (define-acc foo #t) (void))  
+  )

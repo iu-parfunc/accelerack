@@ -13,7 +13,8 @@
  racket/trace
  )
 
-(provide snap-as-syntax acc-syn-table front-end-compiler snap-as-list
+(provide snap-as-syntax acc-syn-table echo-types-param
+         front-end-compiler snap-as-list
          extend-syn-table apply-to-syn-table lookup-acc-expr)
 
 
@@ -23,6 +24,9 @@
 ;;
 ;; It maps variables (symbols) onto acc-syn-entry records.
 (define acc-syn-table (box (make-immutable-free-id-table)))
+
+;; Another piece of syntax-time global state.
+(define echo-types-param (make-parameter #f))
 
 (define (snap-as-syntax)
   (with-syntax ((((k . v) ...)

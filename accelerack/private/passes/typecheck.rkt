@@ -224,7 +224,7 @@
 ;; Put a type into a human-readable form for error messages.
 (define (show-type ty)
   (match (collapse ty)
-    [(? symbol? s)
+    [(? type-var-symbol? s)
      (format "type variable '~a'" s)]
     [oth (format "~a" oth)]))
 

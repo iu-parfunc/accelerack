@@ -14,9 +14,8 @@
  racket/trace
  )
 
-(provide 
-         front-end-compiler 
-         extend-syn-table apply-to-syn-table lookup-acc-expr)
+(provide  front-end-compiler
+          apply-to-syn-table)
 
 
 ;; Just the front-end part of the compiler.
@@ -49,19 +48,3 @@
   (extend-syn-table name finalTy progWithTys)
   finalTy)
 
-
-(define (extend-syn-table name type expr)
-  (define entry (acc-syn-entry type expr))
-   (set-box! acc-syn-table
-             (dict-set (unbox acc-syn-table) name entry)))
-  ;; (let ((expr (if (syntax? expr) expr (datum->syntax #f expr))))
-  ;;   (define entry (acc-syn-entry type expr))
-  ;;   (set-box! acc-syn-table
-  ;;             (dict-set (unbox acc-syn-table) name entry))))
-
-(define (lookup-acc-type name)
-  (acc-syn-entry-type (dict-ref (unbox acc-syn-table) name)))
-
-
-(define (lookup-acc-expr name)
-  (acc-syn-entry-expr (dict-ref (unbox acc-syn-table) name)))

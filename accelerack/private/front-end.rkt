@@ -45,6 +45,11 @@
                                                        inferredTy)
                                                maybeType))
                       inferredTy))
-  (extend-syn-table name finalTy progWithTys)
+  (extend-syn-table name
+                    (lambda (t)
+                      (if t
+                          (unify-types name finalTy t)
+                          finalTy))
+                    progWithTys)
   finalTy)
 

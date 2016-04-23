@@ -14,10 +14,13 @@
  ->
 
  ;; Syntax for type ascription and other forms:
- use
+ : use
  )
 
-(require (only-in racket/contract ->))
+(require (only-in racket/contract ->)
+         (for-syntax syntax/parse racket/dict
+                     accelerack/private/syntax-table)
+         )
 
 (define-syntax (Bool stx)
   (raise-syntax-error 'error "Bool type used outside of Accelerate block" stx))
@@ -39,3 +42,13 @@
 
 (define-syntax (SExp stx)
   (raise-syntax-error 'error "SExp type constructor used outside of Accelerate block" stx))
+
+(define-syntax (: stx)
+  (syntax-parse stx
+    [(_ v:id t) ;; TODO: t:acc-type
+     (let ((entry (lookup-acc-syn-entry #'v)))
+       (if entry
+           (raise-syntax-error
+            ': (format "type annotation on already bound variable: ~a" (syntax->datum #'v)) stx)
+           (extend-syn-table #'v (lambda (_) (syntax->datum #'t)) #f))
+       #'(void))]))

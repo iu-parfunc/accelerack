@@ -9,6 +9,7 @@
   (check-equal? 3 (f 3)))
 
 (test-case "plus 5 function definition"
+  (: f (-> Int Int))
   (define-acc (f x) (+ x 5))
   (check-true (procedure? f))
   (check-equal? 8 (f 3)))

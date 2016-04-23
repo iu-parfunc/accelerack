@@ -18,11 +18,11 @@
          accelerack/private/keywords
          (for-template (except-in racket/base map)
                        (only-in racket/contract ->)
-                       accelerack/private/keywords
-                       (only-in accelerack/private/syntax-table :)
+                       accelerack/private/keywords                       
                        (only-in accelerack/private/wrappers map fold
                                 zipwith generate stencil3x3))
-         (for-syntax racket/base syntax/parse accelerack/private/parse)
+         (for-syntax racket/base racket/dict syntax/parse accelerack/private/parse
+                     accelerack/private/syntax-table)
          (only-in accelerack/private/utils vector->list*)
          (only-in accelerack/private/types type-var-id?)
          )
@@ -162,6 +162,7 @@
            (raise-syntax-error 'acc-array
                                (string-append "bad array literal.\n" ver) stx))
        )]))
+
 
 (module+ test
   (test-true "parse type 1"

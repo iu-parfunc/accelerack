@@ -27,7 +27,7 @@
   accelerack/private/wrappers
   ;; Keyword symbols come from a mix of three places currently:
   (only-in accelerack/private/syntax acc-array acc-lambda-param acc-type
-           acc-element-literal acc-let-bind)
+           acc-element-literal acc-let-bind :)
   accelerack/private/syntax-table
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
   (only-in accelerack/private/keywords Array Int Bool Double use ->))
@@ -99,7 +99,7 @@
                           "\n   At least one symbol was UNBOUND, but should be imported from accelerack.\n"))]))
 
 
-;; TODO: compute this from the list of actual-syntax keywords:
+;; FIXME/TODO: compute this from the list of actual-syntax keywords:
 (define acc-keywords-sexp-list
   '(lambda if let : use
     generate map zipwith fold generate stencil3x3 acc-array-ref))

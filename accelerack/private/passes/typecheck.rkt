@@ -255,10 +255,7 @@
 
 ;; Safely set a type variable while respecting whether or not it is a
 ;; numeric-only (num_) type variable.
-(define (set-tyvar! ctxt t1 t2)
-  (define rhs (if (tyvar-ptr t1)                         
-                  (unify-types ctxt (tyvar-ptr t1) t2)
-                  t2))
+(define (set-tyvar! ctxt t1 rhs)
   (define rhs2 (collapse rhs))
   #;
   (printf " unify to tyvar:  ~a(~a)  -> ~a / ~a, num-type? ~a, type var? ~a\n"
@@ -282,7 +279,7 @@
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(define/contract (unify-types ctxt t1 t2)
+(define (unify-types ctxt t1 t2)
   ;; DEBUGGING:
   (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
@@ -293,9 +290,16 @@
      
     [((? tyvar?) _)
      (occurs-check ctxt (tyvar-name t1) t2)
-     (set-tyvar! ctxt t1 t2)
+     (set-tyvar! ctxt t1 (if (tyvar-ptr t1)                         
+                             (unify-types ctxt (tyvar-ptr t1) t2)
+                             t2))
      t1]
-    [(_ (? tyvar?)) (unify-types ctxt t2 t1)] ;; Flip!
+    [(_ (? tyvar?))
+     (occurs-check ctxt (tyvar-name t2) t1)
+     (set-tyvar! ctxt t2 (if (tyvar-ptr t2)
+                             (unify-types ctxt t1 (tyvar-ptr t2))
+                             t1))
+     t2]
 
     [(`(Array ,n1 ,e1) `(Array ,n2 ,e2))
 
@@ -337,19 +341,36 @@
 ;; error messages.  Specifically, it is better to highlight the
 ;; argument of the wrong type than to highlight the whole application.
 ;;
-(define/contract (gentle-unify-arrow fnty fnstx args ret)
-  (-> instantiated-type? syntax?
+(define (gentle-unify-arrow fnty fnstx args ret)
+  #; (-> instantiated-type? syntax?
       (listof (cons/c instantiated-type? (or/c syntax? #f)))
       (cons/c instantiated-type? (or/c syntax? #f))
       instantiated-type?)
-  ;; FINISHME: can do better here.
-  (unify-types fnstx fnty `(-> ,@(map car args) ,(car ret)))
-  #;
+  (define target `(-> ,@(map car args) ,(car ret)))
+  ;; SIMPLEST implementation, with less good errors:
+  ; (unify-types fnstx target fnty)
+
+  (define (helper expected pr)
+    (match-let ([ (cons rcvd stx) pr])
+      (unify-types (or stx fnstx) rcvd expected)))
   (match fnty
-    [`(-> ,args ... ,res) ...]
-    [(? tyvar) (unify-types fnstx fnty `(-> ,@(map car ls)))]
-    [else (raise-syntax-error ...)])    
-  )
+    [`(-> ,e* ... ,en)
+     ;; FIXME: Pass more context info / extra messages to unify-types:
+     (with-handlers
+       ([exn:fail?
+         (lambda (exn)
+           (fprintf (current-error-port)
+                    "Type Error: Function argument did not have expected type.\n")
+           (raise exn))])
+       (for-each helper e* args))
+     (helper en ret)]
+    ;; Here, there won't be any argument-level errors:
+    [(? tyvar) (unify-types fnstx target fnty)]
+    [else
+     (raise-syntax-error
+      'unify-types
+      (format "Expected a function type here, found: ~a" fnty)
+      fnstx)]))
   
 
 ;; Var instantiated-type? -> boolean?

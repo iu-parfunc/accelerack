@@ -84,7 +84,7 @@
   #:guard (lambda (t e _)
             (unless (acc-type? t)
               (raise-argument-error 'acc-syn-entry "acc-type?" t))
-            (unless (syntax? e)
+            (unless (or (syntax? e) (eq? e #f))
               (raise-argument-error 'acc-syn-entry "syntax?" e))
             (values t e))
   #:transparent)

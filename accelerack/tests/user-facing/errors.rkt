@@ -48,3 +48,25 @@
       (let ()
         (define-acc (f x) (+ x #t))
         (void))))))
+
+
+
+; (acc-echo-types)
+(test-case "app sqr / bad arg"
+  (check-exn
+   #rx"numeric type"
+   (lambda ()
+     (convert-compile-time-error
+      (let () (define-acc (sqr x) (* x x))
+           (define-acc y (sqr #t))
+           (void))))))
+
+(test-case "sqr function with bad signature"
+  (check-exn
+   #rx"rigid"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (: sqr (-> num_a Int))
+        (define-acc (sqr x) (* x x))
+        (void))))))

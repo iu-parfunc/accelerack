@@ -12,6 +12,9 @@
          (only-in racket in-dict)
          (for-syntax racket/base syntax/parse)
 
+         (for-syntax (only-in accelerack/private/syntax-table echo-types-param))
+                     (only-in accelerack/private/syntax-table echo-types-param)
+         
          accelerack/private/wrappers
          accelerack/private/types
 
@@ -55,7 +58,9 @@
 
     ;; Types and Typed operations
     acc-type? acc-element-type?
-
+    acc-echo-types
+    ; echo-types-param ;; Exporting, but only for macro-expansion, not for end users.
+    
     define-acc run-gpu
     Int Bool Double Array
 
@@ -82,3 +87,16 @@
   ;; For documentation purposes we include the special syntaxes:
   (append (list 'fold 'generate 'acc-array) ;; : use ...
           (r:map car acc-prim-types)))
+
+
+(define-syntax (acc-echo-types stx)
+  (syntax-parse stx
+    ;; We could stick the parameter right in the syntax so we don't
+    ;; have to export its binding.  BUT, this can lead to the error:
+    ;; "write: cannot marshal value that is embedded in compiled code"
+    ; [(_) #`(begin-for-syntax (#,echo-types #t))]
+    [(_) (syntax-protect #'(begin-for-syntax (echo-types-param #t)))]
+
+    ))
+
+  

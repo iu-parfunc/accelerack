@@ -3,6 +3,7 @@
 (require accelerack)
 (require accelerack/private/passes/typecheck)
 (require accelerack/private/wrappers)
+(require accelerack/private/syntax-table)
 (require accelerack/private/front-end)
 (require rackunit)
 

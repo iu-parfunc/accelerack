@@ -7,20 +7,21 @@
 (provide define-acc
          ; acc ;; Not exposing this yet.
          run-gpu
-         snapshot-current-acc-syn-table)
+         snapshot-current-acc-syn-table
+         )
 
 (require
          ;; We use the identifiers from "wrappers" as our names for map/fold/etc
          accelerack/private/wrappers
-         accelerack/private/types
+         accelerack/private/types         
          ; accelerack/private/racket_ops
          (only-in accelerack/private/syntax acc-array  :)
          (only-in accelerack/acc-array/private make-acc-array)
          accelerack/acc-array/private/delayed
-         (for-syntax racket/base
+         (for-syntax racket/base racket/trace                     
                      syntax/parse syntax/id-table racket/dict
                      (only-in accelerack/private/syntax acc-array acc-type acc-lambda-param)
-                     ; accelerack/private/passes/verify-acc
+                     accelerack/private/syntax-table
                      accelerack/private/passes/typecheck
                      accelerack/private/types
 		     accelerack/private/front-end
@@ -30,6 +31,7 @@
                      ))
 
 (begin-for-syntax
+  
   (define (is-a-lambda? stx)
     (syntax-parse stx
       #:literals (lambda)
@@ -38,6 +40,8 @@
 
   (define (go name maybeType bod)
     (let-values ([(stripped inferredTy progWithTys) (front-end-compiler bod)])
+      (when (echo-types-param)
+        (printf " define-acc ~a : ~a\n" (syntax->datum name) inferredTy))
       (apply-to-syn-table maybeType inferredTy name progWithTys)
       ;; Expand into the stripped version with no types:
       ;; HACK: fix this to the second alternative after typechecking works:

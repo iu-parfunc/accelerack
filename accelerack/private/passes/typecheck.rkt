@@ -13,7 +13,11 @@
  (contract-out
   [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
                       (values acc-type? syntax?))]
-  [unify-types (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)])
+  [unify-types (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)]
+  [collapse (-> instantiated-type? acc-type?)])
+ 
+ instantiate
+ 
  ; typecheck-expr ;; If the contract is enforced below.
  ; unify-types
  )
@@ -108,7 +112,7 @@
 (define-struct tyvar
   ([ptr #:mutable] ;; #f or a instantiated-type?
     name           ;; symbol?, For nicer printing
-    numeric?        ;; boolean?
+    [numeric #:mutable]  ;; boolean?, can change through unification
    )
   ; #:transparent
   #:methods gen:custom-write
@@ -154,8 +158,26 @@
   (-> dict? identifier? type-schema? dict?)
   (dict-set te k v))
 
+(define (tenv-free-vars te)
+  (define ls (for/list ([(_ sch) (in-dict te)])
+               (schema-free-vars sch)))
+  (if (null? ls) empty-set
+      (apply set-union ls)))
+            
 ;; Type Utilities
 ;; ------------------------------------------------------------
+
+;; Take a tyvar used during unification and make it visible to the
+;; user.  In the future could remap the suffix renaming.
+(define (export-tyvar t)
+  (if (tyvar-numeric t)
+      (if (numeric-type-var? (tyvar-name t))
+          (tyvar-name t)
+          (symbol-append 'num_ (tyvar-name t)))
+      (tyvar-name t)))
+
+(define (symbol-append a b)
+  (string->symbol (string-append (symbol->string a) (symbol->string b))))
 
 ;; Remove type variables:
 ;; TyInst -> MonoTy (i.e. acc-type?)
@@ -163,8 +185,9 @@
   (match ty
     [(? tyvar?)     
      (if (tyvar-ptr ty)
+         ;; policy: if its a chain of variables, which name to use?
          (collapse (tyvar-ptr ty))
-         (tyvar-name ty))]
+         (export-tyvar ty))]
     [(? symbol?) ty]
     [`(Array ,n ,elt)
      `(Array ,(collapse n) ,(collapse elt))]
@@ -174,6 +197,9 @@
     [(? exact-nonnegative-integer?) ty]
     ))
 
+(define (schema-free-vars x)
+  (match-define (type-schema quantified ty) x)
+  (set-subtract (free-vars ty) quantified))
 
 ;; free variables: instantiated-type? -> (seteq? of symbol?)
 ;; Fetches all the variables in the input given
@@ -190,6 +216,7 @@
     [`(-> ,a ,bs ...) (apply set-union (free-vars a) (map free-vars bs))]
     [`#(,vs ...) (apply set-union (map free-vars vs))]
     [sym #:when (symbol? sym) (list->seteq (list sym))]))
+
 
 ;; ------------------------------------------------------------
 
@@ -224,18 +251,32 @@
 ;; Put a type into a human-readable form for error messages.
 (define (show-type ty)
   (match (collapse ty)
-    [(? symbol? s)
+    [(? type-var-symbol? s)
      (format "type variable '~a'" s)]
     [oth (format "~a" oth)]))
 
+(define (is-numeric? t)
+  (if (tyvar? t)
+      (or (tyvar-numeric t)
+          (is-numeric? (tyvar-ptr t)) ;; This should be redundant.
+          )
+      #f))
+
+(define (make-numeric! t)
+  (when (and t (tyvar? t))
+    (set-tyvar-numeric! t #t)
+    (make-numeric! (tyvar-ptr t))))
+
 ;; Safely set a type variable while respecting whether or not it is a
 ;; numeric-only (num_) type variable.
-(define (set-tyvar! ctxt t1 t2)
-  (define rhs (if (tyvar-ptr t1)                         
-                  (unify-types ctxt (tyvar-ptr t1) t2)
-                  t2))
+(define (set-tyvar! ctxt t1 rhs)
   (define rhs2 (collapse rhs))
-  (when (and (tyvar-numeric? t1)
+  #;
+  (printf " unify to tyvar:  ~a(~a)  -> ~a / ~a, num-type? ~a, type var? ~a\n"
+          (tyvar-name t1) (tyvar-numeric t1) rhs rhs2
+          (acc-num-type? rhs2)
+          (type-var-symbol? rhs2))
+  (when (and (tyvar-numeric t1)
              (not (or (acc-num-type? rhs2)
                       ;; It is OK to equate with a non-numeric type var..
                       ;; We defer judgement.
@@ -244,13 +285,17 @@
      'unify-types
      (format "error\n  Expected a numeric type, instead found ~a" (show-type rhs))
      ctxt))
+
+  ;; Propagate numeric-ness in both directions:
+  (when (is-numeric? rhs) (set-tyvar-numeric! t1 #t))
+  (when (tyvar-numeric t1) (make-numeric! rhs))
   (set-tyvar-ptr! t1 rhs))
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(define/contract (unify-types ctxt t1 t2)
+(trace-define (unify-types ctxt t1 t2)
   ;; DEBUGGING:
-  (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
+  ; (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
     ;; Variables trivially unify with themselves:
     [((? tyvar?) (? tyvar?))
@@ -258,11 +303,17 @@
      t1]
      
     [((? tyvar?) _)
-     ;(printf "unify:  ~a  -> ~a\n" (tyvar-name t1) t2)
      (occurs-check ctxt (tyvar-name t1) t2)
-     (set-tyvar! ctxt t1 t2)
+     (set-tyvar! ctxt t1 (if (tyvar-ptr t1)                         
+                             (unify-types ctxt (tyvar-ptr t1) t2)
+                             t2))
      t1]
-    [(_ (? tyvar?)) (unify-types ctxt t2 t1)] ;; Flip!
+    [(_ (? tyvar?))
+     (occurs-check ctxt (tyvar-name t2) t1)
+     (set-tyvar! ctxt t2 (if (tyvar-ptr t2)
+                             (unify-types ctxt t1 (tyvar-ptr t2))
+                             t1))
+     t2]
 
     [(`(Array ,n1 ,e1) `(Array ,n2 ,e2))
 
@@ -285,11 +336,28 @@
     
     [((? acc-element-type?) (? acc-element-type?))
      #:when (equal? t1 t2)
-     t1]
-    
+     t1]    
     [((? exact-nonnegative-integer?) (? exact-nonnegative-integer?))
      #:when (equal? t1 t2)
      t1]
+    ;; Rigid (uninstantiated) type variables:
+    [((? type-var-symbol?) (? type-var-symbol?))
+     #:when (equal? t1 t2)
+     t1]
+    
+    [((? type-var-symbol?) _) #:when (not (equal? t1 t2))
+     (raise-syntax-error
+      'unify-types
+      (format "Found a rigid type variable ~a, whereas expected type ~a\n"
+              (collapse t1) (collapse t2))
+      ctxt)]
+
+    [(_ (? type-var-symbol?)) #:when (not (equal? t1 t2))
+     (raise-syntax-error
+      'unify-types
+      (format "Couldn't match type ~a against expected type, which was a rigid type variable ~a\n"
+              (collapse t1) (collapse t2))
+      ctxt)]
     
     [(_ _)
      (raise-syntax-error
@@ -297,27 +365,48 @@
       (format (string-append "Conflicting types.\n"
                              "Found: ~a\n"
                              "Expected: ~a\n")
-              t1 t2)
+              (collapse t1) (collapse t2))
       ctxt)]))
 
-;; A method of unifying an arrow type that yields better, more
-;; localized error messages.  Specifically, it is better to highlight
-;; the argument of the wrong type than to highlight the whole application.
-(define (gentle-unify-arrow fnty fnstx ls)
-  ;; FINISHME: can do better here.
-  (unify-types fnstx fnty `(-> ,@(map car ls)))
-  #;
+;; A method of unifying an arrow type that yields better-localized
+;; error messages.  Specifically, it is better to highlight the
+;; argument of the wrong type than to highlight the whole application.
+;;
+(define (gentle-unify-arrow fnty fnstx args ret)
+  #; (-> instantiated-type? syntax?
+      (listof (cons/c instantiated-type? (or/c syntax? #f)))
+      (cons/c instantiated-type? (or/c syntax? #f))
+      instantiated-type?)
+  (define target `(-> ,@(map car args) ,(car ret)))
+  ;; SIMPLEST implementation, with less good errors:
+  ; (unify-types fnstx target fnty)
+
+  (define (helper expected pr)
+    (match-let ([ (cons rcvd stx) pr])
+      (unify-types (or stx fnstx) rcvd expected)))
   (match fnty
-    [`(-> ,args ... ,res) ...]
-    [(? tyvar) (unify-types fnstx fnty `(-> ,@(map car ls)))]
-    [else (raise-syntax-error ...)])    
-  )
+    [`(-> ,e* ... ,en)
+     ;; FIXME: Pass more context info / extra messages to unify-types:
+     (with-handlers
+       () #;([exn:fail?
+         (lambda (exn)
+           (fprintf (current-error-port)
+                    "Type Error: Function argument did not have expected type.\n")
+           (raise exn))])
+       (for-each helper e* args))
+     (helper en ret)]
+    ;; Here, there won't be any argument-level errors:
+    [(? tyvar) (unify-types fnstx target fnty)]
+    [else
+     (raise-syntax-error
+      'unify-types
+      (format "Expected a function type here, found: ~a" fnty)
+      fnstx)]))
   
 
 ;; Var instantiated-type? -> boolean?
 (define/contract (occurs-check stx var type)
   (-> syntax? symbol? any/c void?)
-  ; (printf "CHECk occurs ~a ~a, free ~a\n" var type (set->list (free-vars type)))
   (when (set-member? (free-vars type) var)
     ;This is an infinite type. Send an error back
     (raise-syntax-error 'occurs-check
@@ -459,7 +548,9 @@
      (define-values (etys news) (infer-list es))
      (define res (fresh-tyvar 'res))
      (define ufty `(-> ,@etys ,res))
-     (unify-types #'f fty ufty)
+     (gentle-unify-arrow fty #'f 
+                         (map cons etys es)
+                         (cons res #f))
      (for ([e es] [ety etys])
        (unify-types e ety 'Int))
      (values `(Array ,(length es) ,res)
@@ -511,8 +602,8 @@
      
      (gentle-unify-arrow fty #'f
                          `((,zerty . ,#'zer)
-                           (,zerty . ,#'zer)
-                           (,zerty . ,#'zer)))
+                           (,zerty . ,#'zer))
+                         `(,zerty . ,#'zer))
      (unify-types #'arr arrty `(Array ,ntv ,elt))
 
      ;; FIXME: We should defer the final check that the dimensions are concrete.
@@ -587,33 +678,26 @@
          (format "This is expected to have a vector type of known length, instead found: ~a" oth)
          #'e1)])]
     
-    #|
-    [(rator e ...)
-     ;; It's never a good error message when we treat a keyword like a rator:
-     #:when (not (memq (syntax->datum #'rator) acc-keywords-sexp-list))
-     #`(#,(loop #'rator) #,@(r:map loop (syntax->list #'(e ...))))]
-    |#
-
-    ;; FIXME: this can become the general application case:
-    ;; This could be handled through the tenv:
-    [(p:acc-primop args ...)
-     (define primty (instantiate (tenv-ref acc-primop-types #'p)))
-     (define-values (argtys newargs) (infer-list (syntax->list #'(args ...))))
+    [(rator args ...)
+     (define argls (syntax->list #'(args ...)))
+     (define-values (ratorty newrator) (infer #'rator tenv))
+     (define-values (argtys newargs) (infer-list argls))
      (define fresh (fresh-tyvar 'res))
-     (unify-types stx primty `(-> ,@argtys ,fresh))
+     (gentle-unify-arrow ratorty stx 
+                         (map cons argtys argls)
+                         (cons fresh #f))
      (values fresh
-             #`(p #,@newargs))]
+             #`(#,newrator #,@newargs))]
     
      ))
 
 ;; generalize: set(type var) -> type -> scheme
 (define (generalize tenv mono)
-  ;; FIXME: this needs to take the environment free vars and set-difference it.
-  (make-type-schema (free-vars mono) mono))
-
-(define (tenv-free-vars te)
-  'FINISHME)
-
+  ;; Tyvars mentioned in the environment are "rigid" and NOT generalized.
+  (define free-env (tenv-free-vars tenv))
+    ;; FIXME: this needs to take the environment free vars and set-difference it.
+  (make-type-schema (set-subtract (free-vars mono) free-env)
+                    mono))
 
 ;; instantiate: scheme -> type
 (define/contract (instantiate-scheme scheme)
@@ -623,7 +707,8 @@
             ([q  vars])
     (define fresh (fresh-tyvar q))
     (subst ty q fresh)))
-  
+
+;; Takes a normal SExpression mono-type.
 (define/contract (instantiate mono)
   (-> acc-type? instantiated-type?)
   (instantiate-scheme

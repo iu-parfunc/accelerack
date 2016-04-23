@@ -6,7 +6,10 @@
  )
 
 (provide snap-as-syntax acc-syn-table echo-types-param snap-as-list
-         extend-syn-table lookup-acc-expr lookup-acc-syn-entry)
+         lookup-acc-expr lookup-acc-syn-entry
+         (contract-out
+          [extend-syn-table (-> syntax? (-> (or/c acc-type? #f) acc-type?)
+                                (or/c syntax? #f) acc-syn-entry?)]))
 
 ;; The table in which Accelerack syntax is accumulated so as to
 ;; communicate it between textually separate (acc ..) forms.
@@ -15,6 +18,8 @@
 (define acc-syn-table (box (make-immutable-free-id-table)))
 
 ;; This takes a function to merge in new type information, rather than a type directly.
+;; Returns the new (merged) entry associated with the name.
+
 (define (extend-syn-table name merge-type expr)
   (define oldentry (lookup-acc-syn-entry name))
   (define newentry (acc-syn-entry (merge-type #f) expr))
@@ -24,7 +29,8 @@
                     newentry))
   (define newdict
     (dict-set (unbox acc-syn-table) name entry))
-  (set-box! acc-syn-table newdict))
+  (set-box! acc-syn-table newdict)
+  entry)
 
 
 (define (lookup-acc-syn-entry name)

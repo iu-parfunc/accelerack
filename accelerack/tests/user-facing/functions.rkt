@@ -43,8 +43,16 @@
 ; (acc-echo-types)
 
 (test-case "app sqr"
+  ;; FIXME: this one should get a "rigid type variable error" (CC #51)
+  ;; (: sqr (-> num_a Int))
+  (: sqr (-> num_a num_a))
+  (: y Int)
   (define-acc (sqr x) (* x x))
   (define-acc y (sqr 3))
   ; (define-acc z (generate (lambda () (sqr #t))))
-  y)
+  ;; FIXME!: 
+  ; (check-equal? (format "~a" y) "3")
+  ; (check-false (acc-array? y))
+  (void)
+  )
 

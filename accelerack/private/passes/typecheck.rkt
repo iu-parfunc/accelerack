@@ -13,7 +13,11 @@
  (contract-out
   [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
                       (values acc-type? syntax?))]
-  [unify-types (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)])
+  [unify-types (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)]
+  [collapse (-> instantiated-type? acc-type?)])
+ 
+ instantiate
+ 
  ; typecheck-expr ;; If the contract is enforced below.
  ; unify-types
  )
@@ -281,7 +285,7 @@
 ;; If one of the two is "expected", it should be the latter.
 (define (unify-types ctxt t1 t2)
   ;; DEBUGGING:
-  (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
+  ; (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
     ;; Variables trivially unify with themselves:
     [((? tyvar?) (? tyvar?))
@@ -677,7 +681,8 @@
             ([q  vars])
     (define fresh (fresh-tyvar q))
     (subst ty q fresh)))
-  
+
+;; Takes a normal SExpression mono-type.
 (define/contract (instantiate mono)
   (-> acc-type? instantiated-type?)
   (instantiate-scheme

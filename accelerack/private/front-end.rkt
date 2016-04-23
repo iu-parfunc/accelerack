@@ -36,20 +36,23 @@
   (values stripped main-type with-types))
 
 (define (apply-to-syn-table maybeType inferredTy name progWithTys)
-  (define finalTy (if maybeType
-                      (if (unify-types #f inferredTy (syntax->datum maybeType))
-                          (syntax->datum maybeType)
-                          ;; TODO: can report a more detailed unification error:
-                          (raise-syntax-error  name
-                                               (format "inferred type of binding (~a) did not match declared type"
-                                                       inferredTy)
-                                               maybeType))
-                      inferredTy))
-  (extend-syn-table name
+  (define newTy (if maybeType
+                    (if (unify-monos name inferredTy
+                                     (syntax->datum maybeType))
+                        (syntax->datum maybeType)
+                        ;; TODO: can report a more detailed unification error:
+                        (raise-syntax-error  name
+                                             (format "inferred type of binding (~a) did not match declared type"
+                                                     inferredTy)
+                                             maybeType))
+                    inferredTy))
+  (acc-syn-entry-type
+   (extend-syn-table name
                     (lambda (t)
                       (if t
-                          (unify-types name finalTy t)
-                          finalTy))
-                    progWithTys)
-  finalTy)
+                          (unify-monos name newTy t)
+                          newTy))
+                    progWithTys)))
 
+(define (unify-monos ctxt t1 t2)
+  (collapse (unify-types ctxt (instantiate t1) (instantiate t2))))

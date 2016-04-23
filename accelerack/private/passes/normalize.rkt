@@ -9,15 +9,14 @@
 (require rackunit
          rackunit/text-ui
          racket/match
+         racket/list
          accelerack/private/wrappers
          accelerack/private/types
          ; accelerack/acc-array/private/manifest-array
          )
 
-(provide (contract-out
-          (normalize (-> list? any/c list?)))
+(provide normalize)
          ; test1 test2
-         test3 test4 test4b test4c test5 test6)
 
 (define lambda-first-primitive-ls '(map fold zipwith generate stencil3x3))
 (define primitive-ls '(vector vector-ref map fold zipwith generate stencil3x3
@@ -55,7 +54,7 @@
     (`(let ,xls ,a ... ,b)
      `(let ,xls ,@a
            ,(normalize-to-lambda e b x env)))
-    (else (raise-syntax-error 'normalize "normalize-to-lambda: no matching expression" x))))
+    (else (raise-syntax-error 'normalize (format "normalize-to-lambda: no matching exspression for ~a" l) x))))
 
 ;; Environment contains only lambda's for now
 ;; Anything more ??
@@ -64,6 +63,7 @@
     (match exp
       (x #:when (assq x env) (values (cadr (assq x env)) env))
       (x #:when (or (symbol? x) (number? x) (boolean? x) (vector? x)) (values x env))
+      (`(acc-array ,x ...) (values exp env))
       (`(let ,xls ,b)
        (let*-values (((exp env) (normalize-exp-let xls env)))
 	 (let ((bexp (normalize b env)))
@@ -71,11 +71,16 @@
 	       (values bexp env)
 	       (values `(let ,exp ,bexp) env)))))
       (`(if ,x ,y ,z) (values `(if ,(normalize x env) ,(normalize y env) ,(normalize z env)) env))
+      (`(use ,x ,y) (values (normalize x env) env))
       (`(,e ,l ,x ...) #:when (memq e lambda-first-primitive-ls)
-       (let ((l (normalize l env))
+       (let ((l (if (memq l primitive-ls)
+                    (let ((lambda-var-ls (map (lambda(x)
+                                                (string->symbol (string-append (symbol->string 'x) (number->string x))))
+                                              (range (length x)))))
+                      `(lambda ,lambda-var-ls (,l ,@lambda-var-ls)))
+                    (normalize l env)))
              (x (map (lambda(x) (normalize x env)) x)))
          (values (normalize-to-lambda e l x env) env)))
-
       (`(,p ,x ...) #:when(memq p primitive-ls)
        (let ((x (map (lambda(x) (normalize x env)) x)))
          (values `(,p ,@x) env)))
@@ -196,6 +201,7 @@
                      (b (lambda(x y) (* y x))))
                  (let ((l (lambda(x) (b x 2))))
                    (map l (acc-array (1 2 3))))))
+(define test10 '(map add1 (use x (Array 1 Int))))
 
 
 

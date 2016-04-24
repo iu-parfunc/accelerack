@@ -62,3 +62,11 @@
   (void)
   )
 
+
+;; FIXME: see issue #55
+; (test-case "resolve ambiguity with top-level ascription"
+;   (: col-r (-> #(Int Int Int) Int))
+;   (define-acc (col-r v) (vector-ref v 0))
+;   (col-r (vector 1 2 3)))
+
+

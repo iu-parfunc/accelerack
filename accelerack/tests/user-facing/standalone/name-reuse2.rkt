@@ -16,4 +16,3 @@
   ;; incorrectly resolving the type of 'x' to (Array 1 Bool)
   (define-acc y (generate (lambda () x)))
   (void))
-

@@ -757,10 +757,11 @@
     [`(-> ,t* ...)   `(-> ,@(map go t*))]
     [(? acc-scalar-type?)           ty]
     [(? exact-nonnegative-integer?) ty]
-    [(? tyvar? tv)
-     (if (tyvar-ptr tv)
-         (set-tyvar-ptr! tv (go (tyvar-ptr tv)))
-         tv)]
+    [(? tyvar?)
+     ; (when (tyvar-ptr ty) (set-tyvar-ptr! ty (go (tyvar-ptr ty))))
+     (if (eq? (tyvar-name ty) var)
+         new ty)]
+    [else (error 'subst "error, invalid type: ~a\n" ty)]
     ))
 
 

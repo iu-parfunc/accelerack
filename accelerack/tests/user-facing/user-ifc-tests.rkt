@@ -18,7 +18,6 @@
   ;; accident should give a good error:
 #;
   (test-case "add1 function definition"
-    "add1 function definition"
     (define-acc (f x) (begin (printf "hello") (add1 x)))
     (check-true (procedure? f))
     (check-equal? 4 (f 3)))
@@ -27,7 +26,6 @@
 -- TODO: Test different unbound variable errors.
 
   (test-case "failing-test-case 1"
-             "failing-test-case 1"
              (define-acc x (map add1 unbound))
              (check-equal? 2 3)
              )
@@ -168,25 +166,10 @@
                  (check-equal? 2 (car (acc-array->sexp y))))))
 
 
-;; WAIT TILL A LATER VERSION:
-
-; TODO: Scalar support
-#;
-(test-case "scalar"
-           "scalar"
-  (define-acc x 3)
-  (printf "scalar x: ~a\n" x)
-  (check-true (acc-scalar? x))
-  (check-false (acc-array? x)))
-
-#;
 (test-case "scalar ascription"
-           "scalar ascription"
   (define-acc x (: 3 Int))
-  (printf "scalar x: ~a\n" x)
   (check-true (acc-scalar? x))
   (check-false (acc-array? x))
-  ; (check-equal? )
   )
 
 (test-case "scalar definition"

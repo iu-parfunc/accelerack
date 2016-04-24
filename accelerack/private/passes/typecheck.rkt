@@ -193,6 +193,7 @@
          ;; policy: if its a chain of variables, which name to use?
          (collapse (tyvar-ptr ty))
          (export-tyvar ty))]
+    [(? integer?) ty] ;; type-level lits
     [(? symbol?) ty]
     [`(Array ,n ,elt)
      (make-array-type (collapse n) (collapse elt))]
@@ -619,8 +620,12 @@
      ;; Otherwise, whether it works can depend on the order of type inference.
      (match (collapse ntv)
        [n #:when (number? n)
-          (values `(Array ,(sub1 n) ,elt)
-                  #`(fold #,newF #,newZer #,newArr))]
+          (if (< n 1)
+              (raise-syntax-error
+               'unify-types "This array is zero dimensional, and cannot be folded."
+               #'arr)
+              (values `(Array ,(sub1 n) ,elt)
+                  #`(fold #,newF #,newZer #,newArr)))]
        [other (raise-syntax-error pass-name
                (string-append 
                 "Fold is expected to take an array of known dimension.\n"

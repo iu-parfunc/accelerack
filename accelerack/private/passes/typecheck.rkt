@@ -193,6 +193,7 @@
          ;; policy: if its a chain of variables, which name to use?
          (collapse (tyvar-ptr ty))
          (export-tyvar ty))]
+    [(? integer?) ty] ;; type-level lits
     [(? symbol?) ty]
     [`(Array ,n ,elt)
      (make-array-type (collapse n) (collapse elt))]

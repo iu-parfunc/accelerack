@@ -673,6 +673,11 @@
     
     ;; Special typing rule for polymorphic vector ref:
     ;; The second argument must be a fixed integer.
+    ;;
+    ;; FIXME: These constraints should also be deferred, along with
+    ;; the fold constraints.
+    ;;
+    ;; Alternatively, this can be replaced with explicit pattern matching.
     [(vector-ref e1 n:number)
      (define-values (e1ty e1new) (infer #'e1 tenv))
      (define ind (syntax->datum #'n))
@@ -689,7 +694,10 @@
        [oth
         (raise-syntax-error
          'typecheck
-         (format "This is expected to have a vector type of known length, instead found: ~a" oth)
+         (string-append "This is expected to have a vector type of known length, "
+                        (if (symbol? (collapse oth))
+                            "instead found a vector of unknown length."
+                            (format "instead found: ~a" (show-type oth))))
          #'e1)])]
     
     [(rator args ...)

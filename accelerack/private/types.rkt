@@ -40,14 +40,14 @@
 
 ;; Confirm that an integer is in the expected range for the acc "Int" type.
 (define (acc-int? x)
-  (and (integer? x)
+  (and (integer? x) (exact? x)
        (<= (- (expt 2 63)) x (sub1 (expt 2 64)))))
 
 (define (acc-element->type x)
   (cond
-    [(acc-int? x) 'Int]
     [(boolean? x) 'Bool]
-    [(flonum? x)  'Double]
+    [(flonum? x) 'Double] ; (inexact? x)
+    [(acc-int? x) 'Int]
     [(vector? x) (vector-map acc-element->type x)]
     [else (error 'acc-element->type "this is not an array element: ~a" x)]))
 
@@ -201,4 +201,18 @@
 
 (module+ test
   (check-true (acc-type? '(Array n a)))
-  (check-true (acc-type? '(Array 2 Int))))
+  (check-true (acc-type? '(Array 2 Int)))
+
+  (check-pred flonum? 3.0)
+  (check-pred inexact? 3.0)
+  
+  (check-equal? (acc-element->type 3.3) 'Double)
+  (check-equal? (acc-element->type 3) 'Int)
+  (check-equal? (acc-element->type 3.0) 'Double)  
+  
+  (define x 3.0)
+  (check-pred flonum?  x)
+  (check-pred inexact? x)
+  (check-equal? (acc-element->type x) 'Double)
+
+  )

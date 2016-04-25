@@ -249,9 +249,12 @@
          (tenv-set env v (generalize empty-tenv ty))])))
   ;; Rip out the type variable stuff:
   (define-values (ty e2) (infer e env1))
+  (define ty2 (collapse ty))
   (pass-output-chatter 'typecheck-expr
-                       (list ': (syntax->datum e2) ty))
-  (values (collapse ty) e2))
+                       (list 'expr: (syntax->datum e2)
+                             'type: ty
+                             'collapsed: ty2))
+  (values ty2 e2))
 
 
 ;; Put a type into a human-readable form for error messages.
@@ -376,32 +379,33 @@
 ;; error messages.  Specifically, it is better to highlight the
 ;; argument of the wrong type than to highlight the whole application.
 ;;
-(define (gentle-unify-arrow fnty fnstx args ret)
-  #; (-> instantiated-type? syntax?
+(define/contract (gentle-unify-arrow fnty fnstx args ret)
+  (-> instantiated-type? syntax?
       (listof (cons/c instantiated-type? (or/c syntax? #f)))
       (cons/c instantiated-type? (or/c syntax? #f))
       instantiated-type?)
   (define target `(-> ,@(map car args) ,(car ret)))
-  ;; SIMPLEST implementation, with less good errors:
-  (unify-types fnstx target fnty)
-  #;
+  ;; Option (1), SIMPLEST implementation, with worse errors:
+  ; (unify-types fnstx target fnty)
+  ;; Option (2):
   (begin
-    (define (helper expected pr)
-      (match-let ([ (cons rcvd stx) pr])
-        (unify-types (or stx fnstx) rcvd expected)))
+    (define (helper msg)
+      ;; FIXME: Pass more context info / extra messages to unify-types:
+      (lambda (expected pr)
+        ;; One option is to print and rethrow, but better to pass to unify.
+        #; (with-handlers ([exn:fail?
+                            (lambda (exn)
+                              (fprintf (current-error-port) msg)
+                              (raise exn))]) ...)
+        (match-let ([ (cons rcvd stx) pr])
+          (unify-types (or stx fnstx) rcvd expected))))
    (match fnty
     [`(-> ,e* ... ,en)
-     ;; FIXME: Pass more context info / extra messages to unify-types:
-     (with-handlers
-       () #;([exn:fail?
-         (lambda (exn)
-           (fprintf (current-error-port)
-                    "Type Error: Function argument did not have expected type.\n")
-           (raise exn))])
-       (for-each helper e* args))
-     (helper en ret)]
+     (for-each (helper "Function argument did not have expected type.\n")
+               e* args)
+     ((helper "Function return value did not have expected type.\n") en ret)]
     ;; Here, there won't be any argument-level errors:
-    [(? tyvar) (unify-types fnstx target fnty)]
+    [(? tyvar?) (unify-types fnstx target fnty)]
     [else
      (raise-syntax-error
       'unify-types
@@ -610,16 +614,15 @@
     [(fold f zer arr)
      (define-values (arrty newArr) (infer #'arr tenv))
      (define-values (fty newF)     (infer #'f   tenv))
-     (define-values (zerty newZer) (infer #'zer tenv))
+     (define-values (elt newZer) (infer #'zer tenv))
 
      (define ntv (fresh-tyvar 'n))
-     (define elt (fresh-tyvar))
-     
+
      (gentle-unify-arrow fty #'f
-                         `((,zerty . ,#'zer)
-                           (,zerty . ,#'zer))
-                         `(,zerty . ,#'zer))
-     (unify-types #'arr arrty `(Array ,ntv ,elt))
+                         `((,elt . ,#'zer)
+                           (,elt . ,#'zer))
+                         `(,elt . ,#'zer))
+     (unify-types #'arr arrty `(Array ,ntv ,elt)) ;; For side effect on ntv.
 
      ;; FIXME: We should defer the final check that the dimensions are concrete.
      ;; Otherwise, whether it works can depend on the order of type inference.

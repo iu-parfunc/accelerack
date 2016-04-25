@@ -40,6 +40,7 @@
    #'-    '(-> num_a num_a num_a)
    #'*    '(-> num_a num_a num_a)
    #'/    '(-> num_a num_a num_a)
+   #'expt '(-> num_a num_a num_a)
 
    #'=    '(-> num_a num_a Bool)
    #'<    '(-> num_a num_a Bool)

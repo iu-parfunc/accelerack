@@ -40,10 +40,19 @@
    #'-    '(-> num_a num_a num_a)
    #'*    '(-> num_a num_a num_a)
    #'/    '(-> num_a num_a num_a)
+
+   #'=    '(-> num_a num_a Bool)
+   #'<    '(-> num_a num_a Bool)
+   #'<=   '(-> num_a num_a Bool)
+   #'>=   '(-> num_a num_a Bool)   
+   #'>    '(-> num_a num_a Bool)
+
+   #'and  '(-> Bool Bool Bool)
+   #'or   '(-> Bool Bool Bool)
    
    #'add1 '(-> num_a num_a)
    #'sub1 '(-> num_a num_a)
-   #'sqrt '(-> num_a num_a)
+   #'sqrt '(-> num_a Double)
    #'abs  '(-> num_a num_a)
 
    #'min  '(-> num_a num_a num_a)
@@ -73,9 +82,12 @@
 
 (define acc-keyword-lits
   (list
+   #'if #'let #'acc-array-ref #'acc-array
    #'-> #': #'use
    #'Array
-   #'generate  #'fold
+   #'map #'zipwith #'fold
+   #'generate  #'stencil3x3
+   #'replicate #'until
    ))
 
 (define acc-scalar-lits

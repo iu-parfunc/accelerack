@@ -213,3 +213,31 @@
   (let () (define-acc foo 4) (void))
   (let () (define-acc foo #t) (void))  
   )
+
+(test-case "replicate with define-acc (1)"
+  (define-acc arr (acc-array (1 2)))
+  (define-acc arr2 (let ([x 5]) (replicate (r) (r 5) arr)))
+  (check-equal? (acc-array->sexp arr2)
+		'((1 1 1 1 1)
+		  (2 2 2 2 2))))
+
+(test-case "replicate with define-acc (2)"
+  (define-acc arr (acc-array (1 2)))
+  (define-acc a 5)
+  (define-acc arr2 (replicate (r) (r a) arr))
+  (check-equal? (acc-array->sexp arr2)
+		'((1 1 1 1 1)
+		  (2 2 2 2 2))))
+
+
+(test-case "replicate with define-acc (3)"
+  (define-acc arr (acc-array (1 2)))
+  (define-acc a 3)
+  (define-acc arr2 (replicate (r) (a r a) arr))
+  (check-equal? (acc-array->sexp arr2)
+		'(((1 1 1)
+		   (2 2 2))
+		  ((1 1 1)
+		   (2 2 2))
+		  ((1 1 1)
+		   (2 2 2)))))

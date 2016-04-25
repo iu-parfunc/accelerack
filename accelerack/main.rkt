@@ -17,6 +17,8 @@
          
          accelerack/private/wrappers
          accelerack/private/types
+         ;         accelerack/private/prim-table
+         accelerack/private/prim-redefinitions
 
          accelerack/private/executor
          accelerack/private/syntax-capture
@@ -48,6 +50,9 @@
     auntil
     replicate 
 
+    ;; Standard Racket operations with slightly modified behavior.
+    sqrt
+    
     ;; Individual elements plus shapes
     acc-scalar? acc-element?
     stencil-boundary?

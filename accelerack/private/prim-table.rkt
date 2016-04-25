@@ -5,19 +5,22 @@
 
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          rackunit
-
-         (except-in racket/base map)
+         (except-in racket/base map sqrt)
          (only-in racket/contract ->)
          accelerack/private/keywords
          accelerack/private/wrappers
-         (for-template (except-in racket/base map)
+         accelerack/private/prim-redefinitions
+         (for-template (except-in racket/base map sqrt)
                        (only-in racket/contract ->)
                        accelerack/private/keywords
-                       accelerack/private/wrappers)
-         (for-syntax (except-in racket/base map)
-                       (only-in racket/contract ->)
+                       accelerack/private/wrappers
+                       accelerack/private/prim-redefinitions
+                       )
+         (for-syntax (except-in racket/base map sqrt)
+                     (only-in racket/contract ->)
                        accelerack/private/keywords
-                       accelerack/private/wrappers)
+                       accelerack/private/wrappers
+                       accelerack/private/prim-redefinitions)
          )
 
 (provide 
@@ -28,9 +31,6 @@
          acc-keyword-lits
          acc-all-bound-syms
          )
-
-
-
 
 ;; Maps symbols -> acc-type?
 (define acc-primop-types
@@ -47,8 +47,11 @@
    #'>=   '(-> num_a num_a Bool)   
    #'>    '(-> num_a num_a Bool)
 
+   ;; FIXME: Should probably provide prim-redefinitions for these
+   ;; OR simply make them syntax.
    #'and  '(-> Bool Bool Bool)
    #'or   '(-> Bool Bool Bool)
+   #'not  '(-> Bool Bool)
    
    #'add1 '(-> num_a num_a)
    #'sub1 '(-> num_a num_a)

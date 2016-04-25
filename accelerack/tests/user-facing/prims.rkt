@@ -1,14 +1,15 @@
 #lang racket
 
+(require (except-in racket/base sqrt map))
 (require accelerack rackunit)
+
+(require (for-syntax (only-in accelerack sqrt)))
 
 
 (test-case "sqrt"
   (define-acc a (sqrt 9.0))
   (check-equal? a 3.0))
 
-;; FIXME: Need to ensure inexact output:
-#;
 (test-case "sqrt int"
   (define-acc a (sqrt 9))
   (check-equal? a 3.0))

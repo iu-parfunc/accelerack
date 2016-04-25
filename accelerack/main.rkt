@@ -42,6 +42,7 @@
     
     ;; A list of primitives for reference:
     acc-prims
+    acc-keywords
     acc-prim-types
     
     ;; Data-parallel aggregate operations
@@ -94,6 +95,8 @@
   (append (list 'fold 'generate 'acc-array) ;; : use ...
           (r:map car acc-prim-types)))
 
+(define acc-keywords
+  (map syntax->datum acc-keyword-lits))
 
 (define-syntax (acc-echo-types stx)
   (syntax-parse stx

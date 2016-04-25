@@ -36,7 +36,8 @@
  #rx"rigid"
  (lambda ()
    (convert-compile-time-error
-    (typeit #'(lambda ((x : #(a a a))) (+ 1 (vector-ref x 2)))))))
+    (typeit #'(lambda ((x : #(rg rg rg)))
+                (+ 1 (vector-ref x 2)))))))
 
 (test-equal? "monomorphic lambda"
              (typeit #'(lambda (x) (+ 5 x)))
@@ -90,4 +91,23 @@
     (fold f z (fold f z a)))
   (check-equal?
    (type-of fold2d)
+   ;; FIXME: ^^ problem if we define fold2d at top level, makes it think that
+   ;; the variable is racket-bound
    '(-> (-> Double Double Double) Double (Array 2 Double) (Array 0 Double))))
+
+
+(test-case "fold2d then ref"
+  (define-acc (fold2d f z (a : (Array 2 Double)))
+    (fold f z (fold f z a)))
+  (define-acc (fn matrix)
+    (acc-array-ref
+     (fold2d min (acc-array-ref matrix 0 0) matrix)))
+  (void))
+
+(test-case "map w ascription"
+  (define-acc (app (f : (-> a b)) x)
+    (f x))
+  (check-true (match (type-of app)
+                [`(-> (-> ,a ,b) ,a ,b) #t])))
+  
+

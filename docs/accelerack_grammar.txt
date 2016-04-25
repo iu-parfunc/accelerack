@@ -54,6 +54,8 @@ expression e
   | (fold e e e)
   | (generate e e ....)     ; N-dimensional generate
   | (stencil3x3 e b e)      ; Take a function, (lambda (x1 .. x9) e)
+  | (until (v e e) e)       ; Repeatedly evaluate until condition is met.
+  | (replicate (v ..) (e ...) e) ; Expand the dimension and remap indices.
   | (let (lb ...) e)        ; Let binding
   | x                       ; Variable
   | p                       ; Primitive function
@@ -66,10 +68,6 @@ expression e
   | (: e t)                 : Type ascription
   | (use x t)               ; (unquote) Import a normal Racket variable
 
-
-;; TODO:
-  | (while e e e)      ?? Design issues!  Or you could have sfold (sequential)
-  | (replicate ...)    ?? Design issues!
 
 let binding, lb
   = [x e] | [x : t e]

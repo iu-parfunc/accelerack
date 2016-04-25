@@ -212,10 +212,9 @@
 (define (free-vars ty)
   (match ty
     [(? tyvar?)
-     (set-add (if (tyvar-ptr ty)
-                  (free-vars (tyvar-ptr ty))
-                  empty-set)
-              (tyvar-name ty))]
+     (if (tyvar-ptr ty)
+         (free-vars (tyvar-ptr ty)) ;; Not free, bound.
+         (set-add empty-set (tyvar-name ty)))]
     [elt #:when (acc-element-type? elt)            empty-set]
     [num #:when (exact-nonnegative-integer? num)   empty-set]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
@@ -234,7 +233,6 @@
 (define (typecheck-expr syn-table e)
   #;(-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
       (values acc-type? syntax?))
-  (pass-output-chatter 'typecheck-expr (syntax->datum e))
   (reset-var-cnt)
 
   (define env0
@@ -251,6 +249,8 @@
          (tenv-set env v (generalize empty-tenv ty))])))
   ;; Rip out the type variable stuff:
   (define-values (ty e2) (infer e env1))
+  (pass-output-chatter 'typecheck-expr
+                       (list ': (syntax->datum e2) ty))
   (values (collapse ty) e2))
 
 
@@ -266,7 +266,7 @@
       (or (tyvar-numeric t)
           (is-numeric? (tyvar-ptr t)) ;; This should be redundant.
           )
-      #f))
+      (acc-num-type? t)))
 
 (define (make-numeric! t)
   (when (and t (tyvar? t))
@@ -276,25 +276,21 @@
 ;; Safely set a type variable while respecting whether or not it is a
 ;; numeric-only (num_) type variable.
 (define (set-tyvar! ctxt t1 rhs)
-  (define rhs2 (collapse rhs))
-  #;
-  (printf " unify to tyvar:  ~a(~a)  -> ~a / ~a, num-type? ~a, type var? ~a\n"
-          (tyvar-name t1) (tyvar-numeric t1) rhs rhs2
-          (acc-num-type? rhs2)
-          (type-var-symbol? rhs2))
+  (define rhs-coll (collapse rhs))
+  ;(printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
   (when (and (tyvar-numeric t1)
-             (not (or (acc-num-type? rhs2)
+             (not (or (acc-num-type? rhs-coll)
                       ;; It is OK to equate with a non-numeric type var..
                       ;; We defer judgement.
-                      (type-var-symbol? rhs2))))
+                      (type-var-symbol? rhs-coll))))
     (raise-syntax-error
      'unify-types
      (format "error\n  Expected a numeric type, instead found ~a" (show-type rhs))
      ctxt))
 
   ;; Propagate numeric-ness in both directions:
-  (when (is-numeric? rhs) (set-tyvar-numeric! t1 #t))
-  (when (tyvar-numeric t1) (make-numeric! rhs))
+  (when (or (is-numeric? rhs) (tyvar-numeric t1))
+    (make-numeric! t1))
   (set-tyvar-ptr! t1 rhs))
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?
@@ -333,10 +329,12 @@
                          (unify-types ctxt e1 e2))])]
        
     [(`(-> ,as ...) `(-> ,bs ...))
+     #:when (= (length as) (length bs))
      `(-> ,@(for/list ([a as] [b bs])
               (unify-types ctxt a b)))]
     
     [((vector as ...) (vector bs ...))
+     #:when (= (length as) (length bs))
      (for/vector ([a as] [b bs])
        (unify-types ctxt a b))]
     
@@ -385,12 +383,13 @@
       instantiated-type?)
   (define target `(-> ,@(map car args) ,(car ret)))
   ;; SIMPLEST implementation, with less good errors:
-  ; (unify-types fnstx target fnty)
-
-  (define (helper expected pr)
-    (match-let ([ (cons rcvd stx) pr])
-      (unify-types (or stx fnstx) rcvd expected)))
-  (match fnty
+  (unify-types fnstx target fnty)
+  #;
+  (begin
+    (define (helper expected pr)
+      (match-let ([ (cons rcvd stx) pr])
+        (unify-types (or stx fnstx) rcvd expected)))
+   (match fnty
     [`(-> ,e* ... ,en)
      ;; FIXME: Pass more context info / extra messages to unify-types:
      (with-handlers
@@ -407,7 +406,7 @@
      (raise-syntax-error
       'unify-types
       (format "Expected a function type here, found: ~a" fnty)
-      fnstx)]))
+      fnstx)])))
   
 
 ;; Var instantiated-type? -> boolean?
@@ -489,7 +488,7 @@
      ;; We could alternatively do this unification in stages and try
      ;; to optimize the errors that come out:     
      (let ((arrty (unify-types #'e1 ty1 (make-array-type e2slen (fresh-tyvar 'elt)))))
-       (match (collapse arrty)
+       (match (collapse arrty) ;; AUDIT ME
          #;
          [(? tyvar?)
           (if (tyvar-ptr arrty)
@@ -506,11 +505,12 @@
               #'e1)]
             [(exact-nonnegative-integer? dim)
              (if (equal? dim e2slen)
-                 (values elt
+                 (values elt ;; Collapsed!
                    (let ([e2news
                         (for/list ([e2 e2ls])
                           (define-values (ty enew) (infer e2 tenv))
-                          (unify-types e2 ty 'Int)
+                          ;; Side effect only, but it should be safe here:
+                          (unify-types e2 ty 'Int) ;; SAFE
                           enew
                           #;
                           (if (eq? ty 'Int) enew
@@ -537,32 +537,36 @@
      ;; Enforce the user type annotations BEFORE normal inference.
      ;; The main reason for this order is that it may prevent an Array
      ;; dimension ambiguity until we fix those constraints to be deferred.
-     (for ([x xs] [infrd freshes]
-           [expected (syntax->datum #'(x.type ...))])
-       (when expected
-         (unify-types x infrd (instantiate expected))))
-     
+     (define xtys
+       (for/list ([x xs] [infrd freshes]
+                  [expected (syntax->datum #'(x.type ...))])
+         (if expected
+             (unify-types x infrd (instantiate expected))
+             infrd)))
+
      (define tenv2 (for/fold ([te tenv])
                              ([x xs]
-                              [fresh freshes])
-                     (tenv-set te x (make-mono-schema fresh))))
-     (define-values (tbod bod) (infer #'e tenv2))     
-     (values `(-> ,@freshes ,tbod)
+                              [xty xtys])
+                     (tenv-set te x (make-mono-schema xty))))
+     (define-values (tbod bod) (infer #'e tenv2))
+     (define new-params (for/list ([x xs] [xty xtys])
+                          #`(#,x : #,(datum->syntax x (collapse xty)))))
+     (values `(-> ,@xtys ,tbod)
              ;; TODO: must return annotated here:
-             #`(lambda (x.name ...) #,bod))]
+             #`(lambda (#,@new-params) #,bod))]
     
     ;; Generate gets its own typing judgement.  It can't go in the prim table.
     [(generate f e* ...)
      (define es (syntax->list #'(e* ...)))
-     (define-values (fty fnew) (infer #'f tenv))
      (define-values (etys news) (infer-list es))
+     (define etys2 (for/list ([e es] [ety etys])
+                     (unify-types e ety 'Int)))
+     (define-values (fty fnew) (infer #'f tenv))
      (define res (fresh-tyvar 'res))
-     (define ufty `(-> ,@etys ,res))
+     (define ufty `(-> ,@etys2 ,res))
      (gentle-unify-arrow fty #'f 
-                         (map cons etys es)
+                         (map cons etys2 es)
                          (cons res #f))
-     (for ([e es] [ety etys])
-       (unify-types e ety 'Int))
      (values (make-array-type (length es) res)
 	     #`(generate #,fnew #,@news))]
 
@@ -573,7 +577,8 @@
      (define es (syntax->list #'(e* ...)))
      (define ntv (fresh-tyvar 'n))
      (define elt (fresh-tyvar))
-     (unify-types #'arr arrty `(Array ,ntv ,elt))
+     ;; This unify side effects ntv and elt.
+     (define _arrty2 (unify-types #'arr arrty `(Array ,ntv ,elt)))
      (if (or (not vs) (not es))
          (raise-syntax-error pass-name
 			     (string-append "Malformed syntax for replicate.\n"
@@ -584,7 +589,7 @@
 				       (and (identifier? e)
 					    (memf (lambda (v) (free-identifier=? v e)) vs)))
 				     es))])
-	   (match (collapse ntv)
+	   (match (collapse ntv) ;; Careful when we use this.  Here it's safe.
 	     [n #:when (number? n)
 		(values `(Array ,(+ plus-dim n) ,elt)
 			#`(replicate #,vs #,es #,newArr))]
@@ -725,6 +730,7 @@
 (define/contract (instantiate-scheme scheme)
   (-> type-schema? instantiated-type?)
   (match-define (type-schema vars monoty) scheme)
+  ;; Inefficient: repeated subst:
   (for/fold ([ty monoty])
             ([q  vars])
     (define fresh (fresh-tyvar q))
@@ -757,10 +763,16 @@
     [`(-> ,t* ...)   `(-> ,@(map go t*))]
     [(? acc-scalar-type?)           ty]
     [(? exact-nonnegative-integer?) ty]
-    [(? tyvar? tv)
-     (if (tyvar-ptr tv)
-         (set-tyvar-ptr! tv (go (tyvar-ptr tv)))
-         tv)]
+    [(? tyvar?)
+     (cond
+       ;; Warning we should probably NOT ever subst on a bound var:     
+       [(and (tyvar-ptr ty) (eq? (tyvar-name ty) var))
+        (error 'subst "internal error, attempt to substitute *bound* tyvar ~a" var)]
+       [(eq? (tyvar-name ty) var) new]
+       ;; Allow subst to short-circuit for the returned type:
+       [(tyvar-ptr ty) (go (tyvar-ptr ty))]
+       [else ty])]
+    [else (error 'subst "error, invalid type: ~a\n" ty)]
     ))
 
 

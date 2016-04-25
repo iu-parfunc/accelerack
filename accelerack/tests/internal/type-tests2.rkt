@@ -7,6 +7,7 @@
 (require accelerack/private/front-end)
 (require rackunit)
 
+#|
 (define (typeit x)
   (define-values (ty _) (typecheck-expr (snap-as-list) x))
   ty)
@@ -40,17 +41,40 @@ Expected: c3
 
 ; (typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
 
-(check-equal? (typeit #'(let ([x 3]) (+ 5 x)))
-              'Int)
-(check-equal? (typeit #'(let ([x #t]) (+ 5 9)))
-              'Int)
-
-;; FIXME: spurious error:
-(typeit #'(if #t 5 9))
-
-; (typeit #'(let ([x #t]) (if x x x)))
-
-; (typeit #'(let ([x : Bool #t]) (if x x x)))
+(check-equal? (typeit #'(let ([x 3]) (+ 5 x)))     'Int)
+(check-equal? (typeit #'(let ([x #t]) (+ 5 9)))    'Int)
+(check-equal? (typeit #'(if #t 5 9))               'Int)
+(check-equal? (typeit #'(let ([x #t]) (if x x x))) 'Bool)
+(check-equal? (typeit #'(let ([x : Bool #t]) (if x x x))) 'Bool)
 
 (check-equal? (typeit #'(acc-array-ref (acc-array ((9.9))) 0 0))
               'Double)
+
+
+; (acc-echo-types)
+(test-case "check type inferred for colarray->vec4array"
+  (define-acc (col-r (v : #(Int Int Int))) (vector-ref v 0))
+  (define-acc (col-g (v : #(Int Int Int))) (vector-ref v 1))
+  (define-acc (col-b (v : #(Int Int Int))) (vector-ref v 2))
+  (define-acc (colarray->vec4array arr)
+    (let ([helper2
+           (lambda ((c : #(Int Int Int)))
+             (vector (col-r c)
+                     (col-g c)
+                     (col-b c)
+                     255))])
+      (map helper2 arr)))
+  (match (type-of colarray->vec4array)
+    [`(-> (Array ,n #(Int Int Int)) (Array ,n #(Int Int Int Int)))
+     (void)]
+    [oth (error 'failed-test "unexpected result: ~a" oth)]))
+
+|#
+(define-acc (dot (v1 : #(Double Double Double))
+                 (v2 : #(Double Double Double)))
+  (+ (* (vector-ref v1 0)
+        (vector-ref v2 0))
+     (+ (* (vector-ref v1 1)
+           (vector-ref v2 1))
+        (* (vector-ref v1 2)
+           (vector-ref v2 2)))))

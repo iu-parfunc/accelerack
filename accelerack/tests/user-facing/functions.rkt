@@ -69,4 +69,3 @@
 ;   (define-acc (col-r v) (vector-ref v 0))
 ;   (col-r (vector 1 2 3)))
 
-

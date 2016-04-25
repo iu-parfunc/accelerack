@@ -133,9 +133,15 @@
 
 ;; Tests if a value is a valid SExpression encoding an Accelerack type.
 (define (acc-type? t)
+  ;; Polymorphism is allowed here:
+  (define (poly-element-type? t)
+    (match t
+      [(? symbol?) #t]
+      [`#( ,t* ...) (andmap poly-element-type? t*)]
+      [else (acc-scalar-type? t)]))  
   (match t
     [`(Array ,n ,elt) (and (or (symbol? n) (fixnum? n))
-                           (or (symbol? elt) (acc-element-type? elt)))]
+                           (or (symbol? elt) (poly-element-type? elt)))]
     [`#( ,t* ...)     (andmap acc-type? t*)]
     [`(-> ,t* ...)    (andmap acc-type? t*)]
     [(? acc-scalar-type? t) #t]

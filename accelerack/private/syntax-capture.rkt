@@ -4,7 +4,7 @@
 ;; The syntax-capture and verification step.
 ;; ---------------------------------------------------------------
 
-(provide define-acc
+(provide define-acc type-of
          ; acc ;; Not exposing this yet.
          run-gpu
          snapshot-current-acc-syn-table
@@ -42,7 +42,7 @@
     (let-values ([(stripped inferredTy progWithTys normalized-sexp) (front-end-compiler bod)])
       (define finalTy (apply-to-syn-table maybeType inferredTy name progWithTys))
       (when (echo-types-param)
-        (printf " define-acc ~a : ~a\n" (syntax->datum name) finalTy))      
+        (printf " define-acc ~a : ~a\n" (syntax->datum name) finalTy))
       (match finalTy
         ;; TODO: Need support for delayed scalars:
         ; #`(define #,name (make-acc-scalar (acc-delayed-scalar (lambda () #,stripped))))        
@@ -103,6 +103,13 @@
                                          (format "caught error during compilation:\n\n~a\n" exn)
                                          stx))])
        (create-binding! #'f #f #'(lambda (x ...) e)))]))
+
+
+(define-syntax (type-of stx)
+  (syntax-parse stx
+    [(_ bod)
+     (let-values ([(_ inferredTy __ ___) (front-end-compiler #'bod)])
+       #`(quote #,(datum->syntax stx inferredTy)))]))
 
 
 ; --------------------------------------------------------------------------------

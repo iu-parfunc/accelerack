@@ -17,7 +17,7 @@
          scribble/srcdoc
          racket/trace         
          (only-in accelerack/private/utils pass-output-chatter)
-         (only-in accelerack/private/prim-table acc-all-bound-syms)
+         (only-in accelerack/private/prim-table acc-all-bound-syms acc-keyword-lits)
          accelerack/private/syntax
          accelerack/private/syntax-table
          (prefix-in r: racket/base)
@@ -99,10 +99,8 @@
                           "\n   At least one symbol was UNBOUND, but should be imported from accelerack.\n"))]))
 
 
-;; FIXME/TODO: compute this from the list of actual-syntax keywords:
-(define acc-keywords-sexp-list
-  '(lambda if let : use
-    generate map zipwith fold generate stencil3x3 acc-array-ref))
+(define acc-keywords-sexp-list  
+  (map syntax->datum acc-keyword-lits))
 
 ;; AccelerackSyntax Env -> AccelerackSyntax
 (define (verify-acc-helper stx env)
@@ -110,7 +108,7 @@
     (syntax-parse stx
       ;; TODO: use literal-sets:
       #:literals (acc-array acc-array-ref : use
-                  map zipwith fold stencil3x3 generate
+                  map zipwith fold stencil3x3 generate replicate until
                   lambda let if vector vector-ref)
 
       [n:number  #'n]
@@ -149,8 +147,14 @@
       [(fold f e1 e2)    #`(fold    #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
       [(stencil3x3 f e1 e2) #`(stencil3x3 #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
 
+      [(until (var:id pred upd) bod)
+       (define newenv (extend-env (list #'var) env))
+       #`(until (var #,(verify-acc-helper #'pred newenv)
+                     #,(verify-acc-helper #'upd  newenv))
+                #,(verify-acc-helper #'bod newenv))]
+      
       [(if e1 e2 e3) #`(if #,(loop #'e1) #,(loop #'e2) #,(loop #'e3))]
-
+       
       [#(e* ...)
        ; #`#( #,@(map loop (syntax->list #'(e* ...))) )
        (datum->syntax #'(e* ...) (list->vector (r:map loop (syntax->list #'(e* ...)))))]
@@ -217,7 +221,7 @@
 
       ;; If we somehow mess up the imports we can end up with one of the keywords UNBOUND:
       [keywd:id
-       #:when (and (not (identifier-binding #'x))
+       #:when (and ; (not (identifier-binding #'x)) ;; FIXME: need to keep an Env.
                    (memq (syntax->datum #'keywd)
                          acc-keywords-sexp-list))
        (raise-syntax-error

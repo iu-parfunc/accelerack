@@ -379,32 +379,33 @@
 ;; error messages.  Specifically, it is better to highlight the
 ;; argument of the wrong type than to highlight the whole application.
 ;;
-(define (gentle-unify-arrow fnty fnstx args ret)
-  #; (-> instantiated-type? syntax?
+(define/contract (gentle-unify-arrow fnty fnstx args ret)
+  (-> instantiated-type? syntax?
       (listof (cons/c instantiated-type? (or/c syntax? #f)))
       (cons/c instantiated-type? (or/c syntax? #f))
       instantiated-type?)
   (define target `(-> ,@(map car args) ,(car ret)))
-  ;; SIMPLEST implementation, with less good errors:
-  (unify-types fnstx target fnty)
-  #;
+  ;; Option (1), SIMPLEST implementation, with worse errors:
+  ; (unify-types fnstx target fnty)
+  ;; Option (2):
   (begin
-    (define (helper expected pr)
-      (match-let ([ (cons rcvd stx) pr])
-        (unify-types (or stx fnstx) rcvd expected)))
+    (define (helper msg)
+      ;; FIXME: Pass more context info / extra messages to unify-types:
+      (lambda (expected pr)
+        ;; One option is to print and rethrow, but better to pass to unify.
+        #; (with-handlers ([exn:fail?
+                            (lambda (exn)
+                              (fprintf (current-error-port) msg)
+                              (raise exn))]) ...)
+        (match-let ([ (cons rcvd stx) pr])
+          (unify-types (or stx fnstx) rcvd expected))))
    (match fnty
     [`(-> ,e* ... ,en)
-     ;; FIXME: Pass more context info / extra messages to unify-types:
-     (with-handlers
-       () #;([exn:fail?
-         (lambda (exn)
-           (fprintf (current-error-port)
-                    "Type Error: Function argument did not have expected type.\n")
-           (raise exn))])
-       (for-each helper e* args))
-     (helper en ret)]
+     (for-each (helper "Function argument did not have expected type.\n")
+               e* args)
+     ((helper "Function return value did not have expected type.\n") en ret)]
     ;; Here, there won't be any argument-level errors:
-    [(? tyvar) (unify-types fnstx target fnty)]
+    [(? tyvar?) (unify-types fnstx target fnty)]
     [else
      (raise-syntax-error
       'unify-types

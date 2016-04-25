@@ -1,11 +1,13 @@
 #lang racket
 
-(require accelerack)
-(require accelerack/private/passes/typecheck)
-(require accelerack/private/wrappers)
-(require accelerack/private/syntax-table)
-(require accelerack/private/front-end)
-(require rackunit)
+(require accelerack
+         accelerack/private/passes/typecheck
+         accelerack/private/wrappers
+         accelerack/private/syntax-table
+         accelerack/private/types
+         accelerack/private/front-end)
+(require rackunit
+         syntax/macro-testing)
 
 (define (typeit x)
   (define-values (ty _) (typecheck-expr (snap-as-list) x))
@@ -14,31 +16,35 @@
 (check-equal? (typeit #'(lambda ((x : #(Int Double Bool))) (vector-ref x 2)))
               '(-> #(Int Double Bool) Bool))
 
-(test-case ""
-           (match (typeit #'(lambda ((x : #(a b c))) (vector-ref x 2)))
-             [`(-> #(,a ,b ,c1) ,c2) #:when (eq? c1 c2)
-                                   (void)]
-             [else (error 'test "bad result")]))
+(test-true "polymorphic vector ref 1"
+  (match (typeit #'(lambda ((x : #(a b c))) (vector-ref x 2)))
+    [`(-> #(,a ,b ,c1) ,c2) #:when (eq? c1 c2)
+     #t]))
 
-;; This one currently should fail:
-; (typecheck-expr (snap-as-list) #'(lambda (x) (vector-ref x 2)))
-; typecheck: This is expected to have a vector type of known length, instead found: a1 in: x
+(test-true "polymorphic vector ref 2"
+   (match (typeit #'(lambda ((x : #(a a a))) (vector-ref x 2)))
+     [`(-> #(,a ,a ,a) ,a) #t]))
 
+(test-exn "ambiguous vector len"
+   #rx"of known length"
+   (lambda ()
+     (convert-compile-time-error
+      (let ()
+        (typeit  #'(lambda (x) (vector-ref x 2)))))))
 
-;; Oops looks like there are bugs in instantiation.  These should work:
+(check-exn
+ #rx"rigid"
+ (lambda ()
+   (convert-compile-time-error
+    (typeit #'(lambda ((x : #(a a a))) (+ 1 (vector-ref x 2)))))))
 
-; (typecheck-expr (snap-as-list) #'(lambda ((x : #(a a a))) (+ 1 (vector-ref x 2))))
+(test-equal? "monomorphic lambda"
+             (typeit #'(lambda (x) (+ 5 x)))
+             '(-> Int Int))
 
-; (typecheck-expr (snap-as-list) #'(lambda ((x : #(a b c))) (+ 1 (vector-ref x 2))))
-#|
-unify-types: Conflicting types.
-Found: Int
-Expected: c3
- in: (+ 1 (vector-ref x 2))
-|#
-
-
-; (typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
+(test-true "polymorphic lambda"
+  (match (typeit #'(lambda (x) (+ x x)))
+    [`(-> ,n ,n) #:when (numeric-type-var? n) #t]))
 
 (check-equal? (typeit #'(let ([x 3]) (+ 5 x)))     'Int)
 (check-equal? (typeit #'(let ([x #t]) (+ 5 9)))    'Int)
@@ -48,7 +54,6 @@ Expected: c3
 
 (check-equal? (typeit #'(acc-array-ref (acc-array ((9.9))) 0 0))
               'Double)
-
 
 ; (acc-echo-types)
 (test-case "check type inferred for colarray->vec4array"
@@ -68,14 +73,17 @@ Expected: c3
      (void)]
     [oth (error 'failed-test "unexpected result: ~a" oth)]))
 
-(define-acc (dot (v1 : #(Double Double Double))
-                 (v2 : #(Double Double Double)))
-  (+ (* (vector-ref v1 0)
-        (vector-ref v2 0))
-     (+ (* (vector-ref v1 1)
-           (vector-ref v2 1))
-        (* (vector-ref v1 2)
-           (vector-ref v2 2)))))
+(test-case "dot"  
+  (define-acc (dot (v1 : #(Double Double Double))
+                   (v2 : #(Double Double Double)))
+    (+ (* (vector-ref v1 0)
+          (vector-ref v2 0))
+       (+ (* (vector-ref v1 1)
+             (vector-ref v2 1))
+          (* (vector-ref v1 2)
+             (vector-ref v2 2)))))
+  (check-equal? (type-of dot)
+                '(-> #(Double Double Double) #(Double Double Double) Double)))
 
 (test-case "fold2d"
   (define-acc (fold2d f z (a : (Array 2 Double)))

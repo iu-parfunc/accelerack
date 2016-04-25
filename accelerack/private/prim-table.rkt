@@ -61,11 +61,15 @@
    #'min  '(-> num_a num_a num_a)
    #'max  '(-> num_a num_a num_a)
 
-   #'modulo  '(-> Int Int Int)
+   #'modulo    '(-> Int Int Int)
+   #'quotient  '(-> Int Int Int)
+   #'remainder '(-> Int Int Int)
 
    ;; TODO Trig functions.
    
-   #'round  '(-> Double Int)
+   #'round   '(-> Double Int)
+   #'ceiling '(-> Double Int)
+   #'floor   '(-> Double Int)
    #'exact->inexact  '(-> Int Double)
    
    #'map  '(-> (-> a b) (Array n a) (Array n b))

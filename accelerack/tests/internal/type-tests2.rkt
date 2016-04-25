@@ -40,17 +40,11 @@ Expected: c3
 
 ; (typecheck-expr (snap-as-list) #'(lambda (x) (+ 5 x)))
 
-(check-equal? (typeit #'(let ([x 3]) (+ 5 x)))
-              'Int)
-(check-equal? (typeit #'(let ([x #t]) (+ 5 9)))
-              'Int)
-
-;; FIXME: spurious error:
-(typeit #'(if #t 5 9))
-
-; (typeit #'(let ([x #t]) (if x x x)))
-
-; (typeit #'(let ([x : Bool #t]) (if x x x)))
+(check-equal? (typeit #'(let ([x 3]) (+ 5 x)))     'Int)
+(check-equal? (typeit #'(let ([x #t]) (+ 5 9)))    'Int)
+(check-equal? (typeit #'(if #t 5 9))               'Int)
+(check-equal? (typeit #'(let ([x #t]) (if x x x))) 'Bool)
+(check-equal? (typeit #'(let ([x : Bool #t]) (if x x x))) 'Bool)
 
 (check-equal? (typeit #'(acc-array-ref (acc-array ((9.9))) 0 0))
               'Double)
@@ -72,12 +66,7 @@ Expected: c3
       (map helper2 arr)))
 
   ;; FIXME: Make sure this has the right type:
-  #;
   (match (type-of colarray->vec4array)
     [`(-> (Array ,n #(Int Int Int)) (Array ,n #(Int Int Int Int)))
      (void)]
-    [else (error 'failed-test)])
-
-  (void)
-)
-
+    [oth (error 'failed-test "unexpected result: ~a" oth)]))

@@ -4,7 +4,7 @@
 ;; The syntax-capture and verification step.
 ;; ---------------------------------------------------------------
 
-(provide define-acc
+(provide define-acc type-of
          ; acc ;; Not exposing this yet.
          run-gpu
          snapshot-current-acc-syn-table
@@ -103,6 +103,13 @@
                                          (format "caught error during compilation:\n\n~a\n" exn)
                                          stx))])
        (create-binding! #'f #f #'(lambda (x ...) e)))]))
+
+
+(define-syntax (type-of stx)
+  (syntax-parse stx
+    [(_ bod)
+     (let-values ([(_ inferredTy __ ___) (front-end-compiler #'bod)])
+       #`(quote #,(datum->syntax stx inferredTy)))]))
 
 
 ; --------------------------------------------------------------------------------

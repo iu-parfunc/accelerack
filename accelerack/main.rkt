@@ -62,7 +62,7 @@
     acc-echo-types
     ; echo-types-param ;; Exporting, but only for macro-expansion, not for end users.
     
-    define-acc run-gpu
+    define-acc type-of ; run-gpu
     Int Bool Double Array
 
     ;; Other keywords

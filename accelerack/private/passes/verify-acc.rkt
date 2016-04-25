@@ -249,7 +249,7 @@
         [else
          (raise-syntax-error
           'error
-          (format "\n Regular Racket bound variable used in Accelerack expression: ~a.\n If it is an array variable, maybe you meant (use ~a)?"
+          (format "\n Regular Racket bound variable used in Accelerack expression: ~a.\n If it is an array variable, maybe you meant (use ~a <type>)?"
                   (syntax->datum #'x) (syntax->datum #'x))
           )])]
       ;; --------------------------------------------------------------------------------

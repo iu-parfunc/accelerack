@@ -45,6 +45,12 @@
    #'sub1 '(-> num_a num_a)
    #'sqrt '(-> num_a num_a)
    #'abs  '(-> num_a num_a)
+
+   #'min  '(-> num_a num_a num_a)
+   #'max  '(-> num_a num_a num_a)
+
+   #'round  '(-> Double Int)
+   #'exact->inexact  '(-> Int Double)
    
    #'map  '(-> (-> a b) (Array n a) (Array n b))
 

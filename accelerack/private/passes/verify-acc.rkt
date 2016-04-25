@@ -141,7 +141,23 @@
       ;; Here these array ops are treated as special forms, not functions.
       [(generate f es ...)
        #`(generate #,(loop #'f) #,@(r:map loop (syntax->list #'(es ...))))]
-
+      [(replicate (v* ...) (e* ...) arr)
+       (define newArr (loop #'arr))
+       (define vs (syntax->list #'(v* ...)))
+       (define es (syntax->list #'(e* ...)))
+       (define valid (and
+		      (andmap identifier? vs)
+		      (andmap (lambda (e) (or (number? (syntax->datum e))
+					      (identifier? e)))
+			      es)))
+       ;; TODO: actually verify identifiers (look up in env, etc)
+       (if valid
+	   #`(replicate #,vs #,es #,newArr)
+	   (raise-syntax-error
+	    'error
+	    "Invalid patterns for replicate" #'stx))]
+	   
+						  
       [(map f e) #`(map #,(loop #'f) #,(loop #'e))]
       [(zipwith f e1 e2) #`(zipwith #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]
       [(fold f e1 e2)    #`(fold    #,(loop #'f) #,(loop #'e1) #,(loop #'e2))]

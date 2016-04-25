@@ -1,5 +1,5 @@
 
-VER=v0.2
+VER=v0.4
 
 SERVER=tank.cs.indiana.edu
 SERVER_USER=rrnewton
@@ -7,6 +7,7 @@ SERVER_PATH=/l/html/homes.soic.indiana.edu/classes/spring2016/csci/h211-rrnewton
 
 .PHONY: all build send
 
+default: build
 all: build send
 
 build:

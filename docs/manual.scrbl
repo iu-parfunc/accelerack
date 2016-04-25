@@ -1,10 +1,10 @@
 #lang scribble/manual
 
-@(require (for-label (except-in racket map)
+@(require (for-label (except-in racket map sqrt)
                      accelerack
                      2htdp/image))
 
-@title{Data-Parallel Programming with Accelerack (v0.2)}
+@title{Data-Parallel Programming with Accelerack (v0.4)}
 
 In this course we are using a library called @racket[accelerack],
 which allows you to use Racket to do data-parallel programming
@@ -127,21 +127,8 @@ Note that the s-expression uses the same format as the @racket{acc-array} syntax
 (acc-array->sexp x)
 ]
 
+@; TODO: sexp->acc-array
 
-@;{
-@; -------------------------------------------------------
-@section[#:tag "computations"]{Accelerack Computations}
-
-@defform*[((define-acc (name args ...) body)
-           (define-acc name expr))]
-
-Define an Accelerack computation, either a function or expression.
-
-@defproc[(use [any any?]) acc-array?]
-
-Take a Racket value and make it an Accelerack value. This is done
-automatically in some cases by @racket[define-acc].
-}
 
 @; -------------------------------------------------------
 @section[#:tag "functions"]{Building Arrays}
@@ -231,6 +218,9 @@ Currently, valid boundary conditions have the form:
 
 where @racket[(acc-element? v)].
 
+@; TODO: replicate
+
+@; TODO: until
 
 @; -------------------------------------------------------
 @section[#:tag "functions"]{Image functions}
@@ -268,3 +258,29 @@ The following functions provide convenient conversions:
 Note that @racket[acc-element->color] does not work for @emph{any}
 element, rather it must specifically be a vector of four integers
 between 0 and 255.
+
+
+@; -------------------------------------------------------
+@section[#:tag "computations"]{Typed Accelerack Computations}
+
+@defform*[((define-acc (name args ...) body)
+           (define-acc name expr))]
+
+Define an Accelerack computation, either a function or expression.
+
+@defproc[(use [any any?]) acc-array?]
+
+Take a Racket value and make it an Accelerack value. This is done
+automatically in some cases by @racket[define-acc].
+
+
+@; Talk a LOT more about how to write types.
+
+@; TODO: Incorporate full grammar here!
+
+
+@; -------------------------------------------------------
+@section[#:tag "debugging"]{Debugging Accelerack}
+
+@; acc-echo-types
+@; type-of

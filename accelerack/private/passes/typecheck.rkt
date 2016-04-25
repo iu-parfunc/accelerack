@@ -277,7 +277,7 @@
 ;; numeric-only (num_) type variable.
 (define (set-tyvar! ctxt t1 rhs)
   (define rhs-coll (collapse rhs))
-  ; (printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
+  ;(printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
   (when (and (tyvar-numeric t1)
              (not (or (acc-num-type? rhs-coll)
                       ;; It is OK to equate with a non-numeric type var..
@@ -329,10 +329,12 @@
                          (unify-types ctxt e1 e2))])]
        
     [(`(-> ,as ...) `(-> ,bs ...))
+     #:when (= (length as) (length bs))
      `(-> ,@(for/list ([a as] [b bs])
               (unify-types ctxt a b)))]
     
     [((vector as ...) (vector bs ...))
+     #:when (= (length as) (length bs))
      (for/vector ([a as] [b bs])
        (unify-types ctxt a b))]
     

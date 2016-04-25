@@ -7,6 +7,7 @@
 (require accelerack/private/front-end)
 (require rackunit)
 
+#|
 (define (typeit x)
   (define-values (ty _) (typecheck-expr (snap-as-list) x))
   ty)
@@ -55,7 +56,6 @@ Expected: c3
   (define-acc (col-r (v : #(Int Int Int))) (vector-ref v 0))
   (define-acc (col-g (v : #(Int Int Int))) (vector-ref v 1))
   (define-acc (col-b (v : #(Int Int Int))) (vector-ref v 2))
-  
   (define-acc (colarray->vec4array arr)
     (let ([helper2
            (lambda ((c : #(Int Int Int)))
@@ -64,9 +64,17 @@ Expected: c3
                      (col-b c)
                      255))])
       (map helper2 arr)))
-
-  ;; FIXME: Make sure this has the right type:
   (match (type-of colarray->vec4array)
     [`(-> (Array ,n #(Int Int Int)) (Array ,n #(Int Int Int Int)))
      (void)]
     [oth (error 'failed-test "unexpected result: ~a" oth)]))
+
+|#
+(define-acc (dot (v1 : #(Double Double Double))
+                 (v2 : #(Double Double Double)))
+  (+ (* (vector-ref v1 0)
+        (vector-ref v2 0))
+     (+ (* (vector-ref v1 1)
+           (vector-ref v2 1))
+        (* (vector-ref v1 2)
+           (vector-ref v2 2)))))

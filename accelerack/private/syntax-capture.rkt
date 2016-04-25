@@ -42,7 +42,7 @@
     (let-values ([(stripped inferredTy progWithTys normalized-sexp) (front-end-compiler bod)])
       (define finalTy (apply-to-syn-table maybeType inferredTy name progWithTys))
       (when (echo-types-param)
-        (printf " define-acc ~a : ~a\n" (syntax->datum name) finalTy))      
+        (printf " define-acc ~a : ~a\n" (syntax->datum name) finalTy))
       (match finalTy
         ;; TODO: Need support for delayed scalars:
         ; #`(define #,name (make-acc-scalar (acc-delayed-scalar (lambda () #,stripped))))        

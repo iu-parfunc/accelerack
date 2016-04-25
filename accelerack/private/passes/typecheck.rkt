@@ -212,10 +212,9 @@
 (define (free-vars ty)
   (match ty
     [(? tyvar?)
-     (set-add (if (tyvar-ptr ty)
-                  (free-vars (tyvar-ptr ty))
-                  empty-set)
-              (tyvar-name ty))]
+     (if (tyvar-ptr ty)
+         (free-vars (tyvar-ptr ty)) ;; Not free, bound.
+         (set-add empty-set (tyvar-name ty)))]
     [elt #:when (acc-element-type? elt)            empty-set]
     [num #:when (exact-nonnegative-integer? num)   empty-set]
     [`(Array ,n ,elt) (set-union (free-vars n) (free-vars elt))]
@@ -267,7 +266,7 @@
       (or (tyvar-numeric t)
           (is-numeric? (tyvar-ptr t)) ;; This should be redundant.
           )
-      #f))
+      (acc-num-type? t)))
 
 (define (make-numeric! t)
   (when (and t (tyvar? t))
@@ -277,21 +276,21 @@
 ;; Safely set a type variable while respecting whether or not it is a
 ;; numeric-only (num_) type variable.
 (define (set-tyvar! ctxt t1 rhs)
-  (define rhs2 (collapse rhs))
-  ;(printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
+  (define rhs-coll (collapse rhs))
+  ; (printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
   (when (and (tyvar-numeric t1)
-             (not (or (acc-num-type? rhs2)
+             (not (or (acc-num-type? rhs-coll)
                       ;; It is OK to equate with a non-numeric type var..
                       ;; We defer judgement.
-                      (type-var-symbol? rhs2))))
+                      (type-var-symbol? rhs-coll))))
     (raise-syntax-error
      'unify-types
      (format "error\n  Expected a numeric type, instead found ~a" (show-type rhs))
      ctxt))
 
   ;; Propagate numeric-ness in both directions:
-  (when (is-numeric? rhs) (set-tyvar-numeric! t1 #t))
-  (when (tyvar-numeric t1) (make-numeric! rhs))
+  (when (or (is-numeric? rhs) (tyvar-numeric t1))
+    (make-numeric! t1))
   (set-tyvar-ptr! t1 rhs))
   
 ;; instantiated-type? instantiated-type? -> instantiated-type?
@@ -729,6 +728,7 @@
 (define/contract (instantiate-scheme scheme)
   (-> type-schema? instantiated-type?)
   (match-define (type-schema vars monoty) scheme)
+  ;; Inefficient: repeated subst:
   (for/fold ([ty monoty])
             ([q  vars])
     (define fresh (fresh-tyvar q))
@@ -762,13 +762,14 @@
     [(? acc-scalar-type?)           ty]
     [(? exact-nonnegative-integer?) ty]
     [(? tyvar?)
-     ; (when (tyvar-ptr ty) (set-tyvar-ptr! ty (go (tyvar-ptr ty))))
-     (if (eq? (tyvar-name ty) var)
-         new
-         ;; Allow subst to short-circuit:         
-         (if (tyvar-ptr ty)
-             (go (tyvar-ptr ty))
-             ty))]
+     (cond
+       ;; Warning we should probably NOT ever subst on a bound var:     
+       [(and (tyvar-ptr ty) (eq? (tyvar-name ty) var))
+        (error 'subst "internal error, attempt to substitute *bound* tyvar ~a" var)]
+       [(eq? (tyvar-name ty) var) new]
+       ;; Allow subst to short-circuit for the returned type:
+       [(tyvar-ptr ty) (go (tyvar-ptr ty))]
+       [else ty])]
     [else (error 'subst "error, invalid type: ~a\n" ty)]
     ))
 

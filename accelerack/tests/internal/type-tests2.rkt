@@ -54,3 +54,30 @@ Expected: c3
 
 (check-equal? (typeit #'(acc-array-ref (acc-array ((9.9))) 0 0))
               'Double)
+
+
+; (acc-echo-types)
+(test-case "check type inferred for colarray->vec4array"
+  (define-acc (col-r (v : #(Int Int Int))) (vector-ref v 0))
+  (define-acc (col-g (v : #(Int Int Int))) (vector-ref v 1))
+  (define-acc (col-b (v : #(Int Int Int))) (vector-ref v 2))
+  
+  (define-acc (colarray->vec4array arr)
+    (let ([helper2
+           (lambda ((c : #(Int Int Int)))
+             (vector (col-r c)
+                     (col-g c)
+                     (col-b c)
+                     255))])
+      (map helper2 arr)))
+
+  ;; FIXME: Make sure this has the right type:
+  #;
+  (match (type-of colarray->vec4array)
+    [`(-> (Array ,n #(Int Int Int)) (Array ,n #(Int Int Int Int)))
+     (void)]
+    [else (error 'failed-test)])
+
+  (void)
+)
+

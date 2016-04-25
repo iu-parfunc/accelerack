@@ -61,7 +61,9 @@
    #'min  '(-> num_a num_a num_a)
    #'max  '(-> num_a num_a num_a)
 
-   #'modulo  '(-> Int Int Int)
+   #'modulo    '(-> Int Int Int)
+   #'quotient  '(-> Int Int Int)
+   #'remainder '(-> Int Int Int)
 
    ;; TODO Trig functions.
    

@@ -118,9 +118,9 @@ Valid indices are thus between 0 and @racket[acc-array-size] minus 1.
 
 Arrays can be converted into ordinary Racket s-expressions.
 The result is a nested series of lists, with nesting depth equal to the dimension of the array.
-The element values will all satisfy @racket{acc-element?}.
+The element values will all satisfy @racket[acc-element?].
 
-Note that the s-expression uses the same format as the @racket{acc-array} syntax for constructing literal arrays.
+Note that the s-expression uses the same format as the @racket[acc-array] syntax for constructing literal arrays.
 
 @racketblock[
 (define x (acc-array 15))
@@ -128,6 +128,20 @@ Note that the s-expression uses the same format as the @racket{acc-array} syntax
 ]
 
 @; TODO: sexp->acc-array
+
+@defproc[(sexp->acc-array [sexp sexp?]) acc-array?]
+
+Converts Racket s-expressions to acc-arrays where sexps
+The input should consist of nested series of lists, with nesting depth equal to the dimension of the array.
+The element values should satisfy @racket[acc-element?]
+
+@racketblock[
+(sexp->acc-array '1)
+(sexp->acc-array '(1 2 4))
+(sexp->acc-array '(#(1) #(2)))
+]
+
+Note that the s-expression uses the same format as the @racket[acc-array] syntax for constructing literal arrays.
 
 
 @; -------------------------------------------------------

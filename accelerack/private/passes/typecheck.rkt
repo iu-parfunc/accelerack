@@ -32,11 +32,11 @@
          (only-in accelerack/private/syntax acc-array : use acc-primop-types acc-primop
                   acc-lambda-param acc-type acc-element-literal acc-let-bind)
          (only-in accelerack/private/wrappers acc-array-ref acc-array-flatref
-                  zipwith fold stencil3x3 generate replicate)
+                  zipwith fold stencil3x3 generate replicate until)
 
          (for-template (except-in racket/base map))
          (for-template (only-in accelerack/private/wrappers acc-array-ref
-                                map zipwith fold stencil3x3 generate replicate))
+                                map zipwith fold stencil3x3 generate replicate until))
          (for-template (only-in accelerack/private/syntax acc-array : use
                                 acc-lambda-param acc-type))
          )
@@ -155,7 +155,7 @@
           [#f
            (raise-syntax-error
             #f
-            (format "Attempt to reference unbound variable ~a inside accelerack code.\n"
+            (format "Attempt to reference unbound variable (in type environment), '~a', inside accelerack code.\n"
                     (syntax->datum var)))]))))
 
 (define (tenv-set te k v)
@@ -457,7 +457,7 @@
   (syntax-parse stx
     #:literals (use acc-array acc-array-ref :
                 ;; FIXME: some of these can just be removed when they go to the prim table:
-                map zipwith fold stencil3x3 generate replicate
+                map zipwith fold stencil3x3 generate replicate until
                 lambda let if vector vector-ref)
 
     ;; Literal data:
@@ -590,6 +590,16 @@
      (values (make-array-type (length es) res)
 	     #`(generate #,fnew #,@news))]
 
+    [(until (var init pred) bod)
+     (define-values (stateTy newinit) (infer #'init tenv))
+     (define tenv2 (tenv-set tenv #'var (make-mono-schema stateTy)))
+     (define-values (predty newpred) (infer #'pred tenv2))
+     (define-values (bodty  newbod)  (infer #'bod tenv2))
+     (unify-types #'pred predty 'Bool)
+     (define stateTy2 (unify-types #'bod bodty stateTy))
+     (values stateTy
+             #`(until (var #,newinit #,newpred) #,newbod))]
+    
     ;; Replicate gets its own typing judgement.
     [(replicate (v* ...) (e* ...) arr)
      (define-values (arrty newArr) (infer #'arr tenv))

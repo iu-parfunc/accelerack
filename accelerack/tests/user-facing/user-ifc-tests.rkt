@@ -87,6 +87,13 @@
                                  (add1 i)))))
              10)
 
+(test-case "acc: until"
+   (define-acc arr
+     (generate (lambda ()
+                 (until (i 1 (= i 10))
+                        (add1 i)))))
+   (check-equal? arr (acc-array 10)))
+
 (test-case "auntil"
            (define arr (acc-array (1 1 1)))
            (define arr2 (auntil (a arr (acc-array=? (fold + 0 a) (acc-array 9)))

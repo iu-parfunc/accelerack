@@ -70,3 +70,20 @@
 ;   (col-r (vector 1 2 3)))
 
 
+;; FIXME: here too weak of a type was inferred:
+;;  (-> (Array n8 a6) (Array n8 #(res39 res410 res511 Int)))
+;; For the definition:
+; (acc-echo-types)
+#; 
+(test-case ""
+  (define-acc (col-r (v : #(Int Int Int))) (vector-ref v 0))
+  (define-acc (col-g (v : #(Int Int Int))) (vector-ref v 1))
+  (define-acc (col-b (v : #(Int Int Int))) (vector-ref v 2))
+  (define-acc (colarray->vec4array arr)
+    (let ([helper2
+           (lambda ((c : #(Int Int Int)))
+             (vector (col-r c)
+                     (col-g c)
+                     (col-b c)
+                     255))])
+      (map helper2 arr))))

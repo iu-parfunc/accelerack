@@ -55,12 +55,16 @@
    
    #'add1 '(-> num_a num_a)
    #'sub1 '(-> num_a num_a)
-   #'sqrt '(-> num_a Double)
    #'abs  '(-> num_a num_a)
-
+   #'sqrt '(-> num_a Double)
+   
    #'min  '(-> num_a num_a num_a)
    #'max  '(-> num_a num_a num_a)
 
+   #'modulo  '(-> Int Int Int)
+
+   ;; TODO Trig functions.
+   
    #'round  '(-> Double Int)
    #'exact->inexact  '(-> Int Double)
    
@@ -68,7 +72,6 @@
 
    #'zipwith '(-> (-> a b c) (Array n a) (Array n b) (Array n c))
    
-   ; #'sub1 #'+ #'* #'/ #'-    
    ))
 
     ;; ;; Shorthands for convenience and simplicity:

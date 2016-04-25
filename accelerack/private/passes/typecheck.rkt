@@ -368,7 +368,9 @@
     [(`(Array ,n1 ,e1) `(Array ,n2 ,e2))
      (make-array-type (unify-types (cons "Dimensions of arrays must match.\n" msg)
                                    ctxt n1 n2)
-                      (unify-types (cons "Element types of arrays must match.\n" msg)
+                      (unify-types (cons (format "Element types of arrays must match, found: ~a and ~a\n"
+                                                 (export-type e1) (export-type e2))
+                                         msg)
                                    ctxt e1 e2))
      #; (match/values (values (collapse n1) (collapse n2))
        ;; Attempt to improve error messages here:
@@ -381,7 +383,8 @@
      (define blen (length bs))
      `(-> ,@(for/list ([a as] [b bs] [ix (in-naturals)])
               (unify-types (cons (if (= ix (sub1 blen))
-                                     "Return values of function types must match.\n"
+                                     (format "Return values of function types must match: ~a and ~a\n"
+                                             (export-type a) (export-type b))
                                      (format "Argument position ~a must match ~a"
                                              ix "between arrow types (starting with 0)\n"))
                                  msg)

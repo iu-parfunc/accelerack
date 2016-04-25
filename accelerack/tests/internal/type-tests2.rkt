@@ -7,7 +7,6 @@
 (require accelerack/private/front-end)
 (require rackunit)
 
-#|
 (define (typeit x)
   (define-values (ty _) (typecheck-expr (snap-as-list) x))
   ty)
@@ -69,7 +68,6 @@ Expected: c3
      (void)]
     [oth (error 'failed-test "unexpected result: ~a" oth)]))
 
-|#
 (define-acc (dot (v1 : #(Double Double Double))
                  (v2 : #(Double Double Double)))
   (+ (* (vector-ref v1 0)
@@ -78,3 +76,10 @@ Expected: c3
            (vector-ref v2 1))
         (* (vector-ref v1 2)
            (vector-ref v2 2)))))
+
+(test-case "fold2d"
+  (define-acc (fold2d f z (a : (Array 2 Double)))
+    (fold f z (fold f z a)))
+  (check-equal?
+   (type-of fold2d)
+   '(-> (-> Double Double Double) Double (Array 2 Double) (Array 0 Double))))

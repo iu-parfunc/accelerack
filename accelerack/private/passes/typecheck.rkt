@@ -249,9 +249,12 @@
          (tenv-set env v (generalize empty-tenv ty))])))
   ;; Rip out the type variable stuff:
   (define-values (ty e2) (infer e env1))
+  (define ty2 (collapse ty))
   (pass-output-chatter 'typecheck-expr
-                       (list ': (syntax->datum e2) ty))
-  (values (collapse ty) e2))
+                       (list 'expr: (syntax->datum e2)
+                             'type: ty
+                             'collapsed: ty2))
+  (values ty2 e2))
 
 
 ;; Put a type into a human-readable form for error messages.
@@ -610,16 +613,15 @@
     [(fold f zer arr)
      (define-values (arrty newArr) (infer #'arr tenv))
      (define-values (fty newF)     (infer #'f   tenv))
-     (define-values (zerty newZer) (infer #'zer tenv))
+     (define-values (elt newZer) (infer #'zer tenv))
 
      (define ntv (fresh-tyvar 'n))
-     (define elt (fresh-tyvar))
-     
+
      (gentle-unify-arrow fty #'f
-                         `((,zerty . ,#'zer)
-                           (,zerty . ,#'zer))
-                         `(,zerty . ,#'zer))
-     (unify-types #'arr arrty `(Array ,ntv ,elt))
+                         `((,elt . ,#'zer)
+                           (,elt . ,#'zer))
+                         `(,elt . ,#'zer))
+     (unify-types #'arr arrty `(Array ,ntv ,elt)) ;; For side effect on ntv.
 
      ;; FIXME: We should defer the final check that the dimensions are concrete.
      ;; Otherwise, whether it works can depend on the order of type inference.

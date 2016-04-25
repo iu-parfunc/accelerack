@@ -158,9 +158,9 @@
             (format "Attempt to reference unbound variable ~a inside accelerack code.\n"
                     (syntax->datum var)))]))))
 
-(define/contract (tenv-set te k v)
+(define (tenv-set te k v)
   ;; These are type-schemas:
-  (-> dict? identifier? type-schema? dict?)
+  ; (-> dict? identifier? type-schema? dict?)
   (dict-set te k v))
 
 (define (tenv-free-vars te)
@@ -185,18 +185,34 @@
   (string->symbol (string-append (symbol->string a) (symbol->string b))))
 
 ;; Remove type variables:
-;; TyInst -> MonoTy (i.e. acc-type?)
+;; instantiated-type? -> acc-type?
+(define (export-type ty)
+  (match ty
+    [(? tyvar?)     
+     (if (tyvar-ptr ty)
+         (export-type (tyvar-ptr ty))
+         (export-tyvar ty))]
+    [(? integer?) ty] ;; type-level lits
+    [(? symbol?) ty]
+    [`(Array ,n ,elt) (make-array-type (export-type n) (export-type elt))]
+    [`#( ,t* ...)     (list->vector (map export-type t*))]
+    [`(-> ,t* ...)   `(-> ,@(map export-type t*))]
+    [(? acc-scalar-type?)           ty]
+    [(? exact-nonnegative-integer?) ty]))
+
+;; Short-circuit paths through type-variables.
+;; Leave free type variables alone.
+;; instantiated-type? -> instantiated-type?
 (define (collapse ty)
   (match ty
     [(? tyvar?)     
      (if (tyvar-ptr ty)
          ;; policy: if its a chain of variables, which name to use?
          (collapse (tyvar-ptr ty))
-         (export-tyvar ty))]
+         ty)]
     [(? integer?) ty] ;; type-level lits
     [(? symbol?) ty]
-    [`(Array ,n ,elt)
-     (make-array-type (collapse n) (collapse elt))]
+    [`(Array ,n ,elt) (make-array-type (collapse n) (collapse elt))]
     [`#( ,t* ...)     (list->vector (map collapse t*))]
     [`(-> ,t* ...)   `(-> ,@(map collapse t*))]
     [(? acc-scalar-type?)           ty]
@@ -249,17 +265,17 @@
          (tenv-set env v (generalize empty-tenv ty))])))
   ;; Rip out the type variable stuff:
   (define-values (ty e2) (infer e env1))
-  (define ty2 (collapse ty))
+  (define ty2 (export-type ty))
   (pass-output-chatter 'typecheck-expr
                        (list 'expr: (syntax->datum e2)
                              'type: ty
-                             'collapsed: ty2))
+                             'exported/collapsed: ty2))
   (values ty2 e2))
 
 
 ;; Put a type into a human-readable form for error messages.
 (define (show-type ty)
-  (match (collapse ty)
+  (match (export-type ty)
     [(? type-var-symbol? s)
      (format "type variable '~a'" s)]
     [oth (format "~a" oth)]))
@@ -280,15 +296,17 @@
 ;; numeric-only (num_) type variable.
 (define (set-tyvar! ctxt t1 rhs)
   (define rhs-coll (collapse rhs))
-  ;(printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
+;  (printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
   (when (and (tyvar-numeric t1)
              (not (or (acc-num-type? rhs-coll)
                       ;; It is OK to equate with a non-numeric type var..
                       ;; We defer judgement.
-                      (type-var-symbol? rhs-coll))))
+                      (tyvar? rhs-coll)
+                      (numeric-type-var? rhs-coll))))
     (raise-syntax-error
      'unify-types
-     (format "error\n  Expected a numeric type, instead found ~a" (show-type rhs))
+     (format "error\n  Expected a numeric type, instead found ~a"
+             (show-type rhs))
      ctxt))
 
   ;; Propagate numeric-ness in both directions:
@@ -321,15 +339,13 @@
      t2]
 
     [(`(Array ,n1 ,e1) `(Array ,n2 ,e2))
-
-     (match/values (values (collapse n1) (collapse n2))
+     (make-array-type (unify-types ctxt n1 n2)
+                      (unify-types ctxt e1 e2))
+     #; (match/values (values (collapse n1) (collapse n2))
        ;; Attempt to improve error messages here:
-       #;
        [((? number?) (? number?))
         (raise-syntax-error #f "")]
-       [(_ _)      
-        (make-array-type (unify-types ctxt n1 n2)
-                         (unify-types ctxt e1 e2))])]
+       [(_ _)  ...])]
        
     [(`(-> ,as ...) `(-> ,bs ...))
      #:when (= (length as) (length bs))
@@ -356,14 +372,14 @@
      (raise-syntax-error
       'unify-types
       (format "Found a rigid type variable ~a, whereas expected type ~a\n"
-              (collapse t1) (collapse t2))
+              (export-type t1) (export-type t2))
       ctxt)]
 
     [(_ (? type-var-symbol?)) #:when (not (equal? t1 t2))
      (raise-syntax-error
       'unify-types
       (format "Couldn't match type ~a against expected type, which was a rigid type variable ~a\n"
-              (collapse t1) (collapse t2))
+              (export-type t1) (export-type t2))
       ctxt)]
     
     [(_ _)
@@ -372,7 +388,7 @@
       (format (string-append "Conflicting types.\n"
                              "Found: ~a\n"
                              "Expected: ~a\n")
-              (collapse t1) (collapse t2))
+              (show-type t1) (show-type t2))
       ctxt)]))
 
 ;; A method of unifying an arrow type that yields better-localized
@@ -498,7 +514,6 @@
           (if (tyvar-ptr arrty)
               (loop (tyvar-ptr arrty))
               (error 'typecheck "Internal error in accelerack typecheck pass. Please report this."))]
-         
          [`(Array ,dim ,elt)
           (cond
             #;
@@ -529,7 +544,7 @@
                                      #'e1))])]
          [else
           (raise-syntax-error 'acc-array-ref
-            (format "array reference of non-array type ~a" ty1)
+            (format "array reference of non-array type, ~a" (show-type ty1))
             #'e1)]))]
 
     ;; Method one, don't match bad params:
@@ -545,7 +560,8 @@
        (for/list ([x xs] [infrd freshes]
                   [expected (syntax->datum #'(x.type ...))])
          (if expected
-             (unify-types x infrd (instantiate expected))
+             (unify-types x infrd
+                          (type-schema-monoty (generalize tenv expected)))
              infrd)))
 
      (define tenv2 (for/fold ([te tenv])
@@ -554,7 +570,7 @@
                      (tenv-set te x (make-mono-schema xty))))
      (define-values (tbod bod) (infer #'e tenv2))
      (define new-params (for/list ([x xs] [xty xtys])
-                          #`(#,x : #,(datum->syntax x (collapse xty)))))
+                          #`(#,x : #,(datum->syntax x (export-type xty)))))
      (values `(-> ,@xtys ,tbod)
              ;; TODO: must return annotated here:
              #`(lambda (#,@new-params) #,bod))]
@@ -641,7 +657,7 @@
                 (if (symbol? other)
                     (format "type variable, '~a'\n" other)
                     (format "unexpected type, '~a'\n" other))
-                (format "The input to fold had type: ~a" `(Array ,other ,(collapse elt)))
+                (format "The input to fold had type: ~a" `(Array ,other ,(export-type elt)))
                 )
                stx
                )])]
@@ -703,7 +719,7 @@
         (raise-syntax-error
          'typecheck
          (string-append "This is expected to have a vector type of known length, "
-                        (if (symbol? (collapse oth))
+                        (if (symbol? (export-type oth))
                             "instead found a vector of unknown length."
                             (format "instead found: ~a" (show-type oth))))
          #'e1)])]
@@ -721,13 +737,15 @@
     
      ))
 
-;; generalize: set(type var) -> type -> scheme
+;; generalize: set(type var) -> acc-type? -> type-schema?
 (define (generalize tenv mono)
   ;; Tyvars mentioned in the environment are "rigid" and NOT generalized.
   (define free-env (tenv-free-vars tenv))
-    ;; FIXME: this needs to take the environment free vars and set-difference it.
-  (make-type-schema (set-subtract (free-vars mono) free-env)
-                    mono))
+  (define quant (set-subtract (free-vars mono) free-env))
+  (make-type-schema quant
+                    (for/fold ([ty (collapse mono)])
+                              ([q quant])
+                      (subst ty q q))))
 
 ;; instantiate: scheme -> type
 (define/contract (instantiate-scheme scheme)
@@ -788,4 +806,12 @@
     (instantiate-scheme (make-type-schema (list->seteq '(a b))
                                           '(-> (-> a b) (Array n a) (Array n b))))
     (void))
-)
+
+  ;; Generalize could take instantiated types:
+  (check-true
+   (match (generalize empty-tenv
+                      (instantiate-scheme (generalize empty-tenv '#(a a))))
+     [(type-schema set (vector a a)) #:when (set-member? set a)
+      #t]))
+  
+  )

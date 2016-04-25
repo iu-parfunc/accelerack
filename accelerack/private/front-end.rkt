@@ -71,7 +71,8 @@
   (acc-syn-entry-type entry))
 
 (define (unify-monos ctxt t1 t2)
-  (collapse (unify-types ctxt (instantiate t1)
+  (collapse (unify-types ""
+                         ctxt (instantiate t1)
                          ;; Leaving these user type signatures uninstantiated makes
                          ;; the explicitly mentioned variabes rigid and enforces parametricity.
                          (freshen-type-vars t2)

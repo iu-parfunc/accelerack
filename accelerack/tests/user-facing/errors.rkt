@@ -63,7 +63,7 @@
 
 (test-case "sqr function with bad signature"
   (check-exn
-   #rx"rigid"
+   #rx"rigid" 
    (lambda ()
      (convert-compile-time-error
       (let ()
@@ -80,7 +80,7 @@
 
 (test-case "scalar definition / err"
   (check-exn
-   #rx"Bool"
+   #rx"Branches of an"
    (lambda ()
      (convert-compile-time-error
       (let ()
@@ -88,3 +88,6 @@
         (define-acc y (if #t x #t))
         (void))))))
 
+
+; (define-acc a2 (replicate (r c) (r (+ r 3) c)
+;                          (acc-array ((1 2) (3 4)))))

@@ -13,7 +13,8 @@
  (contract-out
   [typecheck-expr (-> (listof (cons/c identifier? acc-syn-entry?)) syntax?
                       (values acc-type? syntax?))]
-  [unify-types (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)]
+  [unify-types (-> string-tree? (or/c syntax? #f)
+                   instantiated-type? instantiated-type? instantiated-type?)]
   [collapse (-> instantiated-type? acc-type?)]
   [freshen-type-vars (-> acc-type? acc-type?)]
   [instantiate (-> acc-type? instantiated-type?)])
@@ -294,7 +295,7 @@
 
 ;; Safely set a type variable while respecting whether or not it is a
 ;; numeric-only (num_) type variable.
-(define (set-tyvar! ctxt t1 rhs)
+(define (set-tyvar! msg ctxt t1 rhs)
   (define rhs-coll (collapse rhs))
 ;  (printf " unify to tyvar:  ~a(~a)  -> ~a " (tyvar-name t1) (tyvar-numeric t1) rhs)
   (when (and (tyvar-numeric t1)
@@ -305,20 +306,46 @@
                       (numeric-type-var? rhs-coll))))
     (raise-syntax-error
      'unify-types
-     (format "error\n  Expected a numeric type, instead found ~a"
-             (show-type rhs))
+     (format "error\n  Expected a numeric type, instead found ~a\nContext notes:\n~a\n"
+             (show-type rhs) (tree->string msg))
      ctxt))
-
   ;; Propagate numeric-ness in both directions:
   (when (or (is-numeric? rhs) (tyvar-numeric t1))
     (make-numeric! t1))
   (set-tyvar-ptr! t1 rhs))
-  
+
+(define (string-tree? x)
+  (cond
+    [(string? x) #t]
+    [(null? x) #t]
+    [(pair? x) (and (string-tree? (car x))
+                    (string-tree? (cdr x)))]
+    [else #f]))
+
+(define (tree->string x)
+  (with-output-to-string
+    (lambda ()
+      (let loop ((x x))
+        (cond
+          [(null? x) (void)]
+          [(string? x) (display x)]
+          [(pair? x) (loop (car x)) (loop (cdr x))]
+          [else (error 'tree->string "unexpected input: ~a" x)])))))
+
+(define (short-show syn)
+  ;; FINISHME: crop to a max length and include ellipses:
+  (with-output-to-string
+    (lambda ()
+      (pretty-print
+       (if (syntax? syn)
+           (syntax->datum syn)
+           syn)))))
+
 ;; instantiated-type? instantiated-type? -> instantiated-type?
 ;; If one of the two is "expected", it should be the latter.
-(define (unify-types ctxt t1 t2)
+(define/contract (unify-types msg ctxt t1 t2)
   ;; DEBUGGING:
-  ; (-> (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
+  (-> string-tree? (or/c syntax? #f) instantiated-type? instantiated-type? instantiated-type?)
   (match/values (values t1 t2)
     ;; Variables trivially unify with themselves:
     [((? tyvar?) (? tyvar?))
@@ -327,20 +354,22 @@
      
     [((? tyvar?) _)
      (occurs-check ctxt (tyvar-name t1) t2)
-     (set-tyvar! ctxt t1 (if (tyvar-ptr t1)                         
-                             (unify-types ctxt (tyvar-ptr t1) t2)
+     (set-tyvar! msg ctxt t1 (if (tyvar-ptr t1)                         
+                             (unify-types msg ctxt (tyvar-ptr t1) t2)
                              t2))
      t1]
     [(_ (? tyvar?))
      (occurs-check ctxt (tyvar-name t2) t1)
-     (set-tyvar! ctxt t2 (if (tyvar-ptr t2)
-                             (unify-types ctxt t1 (tyvar-ptr t2))
+     (set-tyvar! msg ctxt t2 (if (tyvar-ptr t2)
+                             (unify-types msg ctxt t1 (tyvar-ptr t2))
                              t1))
      t2]
 
     [(`(Array ,n1 ,e1) `(Array ,n2 ,e2))
-     (make-array-type (unify-types ctxt n1 n2)
-                      (unify-types ctxt e1 e2))
+     (make-array-type (unify-types (cons "Dimensions of arrays must match.\n" msg)
+                                   ctxt n1 n2)
+                      (unify-types (cons "Element types of arrays must match.\n" msg)
+                                   ctxt e1 e2))
      #; (match/values (values (collapse n1) (collapse n2))
        ;; Attempt to improve error messages here:
        [((? number?) (? number?))
@@ -349,13 +378,20 @@
        
     [(`(-> ,as ...) `(-> ,bs ...))
      #:when (= (length as) (length bs))
-     `(-> ,@(for/list ([a as] [b bs])
-              (unify-types ctxt a b)))]
+     (define blen (length bs))
+     `(-> ,@(for/list ([a as] [b bs] [ix (in-naturals)])
+              (unify-types (cons (if (= ix (sub1 blen))
+                                     "Return values of function types must match.\n"
+                                     (format "Argument position ~a must match ~a"
+                                             ix "between arrow types (starting with 0)\n"))
+                                 msg)
+                           ctxt a b)))]
     
     [((vector as ...) (vector bs ...))
      #:when (= (length as) (length bs))
-     (for/vector ([a as] [b bs])
-       (unify-types ctxt a b))]
+     (for/vector ([a as] [b bs] [ix (in-naturals)])
+       (unify-types (cons (format "Position ~a within two vectors must match.\n" ix) msg)
+                    ctxt a b))]
     
     [((? acc-element-type?) (? acc-element-type?))
      #:when (equal? t1 t2)
@@ -387,7 +423,9 @@
       'unify-types
       (format (string-append "Conflicting types.\n"
                              "Found: ~a\n"
-                             "Expected: ~a\n")
+                             "Expected: ~a\n"
+                             "Context notes:\n"
+                             (tree->string msg))
               (show-type t1) (show-type t2))
       ctxt)]))
 
@@ -395,14 +433,14 @@
 ;; error messages.  Specifically, it is better to highlight the
 ;; argument of the wrong type than to highlight the whole application.
 ;;
-(define/contract (gentle-unify-arrow fnty fnstx args ret)
-  (-> instantiated-type? syntax?
+(define/contract (gentle-unify-arrow msg0 fnty fnstx args ret)
+  (-> string-tree? instantiated-type? syntax?
       (listof (cons/c instantiated-type? (or/c syntax? #f)))
       (cons/c instantiated-type? (or/c syntax? #f))
       instantiated-type?)
   (define target `(-> ,@(map car args) ,(car ret)))
   ;; Option (1), SIMPLEST implementation, with worse errors:
-  ; (unify-types fnstx target fnty)
+  ; (unify-types msg0 fnstx target fnty)
   ;; Option (2):
   (begin
     (define (helper msg)
@@ -414,14 +452,18 @@
                               (fprintf (current-error-port) msg)
                               (raise exn))]) ...)
         (match-let ([ (cons rcvd stx) pr])
-          (unify-types (or stx fnstx) rcvd expected))))
+          (unify-types
+           (cons msg msg0)
+           (or stx fnstx) rcvd expected))))
    (match fnty
-    [`(-> ,e* ... ,en)
-     (for-each (helper "Function argument did not have expected type.\n")
-               e* args)
+     [`(-> ,e* ... ,en)
+      (for ([e e*] [arg args] [ix (in-naturals)])        
+        ((helper (format "Function argument ~a, in position ~a, did not have expected type: ~a.\n"
+                         (syntax->datum (cdr arg)) ix (export-type e)))
+         e arg))
      ((helper "Function return value did not have expected type.\n") en ret)]
     ;; Here, there won't be any argument-level errors:
-    [(? tyvar?) (unify-types fnstx target fnty)]
+    [(? tyvar?) (unify-types msg0 fnstx target fnty)]
     [else
      (raise-syntax-error
       'unify-types
@@ -489,7 +531,8 @@
     ;; Other features, Coming soon:
     [(: e t:acc-type)
      (define-values (ty e2) (infer #'e tenv))
-     (values (unify-types stx ty (instantiate (syntax->datum #'t)))
+     (values (unify-types (format "Ascription expression: ~a\n" (short-show stx))
+                          stx ty (instantiate (syntax->datum #'t)))
              e2)]
     [(use x:id t:acc-type)
      (values (syntax->datum #'t)
@@ -507,7 +550,8 @@
      ;; Here we KNOW what dimension to expect, so we put it in.
      ;; We could alternatively do this unification in stages and try
      ;; to optimize the errors that come out:     
-     (let ((arrty (unify-types #'e1 ty1 (make-array-type e2slen (fresh-tyvar 'elt)))))
+     (let ((arrty (unify-types "Input array to acc-array-ref must be of the proper type.\n"
+                               #'e1 ty1 (make-array-type e2slen (fresh-tyvar 'elt)))))
        (match (collapse arrty) ;; AUDIT ME
          #;
          [(? tyvar?)
@@ -529,7 +573,8 @@
                         (for/list ([e2 e2ls])
                           (define-values (ty enew) (infer e2 tenv))
                           ;; Side effect only, but it should be safe here:
-                          (unify-types e2 ty 'Int) ;; SAFE
+                          (unify-types "Index argument to acc-array-ref must be an Int."
+                                       e2 ty 'Int) ;; SAFE
                           enew
                           #;
                           (if (eq? ty 'Int) enew
@@ -560,7 +605,9 @@
        (for/list ([x xs] [infrd freshes]
                   [expected (syntax->datum #'(x.type ...))])
          (if expected
-             (unify-types x infrd
+             (unify-types (format "Function (lambda) parameter must match its annotated type: ~a\n"
+                                  (export-type expected))
+                          x infrd
                           (type-schema-monoty (generalize tenv expected)))
              infrd)))
 
@@ -580,11 +627,13 @@
      (define es (syntax->list #'(e* ...)))
      (define-values (etys news) (infer-list es))
      (define etys2 (for/list ([e es] [ety etys])
-                     (unify-types e ety 'Int)))
+                     (unify-types "Size arguments to generate must be of type Int.\n"
+                                  e ety 'Int)))
      (define-values (fty fnew) (infer #'f tenv))
      (define res (fresh-tyvar 'res))
      (define ufty `(-> ,@etys2 ,res))
-     (gentle-unify-arrow fty #'f 
+     (gentle-unify-arrow "Function argument to generate must have the right type."
+                         fty #'f 
                          (map cons etys2 es)
                          (cons res #f))
      (values (make-array-type (length es) res)
@@ -595,8 +644,11 @@
      (define tenv2 (tenv-set tenv #'var (make-mono-schema stateTy)))
      (define-values (predty newpred) (infer #'pred tenv2))
      (define-values (bodty  newbod)  (infer #'bod tenv2))
-     (unify-types #'pred predty 'Bool)
-     (define stateTy2 (unify-types #'bod bodty stateTy))
+     (unify-types "Predicate expression in until must have Bool type.\n"
+                  #'pred predty 'Bool)
+     (define stateTy2 (unify-types (string-append "Return value of initial and update sub-expression"
+                                                  " of until must have the same type.\n")
+                                   #'bod bodty stateTy))
      (values stateTy
              #`(until (var #,newinit #,newpred) #,newbod))]
     
@@ -606,9 +658,10 @@
      (define vs (syntax->list #'(v* ...)))
      (define es (syntax->list #'(e* ...)))
      (define ntv (fresh-tyvar 'n))
-     (define elt (fresh-tyvar))
+     (define elt (fresh-tyvar 'elt))
      ;; This unify side effects ntv and elt.
-     (define _arrty2 (unify-types #'arr arrty `(Array ,ntv ,elt)))
+     (define _arrty2 (unify-types "Argument to replicate must be an array.\n"
+                      #'arr arrty `(Array ,ntv ,elt)))
      (if (or (not vs) (not es))
          (raise-syntax-error pass-name
 			     (string-append "Malformed syntax for replicate.\n"
@@ -628,9 +681,10 @@
 					 "Replicate is expected to take an array of known dimension.\n"
 					 "Expected non-negative integer dimension, instead found "
 					 (if (symbol? other)
-					     (format "type variable, '~a'\n" other)
-					     (format "unexpected type, '~a'\n" other))
-					 (format "The input to fold had type: ~a" `(Array ,other ,(collapse elt)))
+					     (format "type variable, '~a'\n" (export-type other))
+					     (format "unexpected type, '~a'\n" (export-type other)))
+					 (format "The input to fold had type: ~a"
+                                                 (export-type `(Array ,other ,elt)))
 					 )
 					stx
 					)])))]
@@ -644,11 +698,12 @@
 
      (define ntv (fresh-tyvar 'n))
 
-     (gentle-unify-arrow fty #'f
+     (gentle-unify-arrow "" fty #'f
                          `((,elt . ,#'zer)
                            (,elt . ,#'zer))
                          `(,elt . ,#'zer))
-     (unify-types #'arr arrty `(Array ,ntv ,elt)) ;; For side effect on ntv.
+     (unify-types "Argument to fold must be an array.\n"
+      #'arr arrty `(Array ,ntv ,elt)) ;; For side effect on ntv.
 
      ;; FIXME: We should defer the final check that the dimensions are concrete.
      ;; Otherwise, whether it works can depend on the order of type inference.
@@ -664,10 +719,9 @@
                (string-append 
                 "Fold is expected to take an array of known dimension.\n"
                 "Expected non-negative integer dimension, instead found "
-                (if (symbol? other)
-                    (format "type variable, '~a'\n" other)
-                    (format "unexpected type, '~a'\n" other))
-                (format "The input to fold had type: ~a" `(Array ,other ,(export-type elt)))
+                (show-type (export-type other))
+                (format "\nThe input to fold had type: ~a"
+                        (export-type `(Array ,other ,elt)))
                 )
                stx
                )])]
@@ -676,8 +730,9 @@
      (define-values (e1ty newe1) (infer #'e1 tenv))
      (define-values (e2ty newe2) (infer #'e2 tenv))
      (define-values (e3ty newe3) (infer #'e3 tenv))
-     (unify-types #'e1 e1ty 'Bool)
-     (values (unify-types #'e3 e3ty e2ty)
+     (unify-types "The test part of an 'if' must return a Bool.\n" #'e1 e1ty 'Bool)
+     (values (unify-types "Branches of an 'if' must have the same type.\n"
+                          #'e3 e3ty e2ty)
              #`(if ,newe1 ,newe2 ,newe3))] 
 
     [(let ( lb:acc-let-bind ...) ebod)
@@ -689,7 +744,10 @@
                   [ty etys]
                   [expected (syntax->datum #'(lb.type ...))])
            (if expected 
-               (unify-types x ty expected)
+               (unify-types (format "Let binding for ~a must match its annotated type: ~a\n"
+                                    (syntax->datum x)
+                                    (export-type expected))
+                            x ty expected)
                ty)))
      (define tenv2
        (for/fold ([te tenv])
@@ -739,7 +797,7 @@
      (define-values (ratorty newrator) (infer #'rator tenv))
      (define-values (argtys newargs) (infer-list argls))
      (define fresh (fresh-tyvar 'res))
-     (gentle-unify-arrow ratorty stx 
+     (gentle-unify-arrow "" ratorty stx 
                          (map cons argtys argls)
                          (cons fresh #f))
      (values fresh

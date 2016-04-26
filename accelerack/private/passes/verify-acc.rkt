@@ -30,7 +30,7 @@
            acc-element-literal acc-let-bind :)
   accelerack/private/syntax-table
   (only-in racket/base lambda let #%app if + * - / add1 sub1 vector vector-ref)
-  (only-in accelerack/private/keywords Array Int Bool Double use ->))
+  accelerack/private/keywords)
 
  ;; Temp: at every stage to make sure:
  ;(for-syntax (only-in accelerack/private/syntax :))
@@ -122,14 +122,18 @@
        (if (identifier-binding #'x)
            #'x ;; The macro expands to this for the "regular Racket" execution.
            (raise-syntax-error
-            'error "Unbound variable used in Accelerack 'use'" #'stx ))]
+            'error "Unbound variable used in Accelerack 'use'" (syntax->datum stx) ))]
       ;; TODO - Check for identifier binding may have flaws
       ;; Atleast catches unbound vars correctly but may work weirdly with define on accelerack stuff
       [(use x:id t) (verify-type #'t)
        (if (identifier-binding #'x)
            #'x ;; The macro expands to this for the "regular Racket" execution.
            (raise-syntax-error
-            'error "Unbound variable used in Accelerack 'use'" #'stx ))]
+            'error "Unbound variable used in Accelerack 'use'" (syntax->datum stx) ))]
+      [(use x . _)
+       (raise-syntax-error
+        'error "Use of non-variable expressions not allowed yet:" (syntax->datum stx) )]
+      
       ;;#'x] ;; FIXME!  Check that it is bound in the syntax table.
 
       ;; FIXME: use the acc-data syntax class:
@@ -155,7 +159,7 @@
 	   #`(replicate #,vs #,es #,newArr)
 	   (raise-syntax-error
 	    'error
-	    "Invalid patterns for replicate" #'stx))]
+	    "Invalid patterns for replicate" (syntax->datum stx)))]
 	   
 						  
       [(map f e) #`(map #,(loop #'f) #,(loop #'e))]

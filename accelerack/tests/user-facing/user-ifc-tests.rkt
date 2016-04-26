@@ -175,6 +175,12 @@
                  (define-acc y (map add1 (use x (Array 1 Int))))
                  (check-equal? 2 (car (acc-array->sexp y))))))
 
+; (test-case "use of expr" (acc (use (+ 1 2) Int)))
+
+(test-case "use of scalar"
+  (define x (+ 1 2))
+  (check-equal? (acc (+ 3 (use x Int)))
+                6))
 
 (test-case "scalar ascription"
   (define-acc x (: 3 Int))

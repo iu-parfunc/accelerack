@@ -221,6 +221,54 @@ right fold. The function may be applied to the elements of the array in any orde
 @racket[zipwith] is just @racket[map] over two input arrays. The function is expected
 to take two arguments.
 
+@defform[(replicate (ext-bind ...) (ext ...) arr)
+         #:grammar
+         [(ext (code:line name)
+                    integer)
+          (ext-bind name)]]
+
+Replicating an array extrudes it across multiple extra dimensions.
+
+@racketblock[
+(define x (acc-array (1 2)))
+(define y (replicate (r) (r 5) x))
+; (acc-array ((1 1 1 1 1) (2 2 2 2 2)))
+]
+
+@racket[replicate] takes a series of symbols to bind to the current array dimension,
+and a series of either symbols or numbers corresponding to the new array. In the above example,
+the array @racket[x] has one dimension, which we bind to @racket[r], and we create a new array
+@racket[y] by replicating @racket[x] into a two-dimensional array, repeating the elements five
+times in the new dimension.
+
+If we put the @racket[r] before the @racket[5], it would be replicated like this:
+
+@racketblock[
+(define x (acc-array (1 2)))
+(define y (replicate (r) (5 r) x))
+; (acc-array ((1 2)(1 2)(1 2)(1 2)(1 2)))
+]
+
+
+
+@defform[(until (name init test) body)]
+
+@racket[until] performs scalar iteration (looping). The form takes a name to bind as a loop
+variable, an initial value for this binding, and a boolean expression that may
+refer to this binding and that, when true, causes the loop to exit. The @racket[body] is executed
+repeatedly in the loop (which also may refer to the loop variable),
+and the result of evaluating the body is assigned to the loop variable after each iteration.
+
+@racketblock[
+(generate (lambda ()
+            (until (i 1 (= i 10))
+                   (add1 i))))
+; (acc-array 10)
+]
+
+This code will initialize @racket[i] to @racket[1] and loop by incrementing @racket[i] until
+it equals @racket[10].
+
 
 @section[#:tag "functions"]{Stencils and stencil boundary conditions}
 
@@ -261,10 +309,6 @@ Currently, valid boundary conditions have the form:
 ]
 
 where @racket[(acc-element? v)].
-
-@; TODO: replicate
-
-@; TODO: until
 
 @; -------------------------------------------------------
 @section[#:tag "functions"]{Image functions}

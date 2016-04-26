@@ -224,7 +224,11 @@
               #'ebod (extend-env xls env)))]
 
       [(vector e ...)     #`(vector #,@(r:map loop (syntax->list #'(e ...))))]
-      [(vector-ref e1 e2) #`(vector-ref #,(loop #'e1) #,(loop #'e2))]
+      [(vector-ref e1 n:number) #`(vector-ref #,(loop #'e1) n)]
+      [(vector-ref e1 e2)
+       (raise-syntax-error 'error
+                           "bad index argument to vector ref.  Expect a literal number, found this."
+                           #'e2)]
 
       ;; We have to to be careful with how we influence the back-tracking search performed by
       ;; syntax-parse.

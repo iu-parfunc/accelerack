@@ -10,17 +10,23 @@
          accelerack/private/keywords
          accelerack/private/wrappers
          accelerack/private/prim-redefinitions
+         (only-in accelerack/acc-array
+                  acc-array-size acc-array-dimension)
          (for-template (except-in racket/base map sqrt)
                        (only-in racket/contract ->)
                        accelerack/private/keywords
                        accelerack/private/wrappers
                        accelerack/private/prim-redefinitions
+                       (only-in accelerack/acc-array
+                                acc-array-size acc-array-dimension)
                        )
          (for-syntax (except-in racket/base map sqrt)
                      (only-in racket/contract ->)
                        accelerack/private/keywords
                        accelerack/private/wrappers
-                       accelerack/private/prim-redefinitions)
+                       accelerack/private/prim-redefinitions
+                       (only-in accelerack/acc-array
+                                acc-array-size acc-array-dimension))
          )
 
 (provide 
@@ -76,6 +82,9 @@
    #'map  '(-> (-> a b) (Array n a) (Array n b))
 
    #'zipwith '(-> (-> a b c) (Array n a) (Array n b) (Array n c))
+
+   #'acc-array-size      '(-> (Array n a) Int)
+   #'acc-array-dimension '(-> (Array n a) Int)   
    
    ))
 

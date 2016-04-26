@@ -307,53 +307,264 @@ between 0 and 255.
 @; -------------------------------------------------------
 @section[#:tag "typed"]{Typed Accelerack Computations}
 
-First, what are the valid types in Accelerack?  To start with, there are
-@racket[Int], @racket[Double], and @racket{Bool}---the most basic types kinds
-of Accelerack data.
+Because Accelerack is an embedded language, there are designated ways of
+telling the system "now I'm about to write Accelerack" code.
+
+@defform[(acc expr)]
+
+For example, @racket[(acc 3)] and @racket[3] evaluate to exactly the same
+thing, but the former is engaging the restricted Accelerack language, and is
+thus type-checked.  Thus @racket[(acc (+ 1 #t))] will result in an error before
+it ever runs, whereas @racket[(+ 1 #t)] will only create an error when it is
+actually executed, e.g. when the function it resides in is called.
+
+@; --------------------------------------------------------------
+@subsection[#:tag "typed"]{Types and Annotations}
+
+What are the valid types in Accelerack?  To start with, there are @racket[Int],
+@racket[Double], and @racket[Bool]---the most basic types kinds of Accelerack
+data.  Even though the Accelerack compiler will infer types for us, we can
+double check that we have the right type by annotating explicitly with a
+@racket[(: expr type)] form.
+
+@defform[(: expr type)]
 
 @examples[
  (require accelerack)
- (: 3   Int)
- (: 3.3 Double)
- (: #t  Bool)
+ (acc (: 3   Int))
+ (acc (: 3.3 Double))
+ (acc (: #t  Bool))
 ]
 
+Note that how we write numbers affects their type.  @racket[3.0] is a
+@racket[Double] whereas @racket[3] is an @racket[Int].
+
+In addition to directly evaluating Accelerack code with @racket[(acc ...)] we
+can also create top-level definitions in the Accelerack language.
 
 @defform*[((define-acc (name args ...) body)
            (define-acc name expr))]
 
-Define an Accelerack computation, either a function or expression.
+Define an Accelerack computation, either a function or expression.  The value
+defined by @racket[name] is usable in regular Racket code as well as in other
+Accelerack expressions.
 
 @examples[(require accelerack)
-          (define x 3)
-          (type-of sqrt)
+          (define-acc x 3)
+          x
+          (acc x)
+          (define y 4)
+          y
+          (eval:error (acc y))]
+
+Here we can see that the reverse is not true---normal Racket variables cannot
+be used in Accelerack computations.  There is, however, a way to @emph{import}
+such values, if we can assign them a valid Accelerate type.  We describe this
+in the next section, @secref["importing"].
+
+There are some additional restrictions on @racket[define-acc] definitions
+compared to regular @racket[define].  In addition to only supporting a limited
+set of constructs, @emph{recursive} definitions are not permitted.
+
+As a final note on @racket[define-acc], observe that @emph{args} can consist
+not just of variables, but of type annotated variables @racket[(v : t)], for
+example:
+
+@examples[(require accelerack)
+          (define-acc (f [x : Int]) (+ x 3))
+
+          (define-acc (g x) (+ (: x Int) 3))
+          (: h (-> Int Int))
+          (define-acc (h x) (+ x 3))]
+
+These demonstrate several ways to ensure that the argument to the function is
+an @racket[Int].  The last one makes use of function types, written with
+arrows, as described in @secref["arrow-types"].
+
+@subsection[#:tag "importing"]{Importing Racket values}
+
+@defform[(use var type)]
+
+Take a Racket value and make it an Accelerack value.
+@; This is done automatically in some cases by @racket[define-acc].
+
+The @emph{var} must be a regular bound variable in Racket, bound to a value
+that satisfies @racket[acc-element?] or @racket[acc-array?].  These are the
+@emph{only} kinds of data that can be imported from Racket to Accelerack.  Indeed,
+most normal Racket datatypes would have no valid Accelerack @emph{type} to
+provide to @racket[use]
+
+@; NOTE: Having a problem running this with examples framework
+@racketblock[
+  (define x (+ 1 2))
+  (acc (+ 3 (use x Int)))    
+
+  (define y (acc-array (1 2 3)))
+  (define-acc z (map add1 (use y (Array 1 Int))))
+  ]
+ @; (acc (+ 3 (use (+ 1 2) Int)))  
+
+@; --------------------------------------------------------------
+@subsection[#:tag "vector-types"]{Vector (tuple) Types}
+
+Vectors in Accelerack are short, fixed-length data structures that can contain
+a mix of different types of data.  (These are called @emph{tuples} in many languages.)
+
+@examples[#:label #f
+  (require accelerack)
+  (: x #(Int Double Bool))
+  (define-acc x (vector 1 2.2 #f))]
+
+@defform[(vector expr_1 ... expr_n)]
+
+Form a vector of of @racket[n] elements.
+It's type will be
+@racket[ #(type_1 ... type_n) ]
+where  @emph{type_1} through @emph{type_n} are the types of
+@emph{expr_1} through @emph{expr_n}, respectively.
+
+@; The type of a vector of @racket[n] elements of types @emph{type_1} through @emph{type_n}.
+
+@; defproc[(vector-ref [v vector?] [i exact-nonnegative-integer?]) any]
+@defform[(vector-ref v n)]
+
+The type of a @racket[vector-ref] expression is the type of the corresponding
+element in the vector.  The index @racket[n] must be a literal number, not an
+arbitrary expression.
+
+@; --------------------------------------------------------------
+@subsection[#:tag "array-types"]{Array Types}
+
+@defform[(Array n elt)]
+
+The form of an array type is @racket[(Array n elt)] where @racket[n] is a
+literal integer specifying the @emph{dimension}, and @racket[elt] is the type
+of the array's element.
+
+Arrays, as described earlier, can contain only @racket[acc-element?] values.
+Moreover, there is a predicate on types themselves that tells you which types
+make valid array elements.
+
+@defproc[(acc-element-type? [t any]) boolean?]
+@defproc[(acc-type? [t any]) boolean?]
+
+Both @racket[acc-element-type?] and @racket[acc-type?] are predicates on the
+s-expression representation of a type.  They are only for use outside
+Accelerack, not within Accelerack expressions.
+
+@examples[
+  (require accelerack)
+  (acc-type? '(Array 1 Double))
+  (acc-element-type? 'Double)
+  (acc-element-type? '#(Int Double))
+  (acc-element-type? '(Array 1 Double))
+  ]
+
+@; -------------------------------------------------------
+@subsection[#:tag "arrow-types"]{Function Types}
+
+The type of a function is written @racket[(-> A B)] where @racket[A] is the
+input type and @racket[B] is the output type.
+@; These function types are sometimes called "arrow" types
+We can see this in action in the
+types of primitive functions:
+
+@examples[#:label #f (require accelerack)
+          (type-of round)
+          (type-of quotient)
           (type-of exact->inexact)]
 
+@; -------------------------------------------------------
+@subsection[#:tag "type-variables"]{Type Variables and Polymorphism}
 
-@defproc[(use [any any?]) acc-array?]
+What is the type of this function?
 
-Take a Racket value and make it an Accelerack value. This is done
-automatically in some cases by @racket[define-acc].
+@racketblock[  (define-acc (f x) x)]
 
+It can accept @emph{any} value.  We can ask Accelerack for its type as follows:
 
-@; Talk a LOT more about how to write types.
+@examples[#:label #f
+  (require accelerack)
+  (define-acc (f x) x)
+  (type-of f)]
 
-@; TODO: Incorporate full grammar here!
+Here the lower-case variables are called @emph{type variables}.  In contrast
+with (upper-case) types like @racket[Int] or @racket[Double], they are stand-ins for any
+valid Accelerack type.  For example, consider these primitives:
 
+@examples[#:label #f (require accelerack)
+  (type-of acc-array-size)
+  (type-of acc-array-dimension)]
+
+Because they don't care about the contents of an array, only its size, these
+functions are @emph{polymorphic} in array contents and dimension.  That is,
+they use type variables to abstract the parts of the type they do not depend on.
+
+Incidentally, note that the above two primitives are part of the subset of
+@racket[acc-array] operations that make sense both @emph{inside} and
+@emph{outside} of accelerack expressions.  Other array manipulation functions,
+like @racket[acc-array->sexp] only make sense in regular Racket code, outside
+@racket[acc]/@racket[define-acc] blocks.
+
+@; -------------------------------------------------------
+@subsection[#:tag "numeric-types"]{Polymorphic Numeric Types}
+
+What is the type of this function?
+
+@racketblock[  (define-acc (f x) (+ x x))]
+
+We can find out like so:
+
+@examples[#:label #f
+  (require accelerack)
+  (define-acc (f x) (+ x x))
+  (type-of f)]
+
+Here, @racket[f]'s type again uses type variables, but these are special
+variables beginning with the prefix @racket[num_].  This is a convention
+meaning that the type variable can only be @emph{instantiated} using a numeric
+type, i.e. @racket[Int] or @racket[Bool].
+
+Thus all of the primitives which work over @racket[num_] types, such as
+@racket[+], @racket[*] and so on, can be used on both integral and floating
+point (@racket[Double]) numbers.
 
 @; -------------------------------------------------------
 @section[#:tag "debugging"]{Debugging Accelerack}
 
-@; acc-echo-types
-@; type-of
+In addition to responding to type errors as we get them.  It is helpful to be
+able to probe the type of expressions to figure out what's going on.  In
+addition to the @racket[type-of] construct that we saw above, we can also
+enable printing of all inferred types for @racket[define-acc]-bound variabes as
+follows:
 
+@defform[(acc-echo-types)]
 
-@examples[(require accelerack)
-          (type-of +)
-          (type-of sqrt)
-          (type-of exact->inexact)]
+@examples[#:label #f
+  (require accelerack)
+  (acc-echo-types)
+  (define-acc x (vector #t 3))
+  (define-acc a (generate (lambda () 4)))]
+
+Note that if you are following the design recipe, you will want to include
+top-level @racket[(: v t)] annotations as the @emph{signature} for each of your
+definitions.  However, this echoing capability can help you infer types which
+you can then copy-paste to produce your function signatures.
+
 
 @; -------------------------------------------------------
+@section[#:tag "grammar"]{Appendix: Full list of keywords}
+
+If not otherwise mentioned above, the Accelerack syntax is the same as the
+normal Racket syntax, e.g. @racket[(if e1 e2 e3)].  However, Accelerack only
+recognizes the following subset of Racket syntaxes.
+
+@examples[(require accelerack)
+          acc-keywords]
+@section[#:tag "grammar"]{Appendix: Full list of primitive types}
+
+@examples[(require accelerack)
+          acc-prim-types]
 @section[#:tag "grammar"]{Appendix: Full typed-language grammar}
 
 @(require racket/include racket/file)

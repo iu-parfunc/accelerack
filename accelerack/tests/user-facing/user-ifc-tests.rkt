@@ -80,6 +80,9 @@
               `(Constant 0)
               x))
 
+(test-equal? "simple acc macro 1" (acc 3) 3)
+(test-equal? "simple acc macro 2" (acc (: 3 Int)) 3)
+
 (test-equal? "until"
              (acc-array->sexp
               (generate (lambda ()

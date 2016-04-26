@@ -4,7 +4,7 @@
 ;; The syntax-capture and verification step.
 ;; ---------------------------------------------------------------
 
-(provide define-acc type-of
+(provide define-acc type-of acc
          ; acc ;; Not exposing this yet.
          run-gpu
          snapshot-current-acc-syn-table
@@ -110,6 +110,12 @@
     [(_ bod)
      (let-values ([(_ inferredTy __ ___) (front-end-compiler #'bod)])
        #`(quote #,(datum->syntax stx inferredTy)))]))
+
+(define-syntax (acc stx)
+  (syntax-parse stx
+    [(_ bod)
+     (let-values ([(stripped _ __ ___) (front-end-compiler #'bod)])
+       stripped)]))
 
 
 ; --------------------------------------------------------------------------------

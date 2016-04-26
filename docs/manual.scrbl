@@ -308,10 +308,28 @@ between 0 and 255.
 @; -------------------------------------------------------
 @section[#:tag "typed"]{Typed Accelerack Computations}
 
+First, what are the valid types in Accelerack?  To start with, there are
+@racket[Int], @racket[Double], and @racket{Bool}---the most basic types kinds
+of Accelerack data.
+
+@examples[
+ (require accelerack)
+ (: 3   Int)
+ (: 3.3 Double)
+ (: #t  Bool)
+]
+
+
 @defform*[((define-acc (name args ...) body)
            (define-acc name expr))]
 
 Define an Accelerack computation, either a function or expression.
+
+@examples[(require accelerack)
+          (define x 3)
+          (type-of sqrt)
+          (type-of exact->inexact)]
+
 
 @defproc[(use [any any?]) acc-array?]
 

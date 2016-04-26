@@ -319,6 +319,7 @@ thus type-checked.  Thus @racket[(acc (+ 1 #t))] will result in an error before
 it ever runs, whereas @racket[(+ 1 #t)] will only create an error when it is
 actually executed, e.g. when the function it resides in is called.
 
+@; --------------------------------------------------------------
 @subsection[#:tag "typed"]{Types and Annotations}
 
 What are the valid types in Accelerack?  To start with, there are @racket[Int],
@@ -359,7 +360,25 @@ Accelerack expressions.
 
 Here we can see that the reverse is not true---normal Racket variables cannot
 be used in Accelerack computations.  There is, however, a way to @emph{import}
-such values, if we can assign them a valid Accelerate type:
+such values, if we can assign them a valid Accelerate type.  We describe this
+in the next section, @secref["importing"].
+
+As a final note on @racket[define-acc], observe that @emph{args} can consist
+not just of variables, but of type annotated variables @racket[(v : t)], for
+example:
+
+@examples[(require accelerack)
+          (define-acc (f [x : Int]) (+ x 3))
+
+          (define-acc (g x) (+ (: x Int) 3))
+          (: h (-> Int Int))
+          (define-acc (h x) (+ x 3))]
+
+These demonstrate several ways to ensure that the argument to the function is
+an @racket[Int].  The last one makes use of function types, written with
+arrows, as described in @secref["arrow-types"].
+
+@subsection[#:tag "importing"]{Importing Racket values}
 
 @defform[(use var type)]
 
@@ -382,12 +401,13 @@ provide to @racket[use]
   ]
  @; (acc (+ 3 (use (+ 1 2) Int)))  
 
+@; --------------------------------------------------------------
 @subsection[#:tag "vector-types"]{Vector (tuple) Types}
 
 Vectors in Accelerack are short, fixed-length data structures that can contain
 a mix of different types of data.  (These are called @emph{tuples} in many languages.)
 
-@examples[
+@examples[#:label #f
   (require accelerack)
   (: x #(Int Double Bool))
   (define-acc x (vector 1 2.2 #f))]
@@ -409,6 +429,7 @@ The type of a @racket[vector-ref] expression is the type of the corresponding
 element in the vector.  The index @racket[n] must be a literal number, not an
 arbitrary expression.
 
+@; --------------------------------------------------------------
 @subsection[#:tag "array-types"]{Array Types}
 
 @defform[(Array n elt)]
@@ -435,18 +456,75 @@ Accelerack, not within Accelerack expressions.
   (acc-element-type? '#(Int Double))
   (acc-element-type? '(Array 1 Double))
   ]
+
+@; -------------------------------------------------------
+@subsection[#:tag "arrow-types"]{Function Types}
+
+The type of a function is written @racket[(-> A B)] where @racket[A] is the
+input type and @racket[B] is the output type.
+@; These function types are sometimes called "arrow" types
+We can see this in action in the
+types of primitive functions:
+
+@examples[#:label #f (require accelerack)
+          (type-of round)
+          (type-of quotient)
+          (type-of exact->inexact)]
+
+@; -------------------------------------------------------
+@subsection[#:tag "type-variables"]{Type Variables and Polymorphism}
+
+What is the type of this function?
+
+@racketblock[  (define-acc (f x) x)]
+
+It can clearly accept any type of value.  We can ask Accelerack for its type with:
+
+@examples[#:label #f
+  (require accelerack)
+  (define-acc (f x) x)
+  (type-of f)]
+
+@; FINISHME
+
+@; -------------------------------------------------------
+@subsection[#:tag "numeric-types"]{Polymorphic Numeric Types}
+
+What is the type of this function?
+
+@racketblock[  (define-acc (f x) (+ x x))]
+
+We can find out by typing this:
+
+@examples[#:label #f
+  (require accelerack)
+  (define-acc (f x) (+ x x))
+  (type-of f)]
+
+@; FINISHME
+
 @; -------------------------------------------------------
 @section[#:tag "debugging"]{Debugging Accelerack}
 
 @; acc-echo-types
 @; type-of
 
-@examples[(require accelerack)
-          (type-of +)
-          (type-of sqrt)
-          (type-of exact->inexact)]
+
+@; FINISHME
 
 @; -------------------------------------------------------
+@section[#:tag "grammar"]{Appendix: Full list of keywords}
+
+If not otherwise mentioned above, the Accelerack syntax is the same as the
+normal Racket syntax, e.g. @racket[(if e1 e2 e3)].  However, Accelerack only
+recognizes the following subset of Racket syntaxes.
+
+@examples[(require accelerack)
+          acc-keywords]
+@section[#:tag "grammar"]{Appendix: Full list of primitive types}
+
+@examples[(require accelerack)
+          acc-prim-types]
 @section[#:tag "grammar"]{Appendix: Full typed-language grammar}
 
 @(require racket/include racket/file)

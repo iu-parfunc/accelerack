@@ -478,14 +478,17 @@ What is the type of this function?
 
 @racketblock[  (define-acc (f x) x)]
 
-It can clearly accept any type of value.  We can ask Accelerack for its type with:
+It can accept @emph{any} value.  We can ask Accelerack for its type as follows:
 
 @examples[#:label #f
   (require accelerack)
   (define-acc (f x) x)
   (type-of f)]
 
-@; FINISHME
+Here the lower-case variables are called @emph{type variables}.  In contrast
+with types like @racket[Int] or @racket[Double], they are stand-ins for any
+valid Accelerack type.
+
 
 @; -------------------------------------------------------
 @subsection[#:tag "numeric-types"]{Polymorphic Numeric Types}

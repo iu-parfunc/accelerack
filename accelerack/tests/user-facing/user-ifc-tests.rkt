@@ -182,6 +182,15 @@
   (check-equal? (acc (+ 3 (use x Int)))
                 6))
 
+
+(check-equal?
+ (acc (acc-array-size (acc-array ((1 2) (3 4)))))
+ 4)
+
+(check-equal?
+ (acc (acc-array-dimension (acc-array ((1 2) (3 4)))))
+ 2)
+
 (test-case "scalar ascription"
   (define-acc x (: 3 Int))
   (check-true (acc-scalar? x))

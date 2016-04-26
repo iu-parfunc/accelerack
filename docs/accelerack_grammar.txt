@@ -15,31 +15,35 @@ Also, see this Evernote for a diagram of the architecture:
 Input language:
 ------------------------------------------------------------
 
-;; Integration with the meta-language:
+;; Integration with host language (Racket):
 meta
   = (acc e)
   | (run-acc e)
   | <definitions>
 
 definitions d
-  = (define-acc (f x ...) e)
+  = (define-acc (f lp ...) e)
   | (define-acc x e)
   | (define-acc x : t e)
+  | (: v t)
 
-scalar-type st
+lambda param, lp
+  = x | [x : t]
+
+type t
+  = elt               ; Element Type
+  | #(t ...)          ; Tuple Type
+  | (Array nt t)      ; Array Type
+  | (-> t ... t)      ; Function Type
+
+element-type et
   = Int
   | Bool
   | Double
-  | #(st ...)   ; Tuple of Scalars
+  | #(et ...)   ; Tuple of Scalars
   | a                 ; Type variable (lower case)
   | (Num a)           ; Numeric type variable
   | SExp              ; A value in the meta-language
-
-type t
-  = st                ; Scalar Type
-  | #(t ...)          ; Tuple Type
-  | (Array nt t)       ; Array Type
-  | (-> t ... t)      ; Function Type
 
 numeric type nt
   = n               ;; Type-level numeric literal
@@ -71,9 +75,6 @@ expression e
 
 let binding, lb
   = [x e] | [x : t e]
-
-lambda param, lp
-  = x | [x : t]
 
 ;; Extra sugar to add later: or/and, let*, ...
 

@@ -11,7 +11,7 @@ default: build
 all: build send
 
 build:
-	scribble --redirect-main https://docs.racket-lang.org/ manual.scrbl
+	scribble --redirect-main https://docs.racket-lang.org/ +m manual.scrbl
 
 send:
 	ssh $(SERVER_USER)@$(SERVER) mkdir -p $(SERVER_PATH)

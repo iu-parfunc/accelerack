@@ -2,29 +2,42 @@
 
 @(require (for-label (except-in racket map sqrt)
                      accelerack
-                     2htdp/image))
+                     rackunit
+                     2htdp/image
+                     )
+#;    scribble/eval
+    rackunit
+    scribble/examples
+    )
 
 @title{Data-Parallel Programming with Accelerack (v0.4)}
 
 In this course we are using a library called @racket[accelerack],
-which allows you to use Racket to do data-parallel programming
-for GPUs.
+which allows you to use Racket for data-parallel programming
+over multidimensional arrays.
+@; RRN: Add this when it works:
+@; for GPUs.
 
-Start by requiring the @racket[accelerack] module:
+All programs that use @racket[accelerack], need only a single import:
 
 @defmodule[accelerack]
 
 Once you have done that, some of the functions you are familiar with
-(such as @racket[map]) have been replaced with expanded versions. 
+(such as @racket[map]) have been replaced with expanded versions.
+And you have access to a host of new functions for manipulating arrays.
 
+Finally, as described in @secref["typed"], Accelerack is actually its own
+@emph{sublanguage}, complete with a type-checker and separate compiler for a
+subset of the normal Racket language.  This arrangement is sometimes called an
+"embedded domain specific language" (EDSL).
 
-
+@; -------------------------------------------------------
 @section[#:tag "arrays"]{Array datatype and properties}
 
 @defproc[(acc-array [acc-element acc-element?] ...) acc-array?]
 
 Arrays are collections of values. Unlike lists, they are fixed in
-size, and can be indexed efficiently.
+size, and can be indexed efficiently, in constant time.
 
 The @racket[acc-array] form introduces a literal array, just as "hello" and 39
 introduce literal strings and integers, respectively.  These arrays can be zero
@@ -43,6 +56,10 @@ dimensional, one dimensional, two dimensional or more.
 The dimension can be computed with @racket[acc-array-dimension], and also
 corresponds to the number of parentheses before the first data element.
 
+The @racket[acc-array] datatype represents @emph{regular} multi-dimensional
+arrays.  Thus all the rows of a two-dimensional array (matrix) must be the same
+length.
+
 
 @defproc[(acc-array? [array any]) boolean?]
 
@@ -59,6 +76,13 @@ Return the number of dimensions of an array.
 Returns a vector of the sizes of each dimension of an array.
 Note that the shape returned satisfies @racket{acc-element?}, and also
 @racket{acc-shape?}.
+
+@examples[(require accelerack)
+          (acc-array-shape (acc-array ((1 2 3) (4 5 6))))
+          ]
+
+Note that the rightmost component of the shape, is the length of the innermost
+list in the array literal, e.g., @racket[(1 2 3)].
 
 @defproc[(acc-shape? [x any]) boolean?]
 
@@ -81,18 +105,19 @@ Returns the size of an array.  That is, the number of total elements.  This is e
    (apply * (vector->list (acc-array-shape a))))
 ]
 
+@; -------------------------------------------------------
 @section[#:tag "arrays"]{Array elements and element-wise access}
 
 @defproc[(acc-element? [element any]) boolean?]
 
 Determine whether a value can go inside an @racket[acc-array], that is, whether it can be an
 array @emph{element}.  This currently includes: exact integers, inexact floating point numbers, and booleans.
-Also, vectors of elements are also valid elements (including vectors of vectors).
+Also, vectors of elements are valid elements (including vectors of vectors).
 
 @defproc[(acc-array-ref [acc-array acc-array?] 
                         [index integer?] ...) acc-element?]
 
-To reference an element in an array, you provide its index. The
+To reference an element in an array, you provide its multidimensional @emph{index}. The
 @racket[acc-array-ref] function takes as many index parameters
 as there are dimensions in the input array.
 
@@ -105,13 +130,18 @@ These are diagonally opposite "corners" of the volume.
 @defproc[(acc-array-flatref [acc-array acc-array?]
                             [flat-index integer?]) acc-element?]
 
-Like @racket[acc-array-ref], this function gets an element out
-of an array using an index. Unlike @racket[acc-array-ref], this
-function only takes one integer as the index. This integer is the
-row-major order index of the element. 
+Like @racket[acc-array-ref], this function retrieves an element from
+an array using an index. Unlike @racket[acc-array-ref], the @racket[acc-array-flatref]
+function only takes @emph{one} integer as the index. This integer is the
+ index of the element in a flattened, "row-major order" view of the array.
 Valid indices are thus between 0 and @racket[acc-array-size] minus 1.
 
+Note, currently, row-major is in fact the order acc-array elements are stored
+in memory, so the @racket[acc-array-flatref] index corresponds directly to the
+index in memory.
 
+
+@; -------------------------------------------------------
 @section[#:tag "arrays"]{Array conversions}
 
 @defproc[(acc-array->sexp [acc-array acc-array?]) sexp?]
@@ -141,8 +171,8 @@ The element values should satisfy @racket[acc-element?]
 (sexp->acc-array '(#(1) #(2)))
 ]
 
-Note that the s-expression uses the same format as the @racket[acc-array] syntax for constructing literal arrays.
-
+Note that the s-expression uses the same format as
+the @racket[acc-array] syntax for constructing literal arrays.
 
 @; -------------------------------------------------------
 @section[#:tag "functions"]{Building Arrays}
@@ -275,12 +305,30 @@ between 0 and 255.
 
 
 @; -------------------------------------------------------
-@section[#:tag "computations"]{Typed Accelerack Computations}
+@section[#:tag "typed"]{Typed Accelerack Computations}
+
+First, what are the valid types in Accelerack?  To start with, there are
+@racket[Int], @racket[Double], and @racket{Bool}---the most basic types kinds
+of Accelerack data.
+
+@examples[
+ (require accelerack)
+ (: 3   Int)
+ (: 3.3 Double)
+ (: #t  Bool)
+]
+
 
 @defform*[((define-acc (name args ...) body)
            (define-acc name expr))]
 
 Define an Accelerack computation, either a function or expression.
+
+@examples[(require accelerack)
+          (define x 3)
+          (type-of sqrt)
+          (type-of exact->inexact)]
+
 
 @defproc[(use [any any?]) acc-array?]
 
@@ -298,3 +346,16 @@ automatically in some cases by @racket[define-acc].
 
 @; acc-echo-types
 @; type-of
+
+
+@examples[(require accelerack)
+          (type-of +)
+          (type-of sqrt)
+          (type-of exact->inexact)]
+
+@; -------------------------------------------------------
+@section[#:tag "grammar"]{Appendix: Full typed-language grammar}
+
+@(require racket/include racket/file)
+@(verbatim (file->string "./accelerack_grammar.txt"))
+

@@ -91,3 +91,21 @@
 
 ; (define-acc a2 (replicate (r c) (r (+ r 3) c)
 ;                          (acc-array ((1 2) (3 4)))))
+
+(test-case "vector-ref index"
+  (check-exn
+   #rx"bad index argument"
+   (lambda ()
+     (convert-compile-time-error
+      (acc (lambda (i) (vector-ref (vector 1 2 3 4) i)))))))
+
+
+(check-exn
+   #rx"vector type of known length"
+   (lambda ()
+     (convert-compile-time-error
+      (acc (lambda (v) (vector-ref v 3))))))
+
+
+
+

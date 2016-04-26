@@ -329,3 +329,15 @@ automatically in some cases by @racket[define-acc].
 
 @; acc-echo-types
 @; type-of
+
+@examples[(require accelerack)
+          (type-of +)
+          (type-of sqrt)
+          (type-of exact->inexact)]
+
+@; -------------------------------------------------------
+@section[#:tag "grammar"]{Appendix: Full typed-language grammar}
+
+@(require racket/include racket/file)
+@(verbatim (file->string "./accelerack_grammar.txt"))
+

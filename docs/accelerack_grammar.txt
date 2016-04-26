@@ -1,19 +1,4 @@
 
-Accelerack language grammar(s)
-================================================================================
-
-This specification documents the Accelerack language.  The "input
-language" should correspond to what is allowed inside (define-acc ...)
-and (acc ...) forms.
-
-As of now [2015.12.08], this full grammar is not completely implemented.
-
-Also, see this Evernote for a diagram of the architecture:
-
-   https://www.evernote.com/l/AF8yx22eNZhFp6P4iUgG_29560KVv9ON-UI
-
-Input language:
-------------------------------------------------------------
 
 ;; Integration with host language (Racket):
 meta
@@ -27,7 +12,7 @@ definitions d
   | (define-acc x : t e)
   | (: v t)
 
-lambda param, lp
+function, or lambda param, lp
   = x | [x : t]
 
 type t
@@ -40,7 +25,7 @@ element-type et
   = Int
   | Bool
   | Double
-  | #(et ...)   ; Tuple of Scalars
+  | #(et ...)         ; Tuple of Scalars
   | a                 ; Type variable (lower case)
   | (Num a)           ; Numeric type variable
   | SExp              ; A value in the meta-language
@@ -72,19 +57,15 @@ expression e
   | (: e t)                 : Type ascription
   | (use x t)               ; (unquote) Import a normal Racket variable
 
-
 let binding, lb
   = [x e] | [x : t e]
 
 ;; Extra sugar to add later: or/and, let*, ...
 
 primops p
-  = add1 sub1 + * - /
-    sqrt ...
-    < > <= >= equal?
-
-TODO: finish this list.
-
+  = + - * / expt = < <= >= > and or not add1 sub1 abs sqrt min max
+    modulo quotient remainder round ceiling floor exact->inexact map
+    zipwith
 
 value v
   = <boolean>
@@ -98,111 +79,3 @@ boundary conditions b
 array-data a
   = v                                ; zero-dimensional scalar
   | (a ...), all a have same length  ; (S n)-dimensional data
-
-
-Language verify-acc
-------------------------------------------------------------
-
-Verify-acc returns a type-stripped version of the AST meant to be
-treated as regular Racket code, not passed on to the rest of the
-compiler.
-
-
-Language post-typecheck
-------------------------------------------------------------
-
-Typecheck takes the starting input language above.
-In its output language, all binders have explicit types:
-
-expression e
-  | (let ((x : t e) ...) e)     ; Let binding
-  | (lambda ((x : t) ...) e)    ; Lambda abs
-  - (:) Ascription is removed, becaause it becomes redundant.
-
-Language after strip-ast
-------------------------------------------------------------
-
-The same grammar, just converted to an S-Expression rather than a
-syntax? representation.
-
-Language post-normalization
-------------------------------------------------------------
-
-All array operators are directly followed by lambdda:
-
-  | (map        (lambda (x  ) e) e)
-  | (zipwith    (lambda (x y) e) e e)
-  | (fold       (lambda (x y) e) e e)
-  | (stencil3x3 (lambda (x1 .. x9) e) b e)
-
-  | (p e ...)    ; Application only for primitives
-  - general application removed
-  - lambda is removed
-
-This pass should never throw errors, which is why its safe to operate
-on the SExp rep rather than the rich syntax representation.
-
-
-[Tentative] Language after monomorphise
-------------------------------------------------------------
-
-Optional: double check after normalization that everything looks
-good.
-
-
-Language split-conds
-------------------------------------------------------------
-
-This pass uses the TYPES (Array versus scalar) to turn:
-
-  (if a b c) -> (econd a b c)
-  (if a b c) -> (acond a b c)
-
-Language after gen-array-ref
-------------------------------------------------------------
-
-This pass replaces every constant array reference or (use ) form with
-an index expression (id 0), (id 1), etc that refer to a separate table
-of inputs to the array computation.  Grammar changes:
-
-expression e
-  + (id n)           ; Out-of-line input array reference
-  - use is gone
-  - acc-array is gone
-
-At runtime, the generated code for (run-gpu _) must produce an
-acc-portable-package that includes the open term (SExp with (id _)
-refs) together with a vector of input arrays all in the cdata? /
-acc-manifest-array-data representation, suitable for an FFI call.
-
-Final grammar, for completeness:
---------------------------------
-
-complete program
-  = (program e t)
-
-mono scalar-type st
-  = Int
-  | Bool
-  | Double
-  | #(st ...)   ; Tuple of Scalars
-
-expression e
-  = x                       ; Variable
-  | p                       ; Primitive function
-  | (acond e e e)           ; array conditionals
-  | (econd e e e)           ; scalar conditionals
-  | (vector e ...)          ; Tuple expression
-  | (vector-ref e e)        ; Tuple dereference
-  | (acc-array-ref e e ...) ; N-dimensional array dereference.
-
-  | (id n)                  ; Reference to input array
-  | (map        (lambda (x  ) e) e)
-  | (zipwith    (lambda (x y) e) e e)
-  | (fold       (lambda (x y) e) e e)
-  | (stencil3x3 (lambda (x1 .. x9) e) b e)
-  | (generate e ... (lambda (x1 .. xN) e1 .. eN))
-  | (let ([x : t] ...) e)   ; Let binding
-  | (p e ...)               ; Primitive Application
-
-All other syntactic categories remain the same as the starting grammar.

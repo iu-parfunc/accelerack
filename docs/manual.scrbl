@@ -363,6 +363,10 @@ be used in Accelerack computations.  There is, however, a way to @emph{import}
 such values, if we can assign them a valid Accelerate type.  We describe this
 in the next section, @secref["importing"].
 
+There are some additional restrictions on @racket[define-acc] definitions
+compared to regular @racket[define].  In addition to only supporting a limited
+set of constructs, @emph{recursive} definitions are not permitted.
+
 As a final note on @racket[define-acc], observe that @emph{args} can consist
 not just of variables, but of type annotated variables @racket[(v : t)], for
 example:
@@ -486,9 +490,22 @@ It can accept @emph{any} value.  We can ask Accelerack for its type as follows:
   (type-of f)]
 
 Here the lower-case variables are called @emph{type variables}.  In contrast
-with types like @racket[Int] or @racket[Double], they are stand-ins for any
-valid Accelerack type.
+with (upper-case) types like @racket[Int] or @racket[Double], they are stand-ins for any
+valid Accelerack type.  For example, consider these primitives:
 
+@examples[#:label #f (require accelerack)
+  (type-of acc-array-size)
+  (type-of acc-array-dimension)]
+
+Because they don't care about the contents of an array, only its size, these
+functions are @emph{polymorphic} in array contents and dimension.  That is,
+they use type variables to abstract the parts of the type they do not depend on.
+
+Incidentally, note that the above two primitives are part of the subset of
+@racket[acc-array] operations that make sense both @emph{inside} and
+@emph{outside} of accelerack expressions.  Other array manipulation functions,
+like @racket[acc-array->sexp] only make sense in regular Racket code, outside
+@racket[acc]/@racket[define-acc] blocks.
 
 @; -------------------------------------------------------
 @subsection[#:tag "numeric-types"]{Polymorphic Numeric Types}
@@ -497,23 +514,43 @@ What is the type of this function?
 
 @racketblock[  (define-acc (f x) (+ x x))]
 
-We can find out by typing this:
+We can find out like so:
 
 @examples[#:label #f
   (require accelerack)
   (define-acc (f x) (+ x x))
   (type-of f)]
 
-@; FINISHME
+Here, @racket[f]'s type again uses type variables, but these are special
+variables beginning with the prefix @racket[num_].  This is a convention
+meaning that the type variable can only be @emph{instantiated} using a numeric
+type, i.e. @racket[Int] or @racket[Bool].
+
+Thus all of the primitives which work over @racket[num_] types, such as
+@racket[+], @racket[*] and so on, can be used on both integral and floating
+point (@racket[Double]) numbers.
 
 @; -------------------------------------------------------
 @section[#:tag "debugging"]{Debugging Accelerack}
 
-@; acc-echo-types
-@; type-of
+In addition to responding to type errors as we get them.  It is helpful to be
+able to probe the type of expressions to figure out what's going on.  In
+addition to the @racket[type-of] construct that we saw above, we can also
+enable printing of all inferred types for @racket[define-acc]-bound variabes as
+follows:
 
+@defform[(acc-echo-types)]
 
-@; FINISHME
+@examples[#:label #f
+  (require accelerack)
+  (acc-echo-types)
+  (define-acc x (vector #t 3))
+  (define-acc a (generate (lambda () 4)))]
+
+Note that if you are following the design recipe, you will want to include
+top-level @racket[(: v t)] annotations as the @emph{signature} for each of your
+definitions.  However, this echoing capability can help you infer types which
+you can then copy-paste to produce your function signatures.
 
 @; -------------------------------------------------------
 @section[#:tag "grammar"]{Appendix: Full list of keywords}

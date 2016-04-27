@@ -14,6 +14,7 @@ function get_racket() {
     cd $TEMPDIR
     # Uses RACKET_DIR and RACKET_VERSION:
     bash < $TOP/.install_racket.sh
+    cd "$TOP"
 }
 
 function ver_check() {

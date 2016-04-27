@@ -152,6 +152,14 @@
                ((1 1 1)
                 (2 2 2))))
 
+(check-equal? 
+ (acc 
+  (replicate (c) (5 c)
+             (acc-array (1 2))))
+ (acc-array ((1 2) (1 2)
+             (1 2) (1 2)
+             (1 2))))
+
 (test-equal? "replicate zipwith"
              (acc-array->sexp
               (zipwith vector

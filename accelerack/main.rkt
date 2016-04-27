@@ -1,6 +1,6 @@
 #lang racket/base
 
-(require 
+(require
          accelerack/private/syntax
          accelerack/private/parse
          accelerack/private/racket_ops
@@ -14,7 +14,7 @@
 
          (for-syntax (only-in accelerack/private/syntax-table echo-types-param))
                      (only-in accelerack/private/syntax-table echo-types-param)
-         
+
          accelerack/private/wrappers
          accelerack/private/types
          ;         accelerack/private/prim-table
@@ -36,29 +36,29 @@
     acc-array-ref acc-array-flatref
     acc-array-dimension
     acc-array-size
-    acc-array-shape 
+    acc-array-shape
     acc-array->sexp
     sexp->acc-array
-    
+
     ;; A list of primitives for reference:
     acc-prims
     acc-keywords
     acc-prim-types
-    
+
     ;; Data-parallel aggregate operations
     map fold zipwith stencil3x3 generate
     until
     auntil
-    replicate 
+    replicate
 
     ;; Standard Racket operations with slightly modified behavior.
-    sqrt
-    
+    sqrt round ceiling floor
+
     ;; Individual elements plus shapes
     acc-scalar? acc-element?
     stencil-boundary?
     intersect-shape
-    
+
     ;; Image conversions
     image->acc-array acc-array->image
     color->acc-element acc-element->color
@@ -67,7 +67,7 @@
     acc-type? acc-element-type?
     acc-echo-types
     ; echo-types-param ;; Exporting, but only for macro-expansion, not for end users.
-    
+
     define-acc type-of acc ; run-gpu
     Int Bool Double Array
 
@@ -75,9 +75,9 @@
     ;; ----------------------------------------
     ;; (require accelerack) must be sufficient to avoid problems with unbound
     ;; identifiers in define-acc blocks.
-    
+
     -> : use
-    
+
     ;; However, not currently reexporting from base:
     ;; vector vector-ref + * - ...
     ;; if let lambda
@@ -107,4 +107,3 @@
     [(_) (syntax-protect #'(begin-for-syntax (echo-types-param #t)))]
 
     ))
-

@@ -5,14 +5,14 @@
 
 (require (only-in ffi/unsafe ctype? _int _double _bool) ;; FIXME: remove _*
          rackunit
-         (except-in racket/base map sqrt)
+         (except-in racket/base map sqrt round ceiling floor)
          (only-in racket/contract ->)
          accelerack/private/keywords
          accelerack/private/wrappers
          accelerack/private/prim-redefinitions
          (only-in accelerack/acc-array
                   acc-array-size acc-array-dimension)
-         (for-template (except-in racket/base map sqrt)
+         (for-template (except-in racket/base map sqrt round ceiling floor)
                        (only-in racket/contract ->)
                        accelerack/private/keywords
                        accelerack/private/wrappers
@@ -20,7 +20,7 @@
                        (only-in accelerack/acc-array
                                 acc-array-size acc-array-dimension)
                        )
-         (for-syntax (except-in racket/base map sqrt)
+         (for-syntax (except-in racket/base map sqrt round ceiling floor)
                      (only-in racket/contract ->)
                        accelerack/private/keywords
                        accelerack/private/wrappers

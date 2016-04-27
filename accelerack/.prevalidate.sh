@@ -2,22 +2,43 @@
 
 set -xe
 
-RACKETBIN="$HOME/racket/bin"
-if [ -d $RACKETBIN ]; then
-    export PATH=$RACKETBIN:$PATH
-fi
-export MINRACKETVERSION=6.3
-if which racket; then
-  CURRENTRACKETV=$(racket -v | egrep -o '[0-9]+.[0-9]+')
-  if [ $(echo "$CURRENTRACKETV >= $MINRACKETVERSION" | bc) -eq 1 ]; then
-	  echo "Racket found" ;
-  else
-	  ./.get_racket.sh
-  fi
+# The version to use for testing.
+export RACKET_VERSION=6.4
+export RACKET_DIR="$HOME/racket_for_accelerack"
+RACKETBIN="$RACKET_DIR/bin"
+
+function get_racket() {
+    TOP=`pwd`
+    TEMPDIR=`tempfile`_dir
+    mkdir -p $TEMPDIR
+    cd $TEMPDIR
+    # Uses RACKET_DIR and RACKET_VERSION:
+    bash < $TOP/.install_racket.sh
+}
+
+function ver_check() {
+    if [ "$VER" == "Welcome to Racket v"$RACKET_VERSION"." ];
+    then echo "Racket version $RACKET_VERSION found.  Good."
+    else echo "Racket found, but it reports version:"
+         echo "   $VER"
+         echo "So I'm reinstalling it."
+         get_racket
+    fi
+}
+
+if [ -e "$RACKETBIN/racket" ]; then
+    RACKET=$RACKETBIN/racket   
+    VER=`$RACKETBIN/racket -v`
+    ver_check
+elif which racket; then
+    VER=`racket -v`
+    ver_check
 else
-  ./.get_racket.sh
+    echo "Racket not found, installing."
+    get_racket    
 fi
 
+# If we installed it, otherwise it's already in path:
 if [ -d $RACKETBIN ]; then
     export PATH=$RACKETBIN:$PATH
 fi

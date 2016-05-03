@@ -45,7 +45,7 @@
    #'+    '(-> num_a num_a num_a)
    #'-    '(-> num_a num_a num_a)
    #'*    '(-> num_a num_a num_a)
-   #'/    '(-> num_a num_a num_a)
+   #'/    '(-> Double Double Double)
    #'expt '(-> num_a num_a num_a)
 
    #'=    '(-> num_a num_a Bool)

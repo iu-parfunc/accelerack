@@ -13,6 +13,12 @@
 
 ;; Simple.  Just a placeholder.
 (define (strip-ast a)
-  (define res (syntax->datum a))
+  (define res (remove-type (syntax->datum a)))
   (pass-output-chatter 'strip-ast res)
   res)
+
+(define (remove-type exp)
+  (match exp
+    (`(,x : ,typ) `,x)
+    (`(,x ...) (map remove-type x))
+    (`,x x)))

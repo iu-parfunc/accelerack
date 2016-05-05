@@ -56,6 +56,19 @@
            ,(normalize-to-lambda e b x env)))
     (else (raise-syntax-error 'normalize (format "normalize-to-lambda: no matching exspression for ~a" l) x))))
 
+(define (make-lambda l x env)
+  (match l
+    ;; Do nothing for lambda if and let
+    (`(lambda ,xls ,y ... ,z) l)
+    (`(if ,c ,y ,z) l)
+    (`(let ,xls ,a ... ,b) l)
+    ;; For all others just make it a simple lambda
+    (else
+     (let ((lambda-var-ls (map (lambda(x)
+                                 (string->symbol (string-append (symbol->string 'x) (number->string x))))
+                               (range (length x)))))
+       `(lambda ,lambda-var-ls (,l ,@lambda-var-ls))))))
+
 ;; Environment contains only lambda's for now
 ;; Anything more ??
 (define (normalize-exp exp env)
@@ -70,15 +83,12 @@
 	   (if (null? exp)
 	       (values bexp env)
 	       (values `(let ,exp ,bexp) env)))))
+      (`(lambda ,xls ,e) (let-values (((e env) (normalize-exp e env)))
+                           (values `(lambda ,xls ,e) env)))
       (`(if ,x ,y ,z) (values `(if ,(normalize x env) ,(normalize y env) ,(normalize z env)) env))
       (`(use ,x ,y) (values (normalize x env) env))
       (`(,e ,l ,x ...) #:when (memq e lambda-first-primitive-ls)
-       (let ((l (if (memq l primitive-ls)
-                    (let ((lambda-var-ls (map (lambda(x)
-                                                (string->symbol (string-append (symbol->string 'x) (number->string x))))
-                                              (range (length x)))))
-                      `(lambda ,lambda-var-ls (,l ,@lambda-var-ls)))
-                    (normalize l env)))
+       (let ((l (make-lambda l x env))
              (x (map (lambda(x) (normalize x env)) x)))
          (values (normalize-to-lambda e l x env) env)))
       (`(,p ,x ...) #:when(memq p primitive-ls)
@@ -231,37 +241,38 @@
              )) ns))
 
 
-(module+ test
+;; (module+ test
 
-  (test-case "Run eval-and-check tests"
-    ;; Check if eval and actual result is equal
-    (check-true (eval-and-check test3))
-    (check-true (eval-and-check test4))
-    (check-true (eval-and-check test4a))
-    (check-true (eval-and-check test4b))
-    (check-true (eval-and-check test4c))
-    (check-true (eval-and-check test5))
-    (check-true (eval-and-check test6))
-    (check-true (eval-and-check test7))
-    (check-true (eval-and-check test9)))
-
-
-  (test-case "Check that normalize yields is-normalized? expressions"
-    ;; Validate output of normalize to
-    ;; Passing tests:
-    (for-each (lambda(x)
-                (check-pred is-normalized? x))
-              (map (lambda(x) (normalize x '()))
-                   (list test3 test4 test4a test4b test4c
-                         test5 test6 test7 test7a test8 test9))))
+;;   (test-case "Run eval-and-check tests"
+;;     ;; Check if eval and actual result is equal
+;;     (check-true (eval-and-check test3))
+;;     (check-true (eval-and-check test4))
+;;     (check-true (eval-and-check test4a))
+;;     (check-true (eval-and-check test4b))
+;;     (check-true (eval-and-check test4c))
+;;     (check-true (eval-and-check test5))
+;;     (check-true (eval-and-check test6))
+;;     (check-true (eval-and-check test7))
+;;     (check-true (eval-and-check test9)))
 
 
-  #;
-  ;; Known failures, FIXME FIXME!
-  ;; Add some invalid cases
-  (for-each (lambda (t)
-              (check-pred (lambda (x) (not (is-normalized? x)))
-                          (normalize t '())))
-            (list))
+;;   (test-case "Check that normalize yields is-normalized? expressions"
+;;     ;; Validate output of normalize to
+;;     ;; Passing tests:
+;;     (for-each (lambda(x)
+;;                 (check-pred is-normalized? x))
+;;               (map (lambda(x) (normalize x '()))
+;;                    (list test3 test4 test4a test4b test4c
+;;                          test5 test6 test7 test7a test8 test9))))
 
-)
+
+;;   #;
+;;   ;; Known failures, FIXME FIXME!
+;;   ;; Add some invalid cases
+;;   (for-each (lambda (t)
+;;               (check-pred (lambda (x) (not (is-normalized? x)))
+;;                           (normalize t '())))
+;;             (list))
+
+;; )
+
